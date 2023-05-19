@@ -14,5 +14,14 @@
 
 #pragma once
 
+class MachineInterface {
+public:
+  MachineInterface(RpnController &rpn);
+  ~MachineInterface();
+
+  struct Privates;
+private:
+  Privates *m_p;
+};
 
 /* end of github/elh/rpn-cnc/cnc-dictionary.h */

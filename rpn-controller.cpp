@@ -21,8 +21,8 @@
 
 #include "rpn-controller.h"
 
-static std::string::size_type
-nextWord(std::string &word, std::string &buffer, char delim=' ') {
+std::string::size_type
+RpnController::nextWord(std::string &word, std::string &buffer, char delim) {
   word = "";
   auto p1 = buffer.find(delim, 0);
   if (p1 == std::string::npos) { // not found
@@ -35,29 +35,7 @@ nextWord(std::string &word, std::string &buffer, char delim=' ') {
   return p1;
 }
 
-/*
- * dataypes on the stack
- */
-struct Vec3 {
-  Vec3(double xx, double yy, double zz) : x(xx), y(yy), z(zz) {}
-  double x;
-  double y;
-  double z;
-};
-
-
-enum datatype_t {
-  st_double,
-  st_integer,
-  st_string,
-  st_vec3,
-
-  // these are not real types, they are used for validating parameters
-  st_number, // either double or integer
-  st_any, // not a real type, just wildcard for don't care
-};
-
-static const std::string
+const std::string
 to_string(const datatype_t &dt) {
   std::string rv;
   switch(dt) {
@@ -83,10 +61,8 @@ to_string(const datatype_t &dt) {
   return rv;
 }
 
-// the order here must match the enum above!
-using stacktype_t = std::variant<double, long, std::string, Vec3>;
-
-static std::string to_string(const stacktype_t &e) {
+const std::string
+to_string(const stacktype_t &e) {
   std::string rv;
   char tmp[32];
   snprintf(tmp, sizeof(tmp), "{%s}: ", to_string(datatype_t(e.index())).c_str());
@@ -116,25 +92,7 @@ static std::string to_string(const stacktype_t &e) {
   return rv;
 }
 
-/*
- * A pairing of name and type, used for documentation and checking parameters to words
- */
-struct param_t {
-  std::string name;
-  datatype_t type;
-};
-
-/*
- * Definition of a word within the dictionary.  This allows for checking against various
- * types of parameters
- */
-struct word_t {
-  std::string description;
-  std::vector<std::vector<param_t>> params;
-  std::function<std::string::size_type(const std::string &word,std::string &rest)> eval;
-};
-
-static std::string
+const std::string
 to_string(const std::pair<std::string,word_t> &wp) {
   std::string rv;
   rv += "((word " + wp.first + ") " + wp.second.description + " " + std::to_string(wp.second.params.size()) + "\n";
@@ -149,7 +107,14 @@ to_string(const std::pair<std::string,word_t> &wp) {
   return rv;
 }
 
-struct RpnCncController::Privates {
+const std::string
+to_string(const Vec3 &v) {
+  char tmp[64];
+  snprintf(tmp, sizeof(tmp), "{x:%f, y:%f z:%f}", v.x, v.y, v.z);
+  return tmp;
+}
+
+struct RpnController::Privates {
   Privates();
   ~Privates() {};
 
@@ -230,6 +195,47 @@ struct RpnCncController::Privates {
     return val;
   }
 
+  std::string stack_pop_as_string() {
+    std::string val;
+    auto s0 = stack_pop();
+    switch(s0.index()) {
+    case st_double:
+      val = std::to_string(std::get<st_double>(s0));
+      break;
+    case st_integer:
+      val = std::to_string(std::get<st_integer>(s0));
+      break;
+
+    case st_string:
+      val = std::get<st_string>(s0);
+      break;
+    case st_vec3:
+      val = to_string(std::get<st_vec3>(s0));
+      break;
+    default:
+      // what do we return?
+      break;
+    }
+    return val;
+  }
+
+  Vec3 stack_pop_as_vec3() {
+    Vec3 val;
+    auto s0 = stack_pop();
+    switch(s0.index()) {
+    case st_double:
+    case st_integer:
+    case st_string:
+    case st_vec3:
+      val = std::get<st_vec3>(s0);
+      break;
+    default:
+      // what do we return?
+      break;
+    }
+    return val;
+  }
+
   void print_stack() {
     auto i=_stack.size();
     printf("--%20lu--\n", i);
@@ -253,7 +259,7 @@ struct RpnCncController::Privates {
 };
 
 std::vector<size_t>
-RpnCncController::Privates::top_of_stack_types(size_t n) {
+RpnController::Privates::top_of_stack_types(size_t n) {
   //  printf("%s(%lu) (depth %lu)\n", __func__, n, _stack.size());
   //  print_stack();
   std::vector<size_t> rv;
@@ -293,7 +299,7 @@ operator==(const datatype_t &dt, const size_t &index) {
 }
 
 bool
-RpnCncController::Privates::validate_stack_for_word(const std::pair<std::string,word_t> &de) {
+RpnController::Privates::validate_stack_for_word(const std::pair<std::string,word_t> &de) {
   bool rv = (de.second.params.size()==0 ||
 	     (de.second.params.size()==1 && de.second.params[0].size()==0));
 
@@ -316,7 +322,7 @@ RpnCncController::Privates::validate_stack_for_word(const std::pair<std::string,
 }
 
 std::string::size_type
-RpnCncController::Privates::compiletime_eval(const std::string &word, std::string &rest) {
+RpnController::Privates::compiletime_eval(const std::string &word, std::string &rest) {
   std::string::size_type rv = 0;
 
   if (_newWord == "") {
@@ -348,7 +354,7 @@ RpnCncController::Privates::compiletime_eval(const std::string &word, std::strin
 }
 
 std::string::size_type
-RpnCncController::Privates::runtime_eval(const std::string &word, std::string &rest) {
+RpnController::Privates::runtime_eval(const std::string &word, std::string &rest) {
   std::string::size_type rv = 0;
   // numbers just push
   if (std::isdigit(word[0])) {
@@ -378,7 +384,7 @@ RpnCncController::Privates::runtime_eval(const std::string &word, std::string &r
 
 
 std::string::size_type
-RpnCncController::Privates::eval(const std::string &word, std::string &rest) {
+RpnController::Privates::eval(const std::string &word, std::string &rest) {
   std::string::size_type rv = 0; // std::string::npos;
   if (word.size()>0) {
 
@@ -391,16 +397,21 @@ RpnCncController::Privates::eval(const std::string &word, std::string &rest) {
   return rv;
 }
 
-RpnCncController::RpnCncController() {
+RpnController::RpnController() {
   m_p = new Privates;
 }
 
-RpnCncController::~RpnCncController() {
+void
+RpnController::addDictionary(const std::map<std::string,word_t> &newDict) {
+  m_p->_runtimeDictionary.insert(newDict.begin(), newDict.end());
+}
+
+RpnController::~RpnController() {
   if (m_p) delete m_p;
 }
 
 bool
-RpnCncController::parse(std::string &line) {
+RpnController::parse(std::string &line) {
   bool rv=true;
   while (line.size()>0) {
     std::string word;
@@ -412,7 +423,7 @@ RpnCncController::parse(std::string &line) {
 }
 
 bool
-RpnCncController::loadFile(const std::string &path) {
+RpnController::loadFile(const std::string &path) {
   bool rv=false;
   std::ifstream ifs(path);
 
@@ -435,7 +446,7 @@ RpnCncController::loadFile(const std::string &path) {
 }
 
 std::string::size_type
-RpnCncController::Privates::parse_comment(const std::string &word, std::string &rest) {
+RpnController::Privates::parse_comment(const std::string &word, std::string &rest) {
   std::string::size_type rv = 0;
   std::string comment;
   rv = nextWord(comment, rest, ')');
@@ -447,7 +458,14 @@ RpnCncController::Privates::parse_comment(const std::string &word, std::string &
   return rv;
 }
 
-RpnCncController::Privates::Privates() : _newWord(""), _isCompiling(false), _newDefinition({}) {
+void RpnController::stack_push(const stacktype_t &v) {   m_p->stack_push(v); }
+stacktype_t RpnController::stack_pop() { return m_p->stack_pop(); }
+double RpnController::stack_pop_as_double() { return m_p->stack_pop_as_double(); }
+long RpnController::stack_pop_as_integer() { return m_p->stack_pop_as_integer(); }
+std::string RpnController::stack_pop_as_string() { return m_p->stack_pop_as_string(); }
+Vec3 RpnController::stack_pop_as_vec3() { return m_p->stack_pop_as_vec3(); }
+
+RpnController::Privates::Privates() : _newWord(""), _isCompiling(false), _newDefinition({}) {
 
   _runtimeDictionary = {
     /*
@@ -639,6 +657,18 @@ RpnCncController::Privates::Privates() : _newWord(""), _isCompiling(false), _new
 	      }
       } },
 	      
+    { ".D", { "print dictionary", {
+	  {},
+	},
+	      [this](const std::string &word, std::string &rest) -> std::string::size_type {
+		for(auto const &de : _runtimeDictionary) {
+		  std::string s = to_string(de);
+		  printf("%s\n\n", s.c_str());
+		}
+		return 0;
+	      }
+      } },
+
     { ".\"", { "String literal", {
 	  {},
 	},
@@ -684,11 +714,14 @@ RpnCncController::Privates::Privates() : _newWord(""), _isCompiling(false), _new
       } },
 
     { "CONCAT", { "String concatenation", {
-	  { { "s1", st_string }, { "a2", st_any } }, // s1 + a2 (convert a2 to string and concat)
-	  { { "a1", st_any }, { "s2", st_string } }, // a1 + s2 (convert a1 to string and concat)
+	  { { "s2", st_string }, { "a1", st_any } }, // s1 + a2 (convert a2 to string and concat)
+	  { { "a2", st_any }, { "s1", st_string } }, // a1 + s2 (convert a1 to string and concat)
 	},
 		  [this](const std::string &word, std::string &rest) -> std::string::size_type {
 		    std::string::size_type rv = 0;
+		    std::string s1 = stack_pop_as_string();
+		    std::string s2 = stack_pop_as_string();
+		    stack_push(s2 + s1);
 		    return rv;
 		  }
       } },
@@ -699,6 +732,20 @@ RpnCncController::Privates::Privates() : _newWord(""), _isCompiling(false), _new
 	       [this](const std::string &word, std::string &rest) -> std::string::size_type {
 		 std::string::size_type rv = 0;
 		 stack_push(_stack.back());
+		 return rv;
+	       }
+      } },
+
+    { "SWAP", { "Swap top two stack items", {
+	  { { "s2", st_any }, { "s1", st_any } }
+	},
+	       [this](const std::string &word, std::string &rest) -> std::string::size_type {
+		 // there are definitely more efficient ways to do this.
+		 std::string::size_type rv = 0;
+		 auto s1 = stack_pop();
+		 auto s2 = stack_pop();
+		 stack_push(s1);
+		 stack_push(s2);
 		 return rv;
 	       }
       } },
@@ -798,137 +845,8 @@ RpnCncController::Privates::Privates() : _newWord(""), _isCompiling(false), _new
 		  std::string::size_type rv = 0;
 		  return rv;
 		}
-      } },
-
-    /*
-     * Machine control words
-     */
-    { "MPOS->", { "Push Machine Position to the stack. ( -- mpos )", {
-	  {},
-	},
-		  [this](const std::string &word, std::string &rest) -> std::string::size_type {
-		    std::string::size_type rv = 0;
-		    return rv;
-		  }
-      } },
-
-    { "WPOS->", { "Push Work Position to the stack. ( -- wpos )", {
-	  {},
-	},
-		  [this](const std::string &word, std::string &rest) -> std::string::size_type {
-		    std::string::size_type rv = 0;
-		    return rv;
-		  }
-      } },
-
-    { "->WPOS", { "Set Work Position ( wpos -- )", {
-	  { { "newpos", st_vec3 } },
-	},
-		  [this](const std::string &word, std::string &rest) -> std::string::size_type {
-		    std::string::size_type rv = 0;
-		    return rv;
-		  }
-      } },
-
-    { "SPEED->", { "Push Spindle Speed to the stack. ( -- speed )", {
-	  {},
-	},
-		   [this](const std::string &word, std::string &rest) -> std::string::size_type {
-		     std::string::size_type rv = 0;
-		     return rv;
-		   }
-      } },
-
-    { "->SPEED", { "Set Spindle Speed ( speed -- )", {
-	  { { "speed", st_number } },
-	},
-		   [this](const std::string &word, std::string &rest) -> std::string::size_type {
-		     std::string::size_type rv = 0;
-		     return rv;
-		   }
-      } },
-
-    { "FEED->", { "Push jog feed rate to the stack. ( -- feed )", {
-	  {},
-	},
-		  [this](const std::string &word, std::string &rest) -> std::string::size_type {
-		    std::string::size_type rv = 0;
-		    return rv;
-		  }
-      } },
-
-    { "->FEED", { "Set jog feed rate ( feed -- )", {
-	  { { "feed", st_number } },
-	},
-		  [this](const std::string &word, std::string &rest) -> std::string::size_type {
-		    std::string::size_type rv = 0;
-		    return rv;
-		  }
-      } },
-
-    { "JOG-R", { "Jog to relative position ( pos -- )", {
-	  { { "offset", st_vec3 } },
-	},
-		 [this](const std::string &word, std::string &rest) -> std::string::size_type {
-		   std::string::size_type rv = 0;
-		   return rv;
-		 }
-      } },
-
-    { "JOG-WA", { "Jog to absolute work position ( wpos -- )", {
-	  { { "wpos", st_vec3 } },
-	},
-		  [this](const std::string &word, std::string &rest) -> std::string::size_type {
-		    std::string::size_type rv = 0;
-		    return rv;
-		  }
-      } },
-
-    { "JOG-MA", { "Jog to absolute machine position ( mpos -- )", {
-	  { { "mpos", st_vec3 } },
-	},
-		  [this](const std::string &word, std::string &rest) -> std::string::size_type {
-		    std::string::size_type rv = 0;
-		    return rv;
-		  }
-      } },
-
-    { "PROBE", { "Probe machine (target feed -- )", {
-	  { { "target", st_vec3 }, { "feed" , st_number } }, // primitive G38.2
-	},
-		 [this](const std::string &word, std::string &rest) -> std::string::size_type {
-		   std::string::size_type rv = 0;
-		   return rv;
-		 }
-      } },
-
-    { "MODAL-STATE->", { "Push machine's modal state on the stack ( -- state )", {
-	  {},
-	},
-			 [this](const std::string &word, std::string &rest) -> std::string::size_type {
-			   std::string::size_type rv = 0;
-			   return rv;
-			 }
-      } },
-
-    { "->MODAL-STATE", { "Send modal state to the machine ( state -- )", {
-	  { { "state", st_string } },
-	},
-			 [this](const std::string &word, std::string &rest) -> std::string::size_type {
-			   std::string::size_type rv = 0;
-			   return rv;
-			 }
-      } },
-
-
-    { "SEND", { "Send command", {
-	  { { "g-code", st_string } },
-	},
-		[this](const std::string &word, std::string &rest) -> std::string::size_type {
-		  std::string::size_type rv = 0;
-		  return rv;
-		}
       } }
+
   };
 
   _compiletimeDictionary = {

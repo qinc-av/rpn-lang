@@ -18,6 +18,11 @@
 
 MODAL-STATE->  
 
+." ABCDE"
+." FGHIJ"
+CONCAT
+.S
+
 ." G91" SEND
 ." G21" SEND
 ." G10 L20 X0 Y0" SEND
@@ -41,3 +46,15 @@ WPOS->
 
 ->MODAL-STATE
 .S
+
+WPOS->
+
+.S
+
+SPEED->
+
+.S
+
+SWAP
+
+->WPOS

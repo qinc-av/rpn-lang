@@ -13,11 +13,14 @@
  */
 
 #include "rpn-controller.h"
+#include "cnc-app.h"
 
 int
 main(int ac, char **av) {
   if (ac > 1) {
-    RpnCncController control;
+    RpnController control;
+    MachineInterface mc(control);
+
     control.loadFile(av[1]);
   } else {
     printf("usage: %s <filename>\n", av[0]);
