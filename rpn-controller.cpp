@@ -725,7 +725,7 @@ RpnController::Privates::Privates() : _newWord(""), _isCompiling(false), _newDef
 	     }
       } },
 
-    { "-", { "Subtract (x y -- y-x)", {
+    { "-", { "Subtract (y x -- y-x)", {
 	  { { "x", st_number }, { "y", st_number } },
 	  { { "vx", st_vec3 }, { "vy", st_vec3 } }, // v1 + v2
 	},
@@ -733,22 +733,22 @@ RpnController::Privates::Privates() : _newWord(""), _isCompiling(false), _newDef
 	       std::string::size_type rv = 0;
 	       auto sx = stack_pop();
 	       auto sy = stack_pop();
-	       unsigned vv = type2_pred_v(sx,sy);
+	       unsigned vv = type2_pred_v(sy,sx);
 	       switch(vv) {
 	       case type2_pred(st_integer,st_integer):
-		 stack_push(std::get<st_integer>(sx)-std::get<st_integer>(sy));
-		 break;
-	       case type2_pred(st_double,st_integer):
-		 stack_push(std::get<st_double>(sx)-std::get<st_integer>(sy));
+		 stack_push(std::get<st_integer>(sy)-std::get<st_integer>(sx));
 		 break;
 	       case type2_pred(st_integer,st_double):
-		 stack_push(std::get<st_integer>(sx)-std::get<st_double>(sy));
+		 stack_push(std::get<st_integer>(sy)-std::get<st_double>(sx));
+		 break;
+	       case type2_pred(st_double,st_integer):
+		 stack_push(std::get<st_double>(sy)-std::get<st_integer>(sx));
 		 break;
 	       case type2_pred(st_double,st_double):
-		 stack_push(std::get<st_double>(sx)-std::get<st_double>(sy));
+		 stack_push(std::get<st_double>(sy)-std::get<st_double>(sx));
 		 break;
 	       case type2_pred(st_vec3,st_vec3):
-		 stack_push(std::get<st_vec3>(sx)+std::get<st_vec3>(sy));
+		 stack_push(std::get<st_vec3>(sy)+std::get<st_vec3>(sx));
 		 break;
 	       }
 	       return rv;
@@ -929,7 +929,7 @@ RpnController::Privates::Privates() : _newWord(""), _isCompiling(false), _newDef
 	},
 		 [this](const std::string &word, std::string &rest) -> std::string::size_type {
 		   std::string::size_type rv = 0;
-		   stack_push(_stack.size());
+		   stack_push(long(_stack.size()));
 		   return rv;
 		 }
       } },

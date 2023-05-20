@@ -30,7 +30,7 @@ INV
 DROP
 
 .S
-
+." test addition"
 2 4 + ( integer mult )
 2.5 4 + ( double * int )
 5 0.2 + ( int * double )
@@ -39,4 +39,22 @@ DROP
 4.5 ->{Y}
 .S
 +
+.S
+
+DEPTH
+DROPN
+.S
+
+." test subtraction"
+2 4 - ( integer mult )
+2.5 4 - ( double * int )
+5 0.2 - ( int * double )
+3.5 6.2 - ( double * double )
+.S
+- - -
+.S
+3.500 ->{X}
+4.5 ->{Y}
+.S
+-
 .S
