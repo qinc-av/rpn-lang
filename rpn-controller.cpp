@@ -465,6 +465,22 @@ long RpnController::stack_pop_as_integer() { return m_p->stack_pop_as_integer();
 std::string RpnController::stack_pop_as_string() { return m_p->stack_pop_as_string(); }
 Vec3 RpnController::stack_pop_as_vec3() { return m_p->stack_pop_as_vec3(); }
 
+static double deg_to_rad(const double &deg) {
+  return deg * (M_PI / 180.);
+}
+static double rad_to_deg(const double &rad) {
+  return rad * 180. / M_PI;
+}
+#define type2_pred_v(v1,v2) ((v1.index()<<8)|(v2.index()<<0))
+#define type2_pred(v1,v2) ((v1<<8)|(v2<<0))
+
+static Vec3 operator+(const Vec3 &a, const Vec3 &b) {
+  return Vec3(a.x+b.x, a.y+b.y, a.z+b.y);
+}
+static Vec3 operator-(const Vec3 &a, const Vec3 &b) {
+  return Vec3(a.x-b.x, a.y-b.y, a.z-b.y);
+}
+
 RpnController::Privates::Privates() : _newWord(""), _isCompiling(false), _newDefinition({}) {
 
   _runtimeDictionary = {
@@ -473,10 +489,12 @@ RpnController::Privates::Privates() : _newWord(""), _isCompiling(false), _newDef
      */
     { "ABS", { "Absolute Value (x -- |x|)", {
 	  { { "x", st_number } },
-	  { { "v", st_vec3 } },
+	  //	  { { "v", st_vec3 } },
 	},
 	       [this](const std::string &word, std::string &rest) -> std::string::size_type {
 		 std::string::size_type rv = 0;
+		 double v = stack_pop_as_double();
+		 stack_push(v*v);
 		 return rv;
 	       }
       } },
@@ -486,6 +504,8 @@ RpnController::Privates::Privates() : _newWord(""), _isCompiling(false), _newDef
 	},
 	       [this](const std::string &word, std::string &rest) -> std::string::size_type {
 		 std::string::size_type rv = 0;
+		 double rad = deg_to_rad(stack_pop_as_double());
+		 stack_push(cos(rad));
 		 return rv;
 	       }
       } },
@@ -495,6 +515,8 @@ RpnController::Privates::Privates() : _newWord(""), _isCompiling(false), _newDef
 	},
 		[this](const std::string &word, std::string &rest) -> std::string::size_type {
 		  std::string::size_type rv = 0;
+		  double v = acos(stack_pop_as_double());
+		  stack_push(rad_to_deg(v));
 		  return rv;
 		}
       } },
@@ -504,6 +526,8 @@ RpnController::Privates::Privates() : _newWord(""), _isCompiling(false), _newDef
 	},
 	       [this](const std::string &word, std::string &rest) -> std::string::size_type {
 		 std::string::size_type rv = 0;
+		 double rad = deg_to_rad(stack_pop_as_double());
+		 stack_push(sin(rad));
 		 return rv;
 	       }
       } },
@@ -513,6 +537,8 @@ RpnController::Privates::Privates() : _newWord(""), _isCompiling(false), _newDef
 	},
 		[this](const std::string &word, std::string &rest) -> std::string::size_type {
 		  std::string::size_type rv = 0;
+		  double v = asin(stack_pop_as_double());
+		  stack_push(rad_to_deg(v));
 		  return rv;
 		}
       } },
@@ -522,6 +548,8 @@ RpnController::Privates::Privates() : _newWord(""), _isCompiling(false), _newDef
 	},
 	       [this](const std::string &word, std::string &rest) -> std::string::size_type {
 		 std::string::size_type rv = 0;
+		 double rad = deg_to_rad(stack_pop_as_double());
+		 stack_push(tan(rad));
 		 return rv;
 	       }
       } },
@@ -531,6 +559,8 @@ RpnController::Privates::Privates() : _newWord(""), _isCompiling(false), _newDef
 	},
 		[this](const std::string &word, std::string &rest) -> std::string::size_type {
 		  std::string::size_type rv = 0;
+		  double v = atan(stack_pop_as_double());
+		  stack_push(rad_to_deg(v));
 		  return rv;
 		}
       } },
@@ -540,6 +570,9 @@ RpnController::Privates::Privates() : _newWord(""), _isCompiling(false), _newDef
 	},
 		 [this](const std::string &word, std::string &rest) -> std::string::size_type {
 		   std::string::size_type rv = 0;
+		   double x = stack_pop_as_double();
+		   double y = stack_pop_as_double();
+		   stack_push(rad_to_deg(atan2(y,x)));
 		   return rv;
 		 }
       } },
@@ -549,6 +582,15 @@ RpnController::Privates::Privates() : _newWord(""), _isCompiling(false), _newDef
 	},
 	       [this](const std::string &word, std::string &rest) -> std::string::size_type {
 		 std::string::size_type rv = 0;
+		 auto x = stack_pop();
+		 switch(x.index()) {
+		 case st_double:
+		   stack_push(std::get<st_double>(x)*-1.);
+		   break;
+		 case st_integer:
+		   stack_push(std::get<st_integer>(x)*-1);
+		   break;
+		 }
 		 return rv;
 	       }
       } },
@@ -558,6 +600,8 @@ RpnController::Privates::Privates() : _newWord(""), _isCompiling(false), _newDef
 	},
 		[this](const std::string &word, std::string &rest) -> std::string::size_type {
 		  std::string::size_type rv = 0;
+		  double x = stack_pop_as_double();
+		  stack_push(sqrt(x));
 		  return rv;
 		}
       } },
@@ -567,6 +611,8 @@ RpnController::Privates::Privates() : _newWord(""), _isCompiling(false), _newDef
 	},
 	      [this](const std::string &word, std::string &rest) -> std::string::size_type {
 		std::string::size_type rv = 0;
+		double x = stack_pop_as_double();
+		stack_push(x*x);
 		return rv;
 	      }
       } },
@@ -576,6 +622,9 @@ RpnController::Privates::Privates() : _newWord(""), _isCompiling(false), _newDef
 	},
 	       [this](const std::string &word, std::string &rest) -> std::string::size_type {
 		 std::string::size_type rv = 0;
+		 double x = stack_pop_as_double();
+		 double y = stack_pop_as_double();
+		 stack_push(pow(x,y));
 		 return rv;
 	       }
       } },
@@ -585,6 +634,12 @@ RpnController::Privates::Privates() : _newWord(""), _isCompiling(false), _newDef
 	},
 	       [this](const std::string &word, std::string &rest) -> std::string::size_type {
 		 std::string::size_type rv = 0;
+		 double x = stack_pop_as_double();
+		 if (x!=0.) {
+		   stack_push(1.0/x);
+		 } else {
+		   stack_push(x);
+		 }
 		 return rv;
 	       }
       } },
@@ -594,6 +649,7 @@ RpnController::Privates::Privates() : _newWord(""), _isCompiling(false), _newDef
 	},
 	      [this](const std::string &word, std::string &rest) -> std::string::size_type {
 		std::string::size_type rv = 0;
+		stack_push(M_PI);
 		return rv;
 	      }
       } },
@@ -604,6 +660,26 @@ RpnController::Privates::Privates() : _newWord(""), _isCompiling(false), _newDef
 	},
 	     [this](const std::string &word, std::string &rest) -> std::string::size_type {
 	       std::string::size_type rv = 0;
+	       auto sx = stack_pop();
+	       auto sy = stack_pop();
+	       unsigned vv = type2_pred_v(sx,sy);
+	       switch(vv) {
+	       case type2_pred(st_integer,st_integer):
+		 stack_push(std::get<st_integer>(sx)+std::get<st_integer>(sy));
+		 break;
+	       case type2_pred(st_double,st_integer):
+		 stack_push(std::get<st_double>(sx)+std::get<st_integer>(sy));
+		 break;
+	       case type2_pred(st_integer,st_double):
+		 stack_push(std::get<st_integer>(sx)+std::get<st_double>(sy));
+		 break;
+	       case type2_pred(st_double,st_double):
+		 stack_push(std::get<st_double>(sx)+std::get<st_double>(sy));
+		 break;
+	       case type2_pred(st_vec3,st_vec3):
+		 stack_push(std::get<st_vec3>(sx)+std::get<st_vec3>(sy));
+		 break;
+	       }
 	       return rv;
 	     }
       } },
@@ -614,6 +690,26 @@ RpnController::Privates::Privates() : _newWord(""), _isCompiling(false), _newDef
 	},
 	     [this](const std::string &word, std::string &rest) -> std::string::size_type {
 	       std::string::size_type rv = 0;
+	       auto sx = stack_pop();
+	       auto sy = stack_pop();
+	       unsigned vv = type2_pred_v(sx,sy);
+	       switch(vv) {
+	       case type2_pred(st_integer,st_integer):
+		 stack_push(std::get<st_integer>(sx)-std::get<st_integer>(sy));
+		 break;
+	       case type2_pred(st_double,st_integer):
+		 stack_push(std::get<st_double>(sx)-std::get<st_integer>(sy));
+		 break;
+	       case type2_pred(st_integer,st_double):
+		 stack_push(std::get<st_integer>(sx)-std::get<st_double>(sy));
+		 break;
+	       case type2_pred(st_double,st_double):
+		 stack_push(std::get<st_double>(sx)-std::get<st_double>(sy));
+		 break;
+	       case type2_pred(st_vec3,st_vec3):
+		 stack_push(std::get<st_vec3>(sx)+std::get<st_vec3>(sy));
+		 break;
+	       }
 	       return rv;
 	     }
       } },
@@ -623,6 +719,23 @@ RpnController::Privates::Privates() : _newWord(""), _isCompiling(false), _newDef
 	},
 	     [this](const std::string &word, std::string &rest) -> std::string::size_type {
 	       std::string::size_type rv = 0;
+	       auto sx = stack_pop();
+	       auto sy = stack_pop();
+	       unsigned vv = type2_pred_v(sx,sy);
+	       switch(vv) {
+	       case type2_pred(st_integer,st_integer):
+		 stack_push(std::get<st_integer>(sx)*std::get<st_integer>(sy));
+		 break;
+	       case type2_pred(st_double,st_integer):
+		 stack_push(std::get<st_double>(sx)*std::get<st_integer>(sy));
+		 break;
+	       case type2_pred(st_integer,st_double):
+		 stack_push(std::get<st_integer>(sx)*std::get<st_double>(sy));
+		 break;
+	       case type2_pred(st_double,st_double):
+		 stack_push(std::get<st_double>(sx)*std::get<st_double>(sy));
+		 break;
+	       }
 	       return rv;
 	     }
       } },
@@ -632,6 +745,23 @@ RpnController::Privates::Privates() : _newWord(""), _isCompiling(false), _newDef
 	},
 	     [this](const std::string &word, std::string &rest) -> std::string::size_type {
 	       std::string::size_type rv = 0;
+	       auto sx = stack_pop();
+	       auto sy = stack_pop();
+	       unsigned vv = type2_pred_v(sx,sy);
+	       switch(vv) {
+	       case type2_pred(st_integer,st_integer):
+		 stack_push(std::get<st_integer>(sx)/std::get<st_integer>(sy));
+		 break;
+	       case type2_pred(st_double,st_integer):
+		 stack_push(std::get<st_double>(sx)/std::get<st_integer>(sy));
+		 break;
+	       case type2_pred(st_integer,st_double):
+		 stack_push(std::get<st_integer>(sx)/std::get<st_double>(sy));
+		 break;
+	       case type2_pred(st_double,st_double):
+		 stack_push(std::get<st_double>(sx)/std::get<st_double>(sy));
+		 break;
+	       }
 	       return rv;
 	     }
       } },
@@ -709,6 +839,7 @@ RpnController::Privates::Privates() : _newWord(""), _isCompiling(false), _newDef
 	},
 	       [this](const std::string &word, std::string &rest) -> std::string::size_type {
 		 std::string::size_type rv = 0;
+		 printf("%s: unimplemented\n", word.c_str());
 		 return rv;
 	       }
       } },
@@ -765,6 +896,7 @@ RpnController::Privates::Privates() : _newWord(""), _isCompiling(false), _newDef
 	},
 		 [this](const std::string &word, std::string &rest) -> std::string::size_type {
 		   std::string::size_type rv = 0;
+		   printf("%s: unimplemented\n", word.c_str());
 		   return rv;
 		 }
       } },
@@ -774,6 +906,7 @@ RpnController::Privates::Privates() : _newWord(""), _isCompiling(false), _newDef
 	},
 		 [this](const std::string &word, std::string &rest) -> std::string::size_type {
 		   std::string::size_type rv = 0;
+		   printf("%s: unimplemented\n", word.c_str());
 		   return rv;
 		 }
       } },
@@ -783,6 +916,7 @@ RpnController::Privates::Privates() : _newWord(""), _isCompiling(false), _newDef
 	},
 		 [this](const std::string &word, std::string &rest) -> std::string::size_type {
 		   std::string::size_type rv = 0;
+		   printf("%s: unimplemented\n", word.c_str());
 		   return rv;
 		 }
       } },
@@ -792,6 +926,7 @@ RpnController::Privates::Privates() : _newWord(""), _isCompiling(false), _newDef
 	},
 		 [this](const std::string &word, std::string &rest) -> std::string::size_type {
 		   std::string::size_type rv = 0;
+		   stack_push(stack_pop_as_string());
 		   return rv;
 		 }
       } },
@@ -801,6 +936,7 @@ RpnController::Privates::Privates() : _newWord(""), _isCompiling(false), _newDef
 	},
 		 [this](const std::string &word, std::string &rest) -> std::string::size_type {
 		   std::string::size_type rv = 0;
+		   printf("%s: unimplemented\n", word.c_str());
 		   return rv;
 		 }
       } },
@@ -838,11 +974,15 @@ RpnController::Privates::Privates() : _newWord(""), _isCompiling(false), _newDef
 		 }
       } },
 
-    { "{}->", { "Convert vector to components on stack ( v -- x y z )", {
-	  { { "v1", st_vec3 } }
+    { "{}->", { "Convert vector to components on stack ( v -- z y x )", {
+	  { { "v", st_vec3 } }
 	},
 		[this](const std::string &word, std::string &rest) -> std::string::size_type {
 		  std::string::size_type rv = 0;
+		  auto v = std::get<st_vec3>(stack_pop());
+		  stack_push(v.z);
+		  stack_push(v.y);
+		  stack_push(v.x);
 		  return rv;
 		}
       } }
