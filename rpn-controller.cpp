@@ -64,7 +64,7 @@ to_string(const datatype_t &dt) {
 const std::string
 to_string(const stacktype_t &e) {
   std::string rv;
-  char tmp[32];
+  char tmp[64];
   snprintf(tmp, sizeof(tmp), "{%s}: ", to_string(datatype_t(e.index())).c_str());
   rv += tmp;
   switch(e.index()) {
@@ -453,7 +453,7 @@ RpnController::Privates::parse_comment(const std::string &word, std::string &res
   if (rv != std::string::npos) {
     //    printf("comment: [%s]\n", comment.c_str());
   } else {
-    printf("parse error in comment: terminating ')' not found [%s]\n", rest.c_str());
+    printf("parse error in comment: terminating ')' not found [%s %s]\n", word.c_str(), rest.c_str());
   }
   return rv;
 }
@@ -474,11 +474,52 @@ static double rad_to_deg(const double &rad) {
 #define type2_pred_v(v1,v2) ((v1.index()<<8)|(v2.index()<<0))
 #define type2_pred(v1,v2) ((v1<<8)|(v2<<0))
 
+static double nan_add(double a, double b) {
+  double rv = std::nan("");
+  switch((isnan(a)<<1)|(isnan(b))) {
+  case 0:
+    rv = a + b;
+    break;
+  case 1:
+    rv = a;
+    break;
+  case 2:
+    rv = b;
+    break;
+  case 3:
+    // rv is already nan
+    break;
+  }
+  return rv;
+}
+
+static double nan_sub(double a, double b) {
+  double rv = std::nan("");
+  switch((isnan(a)<<1)|(isnan(b))) {
+  case 0:
+    rv = a - b;
+    break;
+  case 1:
+    rv = -b;
+    break;
+  case 2:
+    rv = a;
+    break;
+  case 3:
+    // rv is already nan
+    break;
+  }
+  return rv;
+}
 static Vec3 operator+(const Vec3 &a, const Vec3 &b) {
-  return Vec3(a.x+b.x, a.y+b.y, a.z+b.y);
+  return Vec3(nan_add(a.x,b.x),
+	      nan_add(a.y,b.y),
+	      nan_add(a.z,b.z));
 }
 static Vec3 operator-(const Vec3 &a, const Vec3 &b) {
-  return Vec3(a.x-b.x, a.y-b.y, a.z-b.y);
+  return Vec3(nan_sub(a.x,b.x),
+	      nan_sub(a.y,b.y),
+	      nan_sub(a.z,b.z));
 }
 
 RpnController::Privates::Privates() : _newWord(""), _isCompiling(false), _newDefinition({}) {
@@ -834,6 +875,7 @@ RpnController::Privates::Privates() : _newWord(""), _isCompiling(false), _newDef
 	     }
       } },
 
+#if 0
     { "STO", { "store variable", {
 	  { { "val", st_number  }, { "var", st_string } },
 	},
@@ -843,6 +885,7 @@ RpnController::Privates::Privates() : _newWord(""), _isCompiling(false), _newDef
 		 return rv;
 	       }
       } },
+#endif
 
     { "CONCAT", { "String concatenation", {
 	  { { "s2", st_string }, { "a1", st_any } }, // s1 + a2 (convert a2 to string and concat)
@@ -881,6 +924,16 @@ RpnController::Privates::Privates() : _newWord(""), _isCompiling(false), _newDef
 	       }
       } },
 
+    { "DEPTH",  { "Push stack depth", {
+	  {}
+	},
+		 [this](const std::string &word, std::string &rest) -> std::string::size_type {
+		   std::string::size_type rv = 0;
+		   stack_push(_stack.size());
+		   return rv;
+		 }
+      } },
+
     { "DROP",  { "Drop top of stack", {
 	  { { "s1", st_any } }
 	},
@@ -891,12 +944,24 @@ RpnController::Privates::Privates() : _newWord(""), _isCompiling(false), _newDef
 		 }
       } },
 
+    { "DROPN",  { "Drop n items top of stack", {
+	  { { "s1", st_integer } }
+	},
+		  [this](const std::string &word, std::string &rest) -> std::string::size_type {
+		    std::string::size_type rv = 0;
+		    long n = stack_pop_as_integer();
+		    n = std::min((unsigned long)n,_stack.size());
+		    _stack.erase(_stack.end()-n, _stack.end());
+		    return rv;
+		  }
+      } },
+
     { "OVER",  { "Copy second stack item to top", {
 	  { { "s1", st_any }, { "s2", st_any } }
 	},
 		 [this](const std::string &word, std::string &rest) -> std::string::size_type {
 		   std::string::size_type rv = 0;
-		   printf("%s: unimplemented\n", word.c_str());
+		   stack_push(*(_stack.end()-2));
 		   return rv;
 		 }
       } },
