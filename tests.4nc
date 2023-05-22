@@ -51,7 +51,7 @@ DROPN
 5 0.2 - ( int * double )
 3.5 6.2 - ( double * double )
 .S
-- - -
+-
 .S
 3.500 ->{X}
 4.5 ->{Y}

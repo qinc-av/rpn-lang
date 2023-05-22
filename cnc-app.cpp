@@ -18,7 +18,6 @@
 struct MachineInterface::Privates {
   Privates(RpnController &rpn);
   std::map<std::string,word_t> _appDict;
-  RpnController &_rpn;
 };
 
 MachineInterface::MachineInterface(RpnController &rpn) {
@@ -29,7 +28,7 @@ MachineInterface::~MachineInterface() {
   delete m_p;
 }
 
-MachineInterface::Privates::Privates(RpnController &rpn) : _rpn(rpn) {
+MachineInterface::Privates::Privates(RpnController &rpn) {
   rpn.addDictionary({
 /*
      * Machine control words
@@ -37,7 +36,7 @@ MachineInterface::Privates::Privates(RpnController &rpn) : _rpn(rpn) {
     { "MPOS->", { "Push Machine Position to the stack. ( -- mpos )", {
 	  {},
 	},
-		  [this](const std::string &word, std::string &rest) -> std::string::size_type {
+		  [](RpnController &rpn, std::string &rest) -> std::string::size_type {
 		    std::string::size_type rv = 0;
 		    return rv;
 		  }
@@ -46,9 +45,9 @@ MachineInterface::Privates::Privates(RpnController &rpn) : _rpn(rpn) {
     { "WPOS->", { "Push Work Position to the stack. ( -- wpos )", {
 	  {},
 	},
-		  [this](const std::string &word, std::string &rest) -> std::string::size_type {
+		  [](RpnController &rpn, std::string &rest) -> std::string::size_type {
 		    std::string::size_type rv = 0;
-		    _rpn.stack_push(Vec3(1.2, 2.3, 3.4));
+		    rpn.stack_push(Vec3(1.2, 2.3, 3.4));
 		    return rv;
 		  }
       } },
@@ -56,9 +55,9 @@ MachineInterface::Privates::Privates(RpnController &rpn) : _rpn(rpn) {
     { "->WPOS", { "Set Work Position ( wpos -- )", {
 	  { { "newpos", st_vec3 } },
 	},
-		  [this](const std::string &word, std::string &rest) -> std::string::size_type {
+		  [](RpnController &rpn, std::string &rest) -> std::string::size_type {
 		    std::string::size_type rv = 0;
-		    Vec3 np = _rpn.stack_pop_as_vec3();
+		    Vec3 np = rpn.stack_pop_as_vec3();
 		    printf("->WPOS: popped '%s' from stack\n", to_string(np).c_str());
 		    return rv;
 		  }
@@ -67,9 +66,9 @@ MachineInterface::Privates::Privates(RpnController &rpn) : _rpn(rpn) {
     { "SPEED->", { "Push Spindle Speed to the stack. ( -- speed )", {
 	  {},
 	},
-		   [this](const std::string &word, std::string &rest) -> std::string::size_type {
+		   [](RpnController &rpn, std::string &rest) -> std::string::size_type {
 		     std::string::size_type rv = 0;
-		     _rpn.stack_push(10000);
+		     rpn.stack_push(10000);
 		     return rv;
 		   }
       } },
@@ -77,7 +76,7 @@ MachineInterface::Privates::Privates(RpnController &rpn) : _rpn(rpn) {
     { "->SPEED", { "Set Spindle Speed ( speed -- )", {
 	  { { "speed", st_number } },
 	},
-		   [this](const std::string &word, std::string &rest) -> std::string::size_type {
+		   [](RpnController &rpn, std::string &rest) -> std::string::size_type {
 		     std::string::size_type rv = 0;
 		     return rv;
 		   }
@@ -86,7 +85,7 @@ MachineInterface::Privates::Privates(RpnController &rpn) : _rpn(rpn) {
     { "FEED->", { "Push jog feed rate to the stack. ( -- feed )", {
 	  {},
 	},
-		  [this](const std::string &word, std::string &rest) -> std::string::size_type {
+		  [](RpnController &rpn, std::string &rest) -> std::string::size_type {
 		    std::string::size_type rv = 0;
 		    return rv;
 		  }
@@ -95,7 +94,7 @@ MachineInterface::Privates::Privates(RpnController &rpn) : _rpn(rpn) {
     { "->FEED", { "Set jog feed rate ( feed -- )", {
 	  { { "feed", st_number } },
 	},
-		  [this](const std::string &word, std::string &rest) -> std::string::size_type {
+		  [](RpnController &rpn, std::string &rest) -> std::string::size_type {
 		    std::string::size_type rv = 0;
 		    return rv;
 		  }
@@ -104,7 +103,7 @@ MachineInterface::Privates::Privates(RpnController &rpn) : _rpn(rpn) {
     { "JOG-R", { "Jog to relative position ( pos -- )", {
 	  { { "offset", st_vec3 } },
 	},
-		 [this](const std::string &word, std::string &rest) -> std::string::size_type {
+		 [](RpnController &rpn, std::string &rest) -> std::string::size_type {
 		   std::string::size_type rv = 0;
 		   return rv;
 		 }
@@ -113,7 +112,7 @@ MachineInterface::Privates::Privates(RpnController &rpn) : _rpn(rpn) {
     { "JOG-WA", { "Jog to absolute work position ( wpos -- )", {
 	  { { "wpos", st_vec3 } },
 	},
-		  [this](const std::string &word, std::string &rest) -> std::string::size_type {
+		  [](RpnController &rpn, std::string &rest) -> std::string::size_type {
 		    std::string::size_type rv = 0;
 		    return rv;
 		  }
@@ -122,7 +121,7 @@ MachineInterface::Privates::Privates(RpnController &rpn) : _rpn(rpn) {
     { "JOG-MA", { "Jog to absolute machine position ( mpos -- )", {
 	  { { "mpos", st_vec3 } },
 	},
-		  [this](const std::string &word, std::string &rest) -> std::string::size_type {
+		  [](RpnController &rpn, std::string &rest) -> std::string::size_type {
 		    std::string::size_type rv = 0;
 		    return rv;
 		  }
@@ -131,7 +130,7 @@ MachineInterface::Privates::Privates(RpnController &rpn) : _rpn(rpn) {
     { "PROBE", { "Probe machine (target feed -- )", {
 	  { { "target", st_vec3 }, { "feed" , st_number } }, // primitive G38.2
 	},
-		 [this](const std::string &word, std::string &rest) -> std::string::size_type {
+		 [](RpnController &rpn, std::string &rest) -> std::string::size_type {
 		   std::string::size_type rv = 0;
 		   return rv;
 		 }
@@ -140,7 +139,7 @@ MachineInterface::Privates::Privates(RpnController &rpn) : _rpn(rpn) {
     { "MODAL-STATE->", { "Push machine's modal state on the stack ( -- state )", {
 	  {},
 	},
-			 [this](const std::string &word, std::string &rest) -> std::string::size_type {
+			 [](RpnController &rpn, std::string &rest) -> std::string::size_type {
 			   std::string::size_type rv = 0;
 			   return rv;
 			 }
@@ -149,7 +148,7 @@ MachineInterface::Privates::Privates(RpnController &rpn) : _rpn(rpn) {
     { "->MODAL-STATE", { "Send modal state to the machine ( state -- )", {
 	  { { "state", st_string } },
 	},
-			 [this](const std::string &word, std::string &rest) -> std::string::size_type {
+			 [](RpnController &rpn, std::string &rest) -> std::string::size_type {
 			   std::string::size_type rv = 0;
 			   return rv;
 			 }
@@ -159,7 +158,7 @@ MachineInterface::Privates::Privates(RpnController &rpn) : _rpn(rpn) {
     { "SEND", { "Send command", {
 	  { { "g-code", st_string } },
 	},
-		[this](const std::string &word, std::string &rest) -> std::string::size_type {
+		[](RpnController &rpn, std::string &rest) -> std::string::size_type {
 		  std::string::size_type rv = 0;
 		  return rv;
 		}

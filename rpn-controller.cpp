@@ -21,6 +21,11 @@
 
 #include "rpn-controller.h"
 
+#define PRIVATE_NATIVE_WORD_DECL(nw) std::string::size_type RpnController::Privates::native_word_##nw(RpnController &rpn, std::string &rest)
+#define NATIVE_WORD_DECL(nw) static std::string::size_type native_word_##nw(RpnController &rpn, std::string &rest)
+#define PRIVATE_NATIVE_WORD_FN(nw) RpnController::Privates::native_word_##nw
+#define NATIVE_WORD_FN(nw) native_word_##nw
+
 std::string::size_type
 RpnController::nextWord(std::string &word, std::string &buffer, char delim) {
   word = "";
@@ -118,21 +123,19 @@ struct RpnController::Privates {
   Privates();
   ~Privates() {};
 
-  std::string::size_type eval(const std::string &word, std::string &rest);
-  std::string::size_type runtime_eval(const std::string &word, std::string &rest);
-  std::string::size_type compiletime_eval(const std::string &word, std::string &rest);
-
-  std::string::size_type parse_comment(const std::string &word, std::string &rest);
+  std::string::size_type eval(RpnController &rpn, const std::string &word, std::string &rest);
+  std::string::size_type runtime_eval(RpnController &rpn, const std::string &word, std::string &rest);
+  std::string::size_type compiletime_eval(RpnController &rpn, const std::string &word, std::string &rest);
 
   std::string::size_type nodef(const std::string &word, std::string &rest) {
     return 0;
   }
 
-  std::string::size_type user_eval(const std::string &word, std::string &rest, const std::vector<std::string> &wordlist) {
+  std::string::size_type user_eval(RpnController &rpn, std::string &rest, const std::vector<std::string> &wordlist) {
     //    printf("%s: (%s)\n", __func__, word.c_str());
     for(auto w : wordlist) {
       std::string rest;
-      eval(w, rest);
+      eval(rpn, w, rest);
       //      printf("  %s\n", w.c_str());
     }
     return 0;
@@ -256,6 +259,15 @@ struct RpnController::Privates {
   std::vector<std::string> _newDefinition;
 
   std::deque<stacktype_t> _stack;
+
+  NATIVE_WORD_DECL(_S);
+  NATIVE_WORD_DECL(_D);
+  NATIVE_WORD_DECL(COLON);
+  NATIVE_WORD_DECL(SEMICOLON);
+  NATIVE_WORD_DECL(DUP);
+  NATIVE_WORD_DECL(DEPTH);
+  NATIVE_WORD_DECL(DROPN);
+  NATIVE_WORD_DECL(OVER);
 };
 
 std::vector<size_t>
@@ -322,7 +334,7 @@ RpnController::Privates::validate_stack_for_word(const std::pair<std::string,wor
 }
 
 std::string::size_type
-RpnController::Privates::compiletime_eval(const std::string &word, std::string &rest) {
+RpnController::Privates::compiletime_eval(RpnController &rpn, const std::string &word, std::string &rest) {
   std::string::size_type rv = 0;
 
   if (_newWord == "") {
@@ -331,7 +343,7 @@ RpnController::Privates::compiletime_eval(const std::string &word, std::string &
     const auto &cw = _compiletimeDictionary.find(word);
     if (cw != _compiletimeDictionary.end()) {
       // found something in the compiletime dict, evaluate it
-      rv = cw->second.eval(word,rest);
+      rv = cw->second.eval(rpn, rest);
 
     } else {
       if (std::isdigit(word[0])) {
@@ -354,7 +366,7 @@ RpnController::Privates::compiletime_eval(const std::string &word, std::string &
 }
 
 std::string::size_type
-RpnController::Privates::runtime_eval(const std::string &word, std::string &rest) {
+RpnController::Privates::runtime_eval(RpnController &rpn, const std::string &word, std::string &rest) {
   std::string::size_type rv = 0;
   // numbers just push
   if (std::isdigit(word[0])) {
@@ -369,7 +381,7 @@ RpnController::Privates::runtime_eval(const std::string &word, std::string &rest
     const auto &we = _runtimeDictionary.find(word);
     if (we != _runtimeDictionary.end()) {
       if (validate_stack_for_word(*we)) {
-	rv = we->second.eval(word,rest);
+	rv = we->second.eval(rpn, rest);
       } else {
 	printf("parameters not right for '%s'\n", word.c_str());
 	print_stack();
@@ -384,14 +396,14 @@ RpnController::Privates::runtime_eval(const std::string &word, std::string &rest
 
 
 std::string::size_type
-RpnController::Privates::eval(const std::string &word, std::string &rest) {
+RpnController::Privates::eval(RpnController &rpn, const std::string &word, std::string &rest) {
   std::string::size_type rv = 0; // std::string::npos;
   if (word.size()>0) {
 
     if (_isCompiling) {
-      rv = compiletime_eval(word,rest);
+      rv = compiletime_eval(rpn,word,rest);
     } else {
-      rv = runtime_eval(word,rest);
+      rv = runtime_eval(rpn,word,rest);
     }
   }
   return rv;
@@ -416,7 +428,7 @@ RpnController::parse(std::string &line) {
   while (line.size()>0) {
     std::string word;
     auto p1 = nextWord(word,line);
-    auto s = m_p->eval(word, line);
+    auto s = m_p->eval(*this,word, line);
   }
 
   return rv;
@@ -442,19 +454,6 @@ RpnController::loadFile(const std::string &path) {
     }
   }
 
-  return rv;
-}
-
-std::string::size_type
-RpnController::Privates::parse_comment(const std::string &word, std::string &rest) {
-  std::string::size_type rv = 0;
-  std::string comment;
-  rv = nextWord(comment, rest, ')');
-  if (rv != std::string::npos) {
-    //    printf("comment: [%s]\n", comment.c_str());
-  } else {
-    printf("parse error in comment: terminating ')' not found [%s %s]\n", word.c_str(), rest.c_str());
-  }
   return rv;
 }
 
@@ -522,568 +521,698 @@ static Vec3 operator-(const Vec3 &a, const Vec3 &b) {
 	      nan_sub(a.z,b.z));
 }
 
+NATIVE_WORD_DECL(ABS) {
+  std::string::size_type rv = 0;
+  double v = rpn.stack_pop_as_double();
+  rpn.stack_push(abs(v));
+  return rv;
+}
+
+NATIVE_WORD_DECL(COS) {
+  std::string::size_type rv = 0;
+  double rad = deg_to_rad(rpn.stack_pop_as_double());
+  rpn.stack_push(cos(rad));
+  return rv;
+}
+
+NATIVE_WORD_DECL(ACOS) {
+  std::string::size_type rv = 0;
+  double v = acos(rpn.stack_pop_as_double());
+  rpn.stack_push(rad_to_deg(v));
+  return rv;
+}
+
+NATIVE_WORD_DECL(SIN) {
+  std::string::size_type rv = 0;
+  double rad = deg_to_rad(rpn.stack_pop_as_double());
+  rpn.stack_push(sin(rad));
+  return rv;
+}
+
+NATIVE_WORD_DECL(ASIN) {
+  std::string::size_type rv = 0;
+  double v = asin(rpn.stack_pop_as_double());
+  rpn.stack_push(rad_to_deg(v));
+  return rv;
+}
+
+NATIVE_WORD_DECL(TAN) {
+  std::string::size_type rv = 0;
+  double rad = deg_to_rad(rpn.stack_pop_as_double());
+  rpn.stack_push(tan(rad));
+  return rv;
+}
+
+NATIVE_WORD_DECL(ATAN) {
+  std::string::size_type rv = 0;
+  double v = atan(rpn.stack_pop_as_double());
+  rpn.stack_push(rad_to_deg(v));
+  return rv;
+}
+
+NATIVE_WORD_DECL(ATAN2) {
+  std::string::size_type rv = 0;
+  double x = rpn.stack_pop_as_double();
+  double y = rpn.stack_pop_as_double();
+  rpn.stack_push(rad_to_deg(atan2(y,x)));
+  return rv;
+}
+
+NATIVE_WORD_DECL(NEG) {
+  std::string::size_type rv = 0;
+  auto x = rpn.stack_pop();
+  switch(x.index()) {
+  case st_double:
+    rpn.stack_push(std::get<st_double>(x)*-1.);
+    break;
+  case st_integer:
+    rpn.stack_push(std::get<st_integer>(x)*-1);
+    break;
+  }
+  return rv;
+}
+
+NATIVE_WORD_DECL(SQRT) {
+  std::string::size_type rv = 0;
+  double x = rpn.stack_pop_as_double();
+  rpn.stack_push(sqrt(x));
+  return rv;
+}
+
+NATIVE_WORD_DECL(SQ) {
+  std::string::size_type rv = 0;
+  double x = rpn.stack_pop_as_double();
+  rpn.stack_push(x*x);
+  return rv;
+}
+
+NATIVE_WORD_DECL(POW) {
+  std::string::size_type rv = 0;
+  double x = rpn.stack_pop_as_double();
+  double y = rpn.stack_pop_as_double();
+  rpn.stack_push(pow(x,y));
+  return rv;
+}
+
+NATIVE_WORD_DECL(INV) {
+  std::string::size_type rv = 0;
+  double x = rpn.stack_pop_as_double();
+  if (x!=0.) {
+    rpn.stack_push(1.0/x);
+  } else {
+    rpn.stack_push(x);
+  }
+  return rv;
+}
+
+NATIVE_WORD_DECL(PI) {
+  std::string::size_type rv = 0;
+  rpn.stack_push(M_PI);
+  return rv;
+}
+
+NATIVE_WORD_DECL(ADD) {
+  std::string::size_type rv = 0;
+  auto sx = rpn.stack_pop();
+  auto sy = rpn.stack_pop();
+  unsigned vv = type2_pred_v(sx,sy);
+  switch(vv) {
+  case type2_pred(st_integer,st_integer):
+    rpn.stack_push(std::get<st_integer>(sx)+std::get<st_integer>(sy));
+    break;
+  case type2_pred(st_double,st_integer):
+    rpn.stack_push(std::get<st_double>(sx)+std::get<st_integer>(sy));
+    break;
+  case type2_pred(st_integer,st_double):
+    rpn.stack_push(std::get<st_integer>(sx)+std::get<st_double>(sy));
+    break;
+  case type2_pred(st_double,st_double):
+    rpn.stack_push(std::get<st_double>(sx)+std::get<st_double>(sy));
+    break;
+  case type2_pred(st_vec3,st_vec3):
+    rpn.stack_push(std::get<st_vec3>(sx)+std::get<st_vec3>(sy));
+    break;
+  }
+  return rv;
+}
+
+NATIVE_WORD_DECL(SUB) {
+  std::string::size_type rv = 0;
+  auto sx = rpn.stack_pop();
+  auto sy = rpn.stack_pop();
+  unsigned vv = type2_pred_v(sy,sx);
+  switch(vv) {
+  case type2_pred(st_integer,st_integer):
+    rpn.stack_push(std::get<st_integer>(sy)-std::get<st_integer>(sx));
+    break;
+  case type2_pred(st_integer,st_double):
+    rpn.stack_push(std::get<st_integer>(sy)-std::get<st_double>(sx));
+    break;
+  case type2_pred(st_double,st_integer):
+    rpn.stack_push(std::get<st_double>(sy)-std::get<st_integer>(sx));
+    break;
+  case type2_pred(st_double,st_double):
+    rpn.stack_push(std::get<st_double>(sy)-std::get<st_double>(sx));
+    break;
+  case type2_pred(st_vec3,st_vec3):
+    rpn.stack_push(std::get<st_vec3>(sy)+std::get<st_vec3>(sx));
+    break;
+  }
+  return rv;
+}
+
+NATIVE_WORD_DECL(MULT) {
+  std::string::size_type rv = 0;
+    auto sx = rpn.stack_pop();
+    auto sy = rpn.stack_pop();
+    unsigned vv = type2_pred_v(sx,sy);
+    switch(vv) {
+    case type2_pred(st_integer,st_integer):
+      rpn.stack_push(std::get<st_integer>(sx)*std::get<st_integer>(sy));
+      break;
+    case type2_pred(st_double,st_integer):
+      rpn.stack_push(std::get<st_double>(sx)*std::get<st_integer>(sy));
+      break;
+    case type2_pred(st_integer,st_double):
+      rpn.stack_push(std::get<st_integer>(sx)*std::get<st_double>(sy));
+      break;
+    case type2_pred(st_double,st_double):
+      rpn.stack_push(std::get<st_double>(sx)*std::get<st_double>(sy));
+      break;
+    }
+    return rv;
+}
+
+NATIVE_WORD_DECL(DIV) {
+  std::string::size_type rv = 0;
+  auto sx = rpn.stack_pop();
+  auto sy = rpn.stack_pop();
+  unsigned vv = type2_pred_v(sx,sy);
+  switch(vv) {
+  case type2_pred(st_integer,st_integer):
+    rpn.stack_push(std::get<st_integer>(sx)/std::get<st_integer>(sy));
+    break;
+  case type2_pred(st_double,st_integer):
+    rpn.stack_push(std::get<st_double>(sx)/std::get<st_integer>(sy));
+    break;
+  case type2_pred(st_integer,st_double):
+    rpn.stack_push(std::get<st_integer>(sx)/std::get<st_double>(sy));
+    break;
+  case type2_pred(st_double,st_double):
+    rpn.stack_push(std::get<st_double>(sx)/std::get<st_double>(sy));
+    break;
+  }
+  return rv;
+}
+
+NATIVE_WORD_DECL(EVAL) {
+  std::string::size_type rv = 0;
+  printf("%s: not implemented\n", __func__);
+  return rv;
+}
+
+PRIVATE_NATIVE_WORD_DECL(_S) {
+  rpn.m_p->print_stack();
+  return 0;
+}
+
+PRIVATE_NATIVE_WORD_DECL(_D) {
+  for(auto const &de : rpn.m_p->_runtimeDictionary) {
+    std::string s = to_string(de);
+    printf("%s\n\n", s.c_str());
+  }
+  return 0;
+}
+
+NATIVE_WORD_DECL(_Q) {
+  std::string::size_type rv = 0;
+  std::string literal;
+  auto p = RpnController::nextWord(literal, rest, '"');
+  if (p != std::string::npos) {
+    rv = p;
+    rpn.stack_push(literal);
+  } else {
+    printf("parse error in string literal: terminating '\"' not found [%s]\n", rest.c_str());
+  }
+  return rv;
+}
+
+NATIVE_WORD_DECL(OPAREN) {
+  std::string::size_type rv = 0;
+  std::string comment;
+  rv = RpnController::nextWord(comment, rest, ')');
+  if (rv != std::string::npos) {
+  } else {
+    printf("parse error in comment: terminating ')' not found [%s]\n", rest.c_str());
+  }
+  return rv;
+}
+
+PRIVATE_NATIVE_WORD_DECL(COLON) {
+  std::string::size_type rv = 0;
+  rpn.m_p->_isCompiling = true;
+  return rv;
+}
+
+NATIVE_WORD_DECL(CONCAT) {
+  std::string::size_type rv = 0;
+  std::string s1 = rpn.stack_pop_as_string();
+  std::string s2 = rpn.stack_pop_as_string();
+  rpn.stack_push(s2 + s1);
+  return rv;
+}
+
+PRIVATE_NATIVE_WORD_DECL(DUP) {
+  std::string::size_type rv = 0;
+  rpn.stack_push(rpn.m_p->_stack.back());
+  return rv;
+}
+
+NATIVE_WORD_DECL(SWAP) {
+  // there are definitely more efficient ways to do this.
+  std::string::size_type rv = 0;
+  auto s1 = rpn.stack_pop();
+  auto s2 = rpn.stack_pop();
+  rpn.stack_push(s1);
+  rpn.stack_push(s2);
+  return rv;
+}
+
+PRIVATE_NATIVE_WORD_DECL(DEPTH) {
+  std::string::size_type rv = 0;
+  rpn.stack_push(long(rpn.m_p->_stack.size()));
+  return rv;
+}
+
+NATIVE_WORD_DECL(DROP) {
+  std::string::size_type rv = 0;
+  rpn.stack_pop();
+  return rv;
+}
+
+PRIVATE_NATIVE_WORD_DECL(DROPN) {
+  std::string::size_type rv = 0;
+  long n = rpn.stack_pop_as_integer();
+  n = std::min((unsigned long)n,rpn.m_p->_stack.size());
+  rpn.m_p->_stack.erase(rpn.m_p->_stack.end()-n, rpn.m_p->_stack.end());
+  return rv;
+}
+
+PRIVATE_NATIVE_WORD_DECL(OVER) {
+  std::string::size_type rv = 0;
+  rpn.stack_push(*(rpn.m_p->_stack.end()-2));
+  return rv;
+}
+
+NATIVE_WORD_DECL(ROLLU) {
+  std::string::size_type rv = 0;
+  printf("ROLL+: unimplemented\n");
+  return rv;
+}
+
+NATIVE_WORD_DECL(ROLLD) {
+  std::string::size_type rv = 0;
+  printf("ROLL-: unimplemented\n");
+  return rv;
+}
+
+NATIVE_WORD_DECL(to_STR) {
+  std::string::size_type rv = 0;
+  rpn.stack_push(rpn.stack_pop_as_string());
+  return rv;
+}
+
+NATIVE_WORD_DECL(STR_to) {
+  std::string::size_type rv = 0;
+  printf("STR->: unimplemented\n");
+  return rv;
+}
+
+NATIVE_WORD_DECL(to_V3X) {
+  std::string::size_type rv = 0;
+  double x = rpn.stack_pop_as_double();
+  rpn.stack_push(Vec3(x, std::nan(""), std::nan("")));
+  return rv;
+}
+
+NATIVE_WORD_DECL(to_V3Y) {
+  std::string::size_type rv = 0;
+  double y = rpn.stack_pop_as_double();
+  rpn.stack_push(Vec3(std::nan(""), y, std::nan("")));
+  return rv;
+}
+
+NATIVE_WORD_DECL(to_V3Z) {
+  std::string::size_type rv = 0;
+  double z = rpn.stack_pop_as_double();
+  rpn.stack_push(Vec3(std::nan(""), std::nan(""), z));
+  return rv;
+}
+
+NATIVE_WORD_DECL(V3_to) {
+  std::string::size_type rv = 0;
+  auto v = std::get<st_vec3>(rpn.stack_pop());
+  rpn.stack_push(v.z);
+  rpn.stack_push(v.y);
+  rpn.stack_push(v.x);
+  return rv;
+}
+
+PRIVATE_NATIVE_WORD_DECL(SEMICOLON) {
+  std::string::size_type rv = 0;
+  auto wl = std::vector<std::string>(rpn.m_p->_newDefinition);
+  rpn.m_p->_runtimeDictionary[rpn.m_p->_newWord] = {
+    "user " + rpn.m_p->_newWord,
+    {},
+    [wl](RpnController &rpn_, std::string &rest_) -> std::string::size_type {
+      rpn_.m_p->user_eval(rpn_, rest_, wl);
+      return 0;
+    }
+  };
+  rpn.m_p->_isCompiling = false;
+  rpn.m_p->_newWord = "";
+  rpn.m_p->_newDefinition.clear();
+  return rv;
+}
+
+
 RpnController::Privates::Privates() : _newWord(""), _isCompiling(false), _newDefinition({}) {
 
   _runtimeDictionary = {
     /*
      * Math words
      */
-    { "ABS", { "Absolute Value (x -- |x|)", {
-	  { { "x", st_number } },
-	  //	  { { "v", st_vec3 } },
+    { "ABS", {
+	"Absolute Value (x -- |x|)", {
+	  WORD_PARAMS_1(STACK_PARAM("x", st_number)),
+	  //	  WORD_PARAMS_1(STACK_PARAM("x", st_vec3)),
 	},
-	       [this](const std::string &word, std::string &rest) -> std::string::size_type {
-		 std::string::size_type rv = 0;
-		 double v = stack_pop_as_double();
-		 stack_push(v*v);
-		 return rv;
-	       }
+	NATIVE_WORD_FN(ABS)
       } },
 
-    { "COS", { "Cosine (angle -- cos(angle))", {
+    { "COS", {
+	"Cosine (angle -- cos(angle))", {
 	  { { "angle", st_number } }
 	},
-	       [this](const std::string &word, std::string &rest) -> std::string::size_type {
-		 std::string::size_type rv = 0;
-		 double rad = deg_to_rad(stack_pop_as_double());
-		 stack_push(cos(rad));
-		 return rv;
-	       }
+	NATIVE_WORD_FN(COS)
       } },
 
-    { "ACOS", { "Arc-Cosine (x -- acos(x))", {
+    { "ACOS", {
+	"Arc-Cosine (x -- acos(x))", {
 	  { { "x", st_number } }
 	},
-		[this](const std::string &word, std::string &rest) -> std::string::size_type {
-		  std::string::size_type rv = 0;
-		  double v = acos(stack_pop_as_double());
-		  stack_push(rad_to_deg(v));
-		  return rv;
-		}
+	NATIVE_WORD_FN(ACOS)
       } },
 
-    { "SIN", { "Sine (angle -- sin(angle))", {
+    { "SIN", {
+	"Sine (angle -- sin(angle))", {
 	  { { "angle", st_number } }
 	},
-	       [this](const std::string &word, std::string &rest) -> std::string::size_type {
-		 std::string::size_type rv = 0;
-		 double rad = deg_to_rad(stack_pop_as_double());
-		 stack_push(sin(rad));
-		 return rv;
-	       }
+	NATIVE_WORD_FN(SIN)
       } },
 
-    { "ASIN", { "Arc Sine (x -- asin(x))", {
+    { "ASIN", {
+	"Arc Sine (x -- asin(x))", {
 	  { { "x", st_number } }
 	},
-		[this](const std::string &word, std::string &rest) -> std::string::size_type {
-		  std::string::size_type rv = 0;
-		  double v = asin(stack_pop_as_double());
-		  stack_push(rad_to_deg(v));
-		  return rv;
-		}
+	NATIVE_WORD_FN(ASIN)
       } },
 
-    { "TAN", { "Tangent (angle -- tan(angle))", {
+    { "TAN", {
+	"Tangent (angle -- tan(angle))", {
 	  { { "angle", st_number } }
 	},
-	       [this](const std::string &word, std::string &rest) -> std::string::size_type {
-		 std::string::size_type rv = 0;
-		 double rad = deg_to_rad(stack_pop_as_double());
-		 stack_push(tan(rad));
-		 return rv;
-	       }
+	NATIVE_WORD_FN(TAN)
       } },
 
-    { "ATAN", { "Arc-Tangent (x -- atan(x))", {
+    { "ATAN", {
+	"Arc-Tangent (x -- atan(x))", {
 	  { { "x", st_number } }
 	},
-		[this](const std::string &word, std::string &rest) -> std::string::size_type {
-		  std::string::size_type rv = 0;
-		  double v = atan(stack_pop_as_double());
-		  stack_push(rad_to_deg(v));
-		  return rv;
-		}
+	NATIVE_WORD_FN(ATAN),
       } },
 
-    { "ATAN2", { "Arc-Tangent of two variables (y x -- atan2(y,x))", {
+    { "ATAN2", {
+	"Arc-Tangent of two variables (y x -- atan2(y,x))", {
 	  { { "y", st_number }, { "x", st_number } }
 	},
-		 [this](const std::string &word, std::string &rest) -> std::string::size_type {
-		   std::string::size_type rv = 0;
-		   double x = stack_pop_as_double();
-		   double y = stack_pop_as_double();
-		   stack_push(rad_to_deg(atan2(y,x)));
-		   return rv;
-		 }
+	NATIVE_WORD_FN(ATAN2)
       } },
 
-    { "NEG", { "Negate (x -- -x)", {
+    { "NEG", {
+	"Negate (x -- -x)", {
 	  { { "x", st_number } }
 	},
-	       [this](const std::string &word, std::string &rest) -> std::string::size_type {
-		 std::string::size_type rv = 0;
-		 auto x = stack_pop();
-		 switch(x.index()) {
-		 case st_double:
-		   stack_push(std::get<st_double>(x)*-1.);
-		   break;
-		 case st_integer:
-		   stack_push(std::get<st_integer>(x)*-1);
-		   break;
-		 }
-		 return rv;
-	       }
+	NATIVE_WORD_FN(NEG)
       } },
 
-    { "SQRT", { "Square Root (x -- sqrt(x) )", {
+    { "SQRT", {
+	"Square Root (x -- sqrt(x) )", {
 	  { { "x", st_number } }
 	},
-		[this](const std::string &word, std::string &rest) -> std::string::size_type {
-		  std::string::size_type rv = 0;
-		  double x = stack_pop_as_double();
-		  stack_push(sqrt(x));
-		  return rv;
-		}
+	NATIVE_WORD_FN(SQRT)
       } },
 
-    { "SQ", { "Square (x -- x^2)", {
+    { "SQ", {
+	"Square (x -- x^2)", {
 	  { { "x", st_number } }
 	},
-	      [this](const std::string &word, std::string &rest) -> std::string::size_type {
-		std::string::size_type rv = 0;
-		double x = stack_pop_as_double();
-		stack_push(x*x);
-		return rv;
-	      }
+	NATIVE_WORD_FN(SQ)
       } },
 
-    { "POW", { "Exponentation (x y -- x^y)", {
+    { "POW", {
+	"Exponentation (x y -- x^y)", {
 	  { { "x", st_number }, { "y", st_number } }
 	},
-	       [this](const std::string &word, std::string &rest) -> std::string::size_type {
-		 std::string::size_type rv = 0;
-		 double x = stack_pop_as_double();
-		 double y = stack_pop_as_double();
-		 stack_push(pow(x,y));
-		 return rv;
-	       }
+	NATIVE_WORD_FN(POW)
       } },
 
-    { "INV", { "Invert (x -- 1/x))", {
+    { "INV", {
+	"Invert (x -- 1/x))", {
 	  { { "x", st_number } },
 	},
-	       [this](const std::string &word, std::string &rest) -> std::string::size_type {
-		 std::string::size_type rv = 0;
-		 double x = stack_pop_as_double();
-		 if (x!=0.) {
-		   stack_push(1.0/x);
-		 } else {
-		   stack_push(x);
-		 }
-		 return rv;
-	       }
+	NATIVE_WORD_FN(INV)
       } },
 
-    { "PI", { "The constant PI", {
+    { "PI", {
+	"The constant PI", {
 	  {},
 	},
-	      [this](const std::string &word, std::string &rest) -> std::string::size_type {
-		std::string::size_type rv = 0;
-		stack_push(M_PI);
-		return rv;
-	      }
+	NATIVE_WORD_FN(PI)
       } },
 
-    { "+", { "Addition (x y -- x+y)", {
+    { "+", {
+	"Addition (y x -- x+y)", {
 	  { { "x", st_number }, { "y", st_number } }, // x + y
 	  { { "vx", st_vec3 }, { "vx", st_vec3 } }, // v1 + v2
 	},
-	     [this](const std::string &word, std::string &rest) -> std::string::size_type {
-	       std::string::size_type rv = 0;
-	       auto sx = stack_pop();
-	       auto sy = stack_pop();
-	       unsigned vv = type2_pred_v(sx,sy);
-	       switch(vv) {
-	       case type2_pred(st_integer,st_integer):
-		 stack_push(std::get<st_integer>(sx)+std::get<st_integer>(sy));
-		 break;
-	       case type2_pred(st_double,st_integer):
-		 stack_push(std::get<st_double>(sx)+std::get<st_integer>(sy));
-		 break;
-	       case type2_pred(st_integer,st_double):
-		 stack_push(std::get<st_integer>(sx)+std::get<st_double>(sy));
-		 break;
-	       case type2_pred(st_double,st_double):
-		 stack_push(std::get<st_double>(sx)+std::get<st_double>(sy));
-		 break;
-	       case type2_pred(st_vec3,st_vec3):
-		 stack_push(std::get<st_vec3>(sx)+std::get<st_vec3>(sy));
-		 break;
-	       }
-	       return rv;
-	     }
+	NATIVE_WORD_FN(ADD)
       } },
 
-    { "-", { "Subtract (y x -- y-x)", {
+    { "-", {
+	"Subtract (y x -- y-x)", {
 	  { { "x", st_number }, { "y", st_number } },
 	  { { "vx", st_vec3 }, { "vy", st_vec3 } }, // v1 + v2
 	},
-	     [this](const std::string &word, std::string &rest) -> std::string::size_type {
-	       std::string::size_type rv = 0;
-	       auto sx = stack_pop();
-	       auto sy = stack_pop();
-	       unsigned vv = type2_pred_v(sy,sx);
-	       switch(vv) {
-	       case type2_pred(st_integer,st_integer):
-		 stack_push(std::get<st_integer>(sy)-std::get<st_integer>(sx));
-		 break;
-	       case type2_pred(st_integer,st_double):
-		 stack_push(std::get<st_integer>(sy)-std::get<st_double>(sx));
-		 break;
-	       case type2_pred(st_double,st_integer):
-		 stack_push(std::get<st_double>(sy)-std::get<st_integer>(sx));
-		 break;
-	       case type2_pred(st_double,st_double):
-		 stack_push(std::get<st_double>(sy)-std::get<st_double>(sx));
-		 break;
-	       case type2_pred(st_vec3,st_vec3):
-		 stack_push(std::get<st_vec3>(sy)+std::get<st_vec3>(sx));
-		 break;
-	       }
-	       return rv;
-	     }
+	NATIVE_WORD_FN(SUB)
       } },
 
-    { "*", { "Multiply (x y -- x*y)", {
+    { "*", {
+	"Multiply (x y -- x*y)", {
 	  { { "x", st_number }, { "y", st_number } }
 	},
-	     [this](const std::string &word, std::string &rest) -> std::string::size_type {
-	       std::string::size_type rv = 0;
-	       auto sx = stack_pop();
-	       auto sy = stack_pop();
-	       unsigned vv = type2_pred_v(sx,sy);
-	       switch(vv) {
-	       case type2_pred(st_integer,st_integer):
-		 stack_push(std::get<st_integer>(sx)*std::get<st_integer>(sy));
-		 break;
-	       case type2_pred(st_double,st_integer):
-		 stack_push(std::get<st_double>(sx)*std::get<st_integer>(sy));
-		 break;
-	       case type2_pred(st_integer,st_double):
-		 stack_push(std::get<st_integer>(sx)*std::get<st_double>(sy));
-		 break;
-	       case type2_pred(st_double,st_double):
-		 stack_push(std::get<st_double>(sx)*std::get<st_double>(sy));
-		 break;
-	       }
-	       return rv;
-	     }
+	NATIVE_WORD_FN(MULT)
       } },
 
-    { "*", { "Divide (x y -- y/x)", {
+    { "*", {
+	"Divide (x y -- y/x)", {
 	  { { "x", st_number }, { "y", st_number } }
 	},
-	     [this](const std::string &word, std::string &rest) -> std::string::size_type {
-	       std::string::size_type rv = 0;
-	       auto sx = stack_pop();
-	       auto sy = stack_pop();
-	       unsigned vv = type2_pred_v(sx,sy);
-	       switch(vv) {
-	       case type2_pred(st_integer,st_integer):
-		 stack_push(std::get<st_integer>(sx)/std::get<st_integer>(sy));
-		 break;
-	       case type2_pred(st_double,st_integer):
-		 stack_push(std::get<st_double>(sx)/std::get<st_integer>(sy));
-		 break;
-	       case type2_pred(st_integer,st_double):
-		 stack_push(std::get<st_integer>(sx)/std::get<st_double>(sy));
-		 break;
-	       case type2_pred(st_double,st_double):
-		 stack_push(std::get<st_double>(sx)/std::get<st_double>(sy));
-		 break;
-	       }
-	       return rv;
-	     }
+	NATIVE_WORD_FN(DIV)
       } },
 
-    { "EVAL", { "Evaluate string as an algebraic expression", {
+    { "EVAL", {
+	"Evaluate string as an algebraic expression", {
 	  { { "expr", st_string } },
 	},
-		[this](const std::string &word, std::string &rest) -> std::string::size_type {
-		  std::string::size_type rv = 0;
-		  return rv;
-		}
+	NATIVE_WORD_FN(EVAL)
       } },
 
     /*
      * Stack and object words
      */
-    { ".S", { "print stack", {
+    { ".S", {
+	"print stack", {
 	  {},
 	},
-	      [this](const std::string &word, std::string &rest) -> std::string::size_type {
-		print_stack();
-		return 0;
-	      }
+	NATIVE_WORD_FN(_S)
       } },
 	      
-    { ".D", { "print dictionary", {
+    { ".D", {
+	"print dictionary", {
 	  {},
 	},
-	      [this](const std::string &word, std::string &rest) -> std::string::size_type {
-		for(auto const &de : _runtimeDictionary) {
-		  std::string s = to_string(de);
-		  printf("%s\n\n", s.c_str());
-		}
-		return 0;
-	      }
+	NATIVE_WORD_FN(_D)
       } },
 
-    { ".\"", { "String literal", {
+    { ".\"", {
+	"String literal", {
 	  {},
 	},
-	       [this](const std::string &word, std::string &rest) -> std::string::size_type {
-		 std::string::size_type rv = 0;
-		 std::string literal;
-		 auto p = nextWord(literal, rest, '"');
-		 if (p != std::string::npos) {
-		   rv = p;
-		   stack_push(literal);
-		 } else {
-		   printf("parse error in string literal: terminating '\"' not found [%s]\n", rest.c_str());
-		 }
-		 return rv;
-	       }
+	NATIVE_WORD_FN(_Q)
       } },
 
-    { "(", { "Commment", {
+    { "(", {
+	"Commment", {
 	  {},
 	},
-	     [this](const std::string &word, std::string &rest) -> std::string::size_type {
-	       return parse_comment(word,rest);
-	     }
+	NATIVE_WORD_FN(OPAREN)
       } },
 
-    { ":", { "Define new word", {
+    { ":", {
+	"Define new word", {
 	  {},
 	},
-	     [this](const std::string &word, std::string &rest) -> std::string::size_type {
-	       std::string::size_type rv = 0;
-	       _isCompiling = true;
-	       return rv;
-	     }
+	PRIVATE_NATIVE_WORD_FN(COLON)
       } },
 
 #if 0
-    { "STO", { "store variable", {
+    { "STO", {
+	"store variable", {
 	  { { "val", st_number  }, { "var", st_string } },
 	},
-	       [this](const std::string &word, std::string &rest) -> std::string::size_type {
-		 std::string::size_type rv = 0;
-		 printf("%s: unimplemented\n", word.c_str());
-		 return rv;
-	       }
+	NATIVE_WORD_FN(STO)
+	[](RpnController &rpn, std::string &rest) -> std::string::size_type {
+	  std::string::size_type rv = 0;
+	  printf("%s: unimplemented\n", word.c_str());
+	  return rv;
+	}
       } },
 #endif
 
-    { "CONCAT", { "String concatenation", {
+    { "CONCAT", {
+	"String concatenation", {
 	  { { "s2", st_string }, { "a1", st_any } }, // s1 + a2 (convert a2 to string and concat)
 	  { { "a2", st_any }, { "s1", st_string } }, // a1 + s2 (convert a1 to string and concat)
 	},
-		  [this](const std::string &word, std::string &rest) -> std::string::size_type {
-		    std::string::size_type rv = 0;
-		    std::string s1 = stack_pop_as_string();
-		    std::string s2 = stack_pop_as_string();
-		    stack_push(s2 + s1);
-		    return rv;
-		  }
+	NATIVE_WORD_FN(CONCAT)
       } },
 
-    { "DUP", { "Duplicate top of stack", {
+    { "DUP", {
+	"Duplicate top of stack", {
 	  { { "s1", st_any } }
 	},
-	       [this](const std::string &word, std::string &rest) -> std::string::size_type {
-		 std::string::size_type rv = 0;
-		 stack_push(_stack.back());
-		 return rv;
-	       }
+	PRIVATE_NATIVE_WORD_FN(DUP)
       } },
 
-    { "SWAP", { "Swap top two stack items", {
+    { "SWAP", {
+	"Swap top two stack items", {
 	  { { "s2", st_any }, { "s1", st_any } }
 	},
-	       [this](const std::string &word, std::string &rest) -> std::string::size_type {
-		 // there are definitely more efficient ways to do this.
-		 std::string::size_type rv = 0;
-		 auto s1 = stack_pop();
-		 auto s2 = stack_pop();
-		 stack_push(s1);
-		 stack_push(s2);
-		 return rv;
-	       }
+	NATIVE_WORD_FN(SWAP)
       } },
 
-    { "DEPTH",  { "Push stack depth", {
+    { "DEPTH",  {
+	"Push stack depth", {
 	  {}
 	},
-		 [this](const std::string &word, std::string &rest) -> std::string::size_type {
-		   std::string::size_type rv = 0;
-		   stack_push(long(_stack.size()));
-		   return rv;
-		 }
+	NATIVE_WORD_FN(DEPTH)
       } },
 
-    { "DROP",  { "Drop top of stack", {
+    { "DROP",  {
+	"Drop top of stack", {
 	  { { "s1", st_any } }
 	},
-		 [this](const std::string &word, std::string &rest) -> std::string::size_type {
-		   std::string::size_type rv = 0;
-		   stack_pop();
-		   return rv;
-		 }
+	NATIVE_WORD_FN(DROP)
       } },
 
-    { "DROPN",  { "Drop n items top of stack", {
+    { "DROPN",  {
+	"Drop n items top of stack", {
 	  { { "s1", st_integer } }
 	},
-		  [this](const std::string &word, std::string &rest) -> std::string::size_type {
-		    std::string::size_type rv = 0;
-		    long n = stack_pop_as_integer();
-		    n = std::min((unsigned long)n,_stack.size());
-		    _stack.erase(_stack.end()-n, _stack.end());
-		    return rv;
-		  }
+	NATIVE_WORD_FN(DROPN)
       } },
 
-    { "OVER",  { "Copy second stack item to top", {
+    { "OVER",  {
+	"Copy second stack item to top", {
 	  { { "s1", st_any }, { "s2", st_any } }
 	},
-		 [this](const std::string &word, std::string &rest) -> std::string::size_type {
-		   std::string::size_type rv = 0;
-		   stack_push(*(_stack.end()-2));
-		   return rv;
-		 }
+	NATIVE_WORD_FN(OVER)
       } },
 
-    { "ROLL+", { "Roll stack so that top goes to the bottom ( t1 t2 ... b -- t2 ... b t1 )", {
+    { "ROLL+", {
+	"Roll stack so that top goes to the bottom ( t1 t2 ... b -- t2 ... b t1 )", {
 	  {},
 	},
-		 [this](const std::string &word, std::string &rest) -> std::string::size_type {
-		   std::string::size_type rv = 0;
-		   printf("%s: unimplemented\n", word.c_str());
-		   return rv;
-		 }
+	NATIVE_WORD_FN(ROLLU)
       } },
 
-    { "ROLL-", { "Roll stack so that bottom goes to the top ( t ... b2 b1 -- b1 t ... b2 )", {
+    { "ROLL-", {
+	"Roll stack so that bottom goes to the top ( t ... b2 b1 -- b1 t ... b2 )", {
 	  {},
 	},
-		 [this](const std::string &word, std::string &rest) -> std::string::size_type {
-		   std::string::size_type rv = 0;
-		   printf("%s: unimplemented\n", word.c_str());
-		   return rv;
-		 }
+	NATIVE_WORD_FN(ROLLD)
       } },
 
-    { "->STR", { "Convert top of stack to a string ( val -- str )", {
+    { "->STR", {
+	"Convert top of stack to a string ( val -- str )", {
 	  { { "v1", st_any } }
 	},
-		 [this](const std::string &word, std::string &rest) -> std::string::size_type {
-		   std::string::size_type rv = 0;
-		   stack_push(stack_pop_as_string());
-		   return rv;
-		 }
+	NATIVE_WORD_FN(to_STR)
       } },
 
-    { "STR->", { "Parse string at top of stack to another type ( str -- val )", {
+    { "STR->", {
+	"Parse string at top of stack to another type ( str -- val )", {
 	  { { "v1", st_string } }
 	},
-		 [this](const std::string &word, std::string &rest) -> std::string::size_type {
-		   std::string::size_type rv = 0;
-		   printf("%s: unimplemented\n", word.c_str());
-		   return rv;
-		 }
+	NATIVE_WORD_FN(STR_to)
       } },
 
-    { "->{X}", { "Convert value on top of stack to X component of vec3 ( x -- {x,,} )", {
+    { "->{X}", {
+	"Convert value on top of stack to X component of vec3 ( x -- {x,,} )", {
 	  { { "X", st_number } }
 	},
-		 [this](const std::string &word, std::string &rest) -> std::string::size_type {
-		   std::string::size_type rv = 0;
-		   double x = stack_pop_as_double();
-		   stack_push(Vec3(x, std::nan(""), std::nan("")));
-		   return rv;
-		 }
+	NATIVE_WORD_FN(to_V3X)
       } },
 
-    { "->{Y}", { "Convert value on top of stack to Y component of vec3 ( y -- {,y,} )", {
+    { "->{Y}", {
+	"Convert value on top of stack to Y component of vec3 ( y -- {,y,} )", {
 	  { { "Y", st_number } }
 	},
-		 [this](const std::string &word, std::string &rest) -> std::string::size_type {
-		   std::string::size_type rv = 0;
-		   double y = stack_pop_as_double();
-		   stack_push(Vec3(std::nan(""), y, std::nan("")));
-		   return rv;
-		 }
+	NATIVE_WORD_FN(to_V3Y)
       } },
 
-    { "->{Z}", { "Convert value on top of stack to Z component of vec3 ( z -- {,,z} )", {
+    { "->{Z}", {
+	"Convert value on top of stack to Z component of vec3 ( z -- {,,z} )", {
 	  { { "Z", st_number } }
 	},
-		 [this](const std::string &word, std::string &rest) -> std::string::size_type {
-		   std::string::size_type rv = 0;
-		   double z = stack_pop_as_double();
-		   stack_push(Vec3(std::nan(""), std::nan(""), z));
-		   return rv;
-		 }
+	NATIVE_WORD_FN(to_V3Z)
       } },
 
-    { "{}->", { "Convert vector to components on stack ( v -- z y x )", {
+    { "{}->", {
+	"Convert vector to components on stack ( v -- z y x )", {
 	  { { "v", st_vec3 } }
 	},
-		[this](const std::string &word, std::string &rest) -> std::string::size_type {
-		  std::string::size_type rv = 0;
-		  auto v = std::get<st_vec3>(stack_pop());
-		  stack_push(v.z);
-		  stack_push(v.y);
-		  stack_push(v.x);
-		  return rv;
-		}
+	NATIVE_WORD_FN(V3_to)
       } }
 
   };
 
   _compiletimeDictionary = {
-    { ";", { "End Definition", {
+    { ";", {
+	"End Definition", {
 	  {},
 	},
-	     [this](const std::string &word, std::string &rest) -> std::string::size_type {
-	       std::string::size_type rv = 0;
-	       auto wl = std::vector<std::string>(_newDefinition);
-	       _runtimeDictionary[_newWord] = {
-		 "user " + _newWord,
-		 {},
-		 [this,wl](const std::string &word_, std::string &rest_) -> std::string::size_type {
-		   user_eval(word_,rest_, wl);
-		   return 0;
-		 }
-	       };
-	       _isCompiling = false;
-	       _newWord = "";
-	       _newDefinition.clear();
-	       return rv;
-	     }
+	PRIVATE_NATIVE_WORD_FN(SEMICOLON)
       } },
 
-    { "(", { "Commment", {
+    { "(", {
+	"Commment", {
 	  {},
 	},
-	     [this](const std::string &word, std::string &rest) -> std::string::size_type {
-	       return parse_comment(word,rest);
-	     }
+	NATIVE_WORD_FN(OPAREN)
       } },
-
+    
   };
 
 }

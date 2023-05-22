@@ -19,6 +19,8 @@
 #include <vector>
 #include <variant>
 
+class RpnController;
+
 /*
  * dataypes on the stack
  */
@@ -51,6 +53,19 @@ struct param_t {
   datatype_t type;
 };
 
+#define STACK_PARAM(n,t) { n, t }
+// a word that requires more than 8 paramaters on the stack should probably be re-worked
+
+#define WORD_PARAMS_0
+#define WORD_PARAMS_1(p1) { p1 }
+#define WORD_PARAMS_2(p1,p2) { p1, p2 }
+#define WORD_PARAMS_3(p1,p2,p3) { p1, p2, p3 }
+#define WORD_PARAMS_4(p1,p2,p3,p4) { p1, p2, p3, p4 }
+#define WORD_PARAMS_5(p1,p2,p3,p4,p5) { p1, p2, p3, p4, p5 }
+#define WORD_PARAMS_6(p1,p2,p3,p4,p5,p6) { p1, p2, p3, p4, p5, p6 }
+#define WORD_PARAMS_7(p1,p2,p3,p4,p5,p6,p7) { p1, p2, p3, p4, p5, p6, p7 }
+#define WORD_PARAMS_8(p1,p2,p3,p4,p5,p6,p7,p8) { p1, p2, p3, p4, p5, p6, p7, p8 }
+
 /*
  * Definition of a word within the dictionary.  This allows for checking against various
  * types of parameters
@@ -58,7 +73,8 @@ struct param_t {
 struct word_t {
   std::string description;
   std::vector<std::vector<param_t>> params;
-  std::function<std::string::size_type(const std::string &word,std::string &rest)> eval;
+  //  std::function<std::string::size_type(/*const std::string &word,*/std::string &rest)> eval;
+  std::function<std::string::size_type(RpnController &rpn, std::string &rest)> eval;
 };
 
 class RpnController {
