@@ -14,7 +14,7 @@
 
 #pragma once
 
-class MachineInterface {
+class MachineInterface : public WordContext {
 public:
   MachineInterface(RpnController &rpn);
   ~MachineInterface();

@@ -17,14 +17,17 @@
 
 int
 main(int ac, char **av) {
+  RpnController control;
+  MachineInterface mc(control);
+  //  std::string file = "/Users/eric/work/github/elh/rpn-cnc/xyz-probe.4nc";
+    std::string file = "/Users/eric/work/github/elh/rpn-cnc/tests.4nc";
   if (ac > 1) {
-    RpnController control;
-    MachineInterface mc(control);
-
-    control.loadFile(av[1]);
-  } else {
-    printf("usage: %s <filename>\n", av[0]);
+    file = av[1];
   }
+  control.loadFile(file);
+  //  } else {
+  //    printf("usage: %s <filename>\n", av[0]);
+  //  }
   
   return 0;
 }

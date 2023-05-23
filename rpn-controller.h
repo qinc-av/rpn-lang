@@ -20,7 +20,7 @@
 #include <variant>
 
 class RpnController;
-
+class WordContext; // an abstract base object that can contain information for specific word definitions
 /*
  * dataypes on the stack
  */
@@ -60,10 +60,10 @@ struct param_t {
 #define SCOPED_NATIVE_WORD_FN(clazz, nw) clazz::NATIVE_WORD_FN(nw)
 
 // declares the native word
-#define NATIVE_WORD_IMPL(nw) static std::string::size_type NATIVE_WORD_FN(nw)(RpnController &rpn, std::string &rest)
+#define NATIVE_WORD_IMPL(nw) static std::string::size_type NATIVE_WORD_FN(nw)(RpnController &rpn, WordContext *ctx, std::string &rest)
 
 // declares a native word that is private to the Privates class - this lets it access rpn.m_p
-#define SCOPED_NATIVE_WORD_IMPL(clazz,nw) std::string::size_type SCOPED_NATIVE_WORD_FN(clazz,nw) (RpnController &rpn, std::string &rest)
+#define SCOPED_NATIVE_WORD_IMPL(clazz,nw) std::string::size_type SCOPED_NATIVE_WORD_FN(clazz,nw) (RpnController &rpn, WordContext *ctx, std::string &rest)
 
 #define STACK_PARAM(n,t) { n, t }
 
@@ -87,10 +87,33 @@ struct param_t {
 //  std::function<std::string::size_type(RpnController &rpn, std::string &rest)> eval;
 //};
 
+class WordContext {
+public:
+  WordContext() {}
+  virtual ~WordContext() {}
+protected:
+};
+
+class CompiledWordContext : public WordContext {
+public:
+  CompiledWordContext() {};
+  void addWord(const std::string &word) { _wordlist.push_back(word); };
+  CompiledWordContext *clone() const {
+    CompiledWordContext *rv = new CompiledWordContext;
+    rv->_wordlist = _wordlist;
+    return rv;
+  }
+  const std::vector<std::string> &wordlist() const { return _wordlist; };
+  void clear() { _wordlist.clear(); };
+protected:
+  std::vector<std::string> _wordlist;
+};
+
 struct word_t {
   std::string description;
   std::vector<std::vector<param_t>> params;
-  std::function<std::string::size_type(RpnController &rpn, std::string &rest)> eval;
+  std::function<std::string::size_type(RpnController &rpn, WordContext *ctx, std::string &rest)> eval;
+  WordContext *context;
 };
 
 class RpnController {

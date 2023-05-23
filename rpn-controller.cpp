@@ -114,23 +114,13 @@ to_string(const Vec3 &v) {
   return tmp;
 }
 
-struct RpnController::Privates {
+struct RpnController::Privates : public WordContext {
   Privates();
   ~Privates() {};
 
   std::string::size_type eval(RpnController &rpn, const std::string &word, std::string &rest);
   std::string::size_type runtime_eval(RpnController &rpn, const std::string &word, std::string &rest);
   std::string::size_type compiletime_eval(RpnController &rpn, const std::string &word, std::string &rest);
-
-  std::string::size_type user_eval(RpnController &rpn, std::string &rest, const std::vector<std::string> &wordlist) {
-    //    printf("%s: (%s)\n", __func__, word.c_str());
-    for(auto w : wordlist) {
-      std::string rest;
-      eval(rpn, w, rest);
-      //      printf("  %s\n", w.c_str());
-    }
-    return 0;
-  }
 
   std::vector<size_t> top_of_stack_types(size_t n);
 
@@ -247,18 +237,11 @@ struct RpnController::Privates {
 
   bool _isCompiling;
   std::string _newWord;
-  std::vector<std::string> _newDefinition;
+  CompiledWordContext _newDefinition;
 
   std::deque<stacktype_t> _stack;
 
-  NATIVE_WORD_IMPL(_S);
-  NATIVE_WORD_IMPL(_D);
-  NATIVE_WORD_IMPL(COLON);
-  NATIVE_WORD_IMPL(SEMICOLON);
-  NATIVE_WORD_IMPL(DUP);
-  NATIVE_WORD_IMPL(DEPTH);
-  NATIVE_WORD_IMPL(DROPN);
-  NATIVE_WORD_IMPL(OVER);
+  NATIVE_WORD_IMPL(COMPILED_EVAL);
 };
 
 std::vector<size_t>
@@ -334,18 +317,18 @@ RpnController::Privates::compiletime_eval(RpnController &rpn, const std::string 
     const auto &cw = _compiletimeDictionary.find(word);
     if (cw != _compiletimeDictionary.end()) {
       // found something in the compiletime dict, evaluate it
-      rv = cw->second.eval(rpn, rest);
+      rv = cw->second.eval(rpn, cw->second.context, rest);
 
     } else {
       if (std::isdigit(word[0])) {
 	// numbers just push
-	_newDefinition.push_back(word);
+	_newDefinition.addWord(word);
 
       } else {
 	// everything else, we check in the runtime dictionary
 	const auto &rw = _runtimeDictionary.find(word);
 	if (rw != _runtimeDictionary.end()) {
-	  _newDefinition.push_back(word);
+	  _newDefinition.addWord(word);
 	} else {
 	  rv = std::string::npos;
 	  printf("unrecognized word at compile time: '%s'\n", word.c_str());
@@ -372,7 +355,7 @@ RpnController::Privates::runtime_eval(RpnController &rpn, const std::string &wor
     const auto &we = _runtimeDictionary.find(word);
     if (we != _runtimeDictionary.end()) {
       if (validate_stack_for_word(*we)) {
-	rv = we->second.eval(rpn, rest);
+	rv = we->second.eval(rpn,  we->second.context, rest);
       } else {
 	printf("parameters not right for '%s'\n", word.c_str());
 	print_stack();
@@ -616,7 +599,7 @@ NATIVE_WORD_IMPL(POW) {
   std::string::size_type rv = 0;
   double x = rpn.stack_pop_as_double();
   double y = rpn.stack_pop_as_double();
-  rpn.stack_push(pow(x,y));
+  rpn.stack_push(pow(y,x));
   return rv;
 }
 
@@ -737,16 +720,16 @@ NATIVE_WORD_IMPL(EVAL) {
   return rv;
 }
 
-#define PRIVATE_NATIVE_WORD_FN(sym) SCOPED_NATIVE_WORD_FN(RpnController::Privates,sym)
-#define PRIVATE_NATIVE_WORD_IMPL(sym) SCOPED_NATIVE_WORD_IMPL(RpnController::Privates,sym)
 
-PRIVATE_NATIVE_WORD_IMPL(_S) {
-  rpn.m_p->print_stack();
+NATIVE_WORD_IMPL(_S) {
+  RpnController::Privates *p = dynamic_cast<RpnController::Privates*>(ctx);
+  p->print_stack();
   return 0;
 }
 
-PRIVATE_NATIVE_WORD_IMPL(_D) {
-  for(auto const &de : rpn.m_p->_runtimeDictionary) {
+NATIVE_WORD_IMPL(_D) {
+  RpnController::Privates *p = dynamic_cast<RpnController::Privates*>(ctx);
+  for(auto const &de : p->_runtimeDictionary) {
     std::string s = to_string(de);
     printf("%s\n\n", s.c_str());
   }
@@ -777,9 +760,10 @@ NATIVE_WORD_IMPL(OPAREN) {
   return rv;
 }
 
-PRIVATE_NATIVE_WORD_IMPL(COLON) {
+NATIVE_WORD_IMPL(COLON) {
+  RpnController::Privates *p = dynamic_cast<RpnController::Privates*>(ctx);
   std::string::size_type rv = 0;
-  rpn.m_p->_isCompiling = true;
+  p->_isCompiling = true;
   return rv;
 }
 
@@ -791,9 +775,10 @@ NATIVE_WORD_IMPL(CONCAT) {
   return rv;
 }
 
-PRIVATE_NATIVE_WORD_IMPL(DUP) {
+NATIVE_WORD_IMPL(DUP) {
+  RpnController::Privates *p = dynamic_cast<RpnController::Privates*>(ctx);
   std::string::size_type rv = 0;
-  rpn.stack_push(rpn.m_p->_stack.back());
+  rpn.stack_push(p->_stack.back());
   return rv;
 }
 
@@ -807,9 +792,10 @@ NATIVE_WORD_IMPL(SWAP) {
   return rv;
 }
 
-PRIVATE_NATIVE_WORD_IMPL(DEPTH) {
+NATIVE_WORD_IMPL(DEPTH) {
+  RpnController::Privates *p = dynamic_cast<RpnController::Privates*>(ctx);
   std::string::size_type rv = 0;
-  rpn.stack_push(long(rpn.m_p->_stack.size()));
+  rpn.stack_push(long(p->_stack.size()));
   return rv;
 }
 
@@ -819,17 +805,19 @@ NATIVE_WORD_IMPL(DROP) {
   return rv;
 }
 
-PRIVATE_NATIVE_WORD_IMPL(DROPN) {
+NATIVE_WORD_IMPL(DROPN) {
+  RpnController::Privates *p = dynamic_cast<RpnController::Privates*>(ctx);
   std::string::size_type rv = 0;
   long n = rpn.stack_pop_as_integer();
-  n = std::min((unsigned long)n,rpn.m_p->_stack.size());
-  rpn.m_p->_stack.erase(rpn.m_p->_stack.end()-n, rpn.m_p->_stack.end());
+  n = std::min((unsigned long)n,p->_stack.size());
+  p->_stack.erase(p->_stack.end()-n, p->_stack.end());
   return rv;
 }
 
-PRIVATE_NATIVE_WORD_IMPL(OVER) {
+NATIVE_WORD_IMPL(OVER) {
+  RpnController::Privates *p = dynamic_cast<RpnController::Privates*>(ctx);
   std::string::size_type rv = 0;
-  rpn.stack_push(*(rpn.m_p->_stack.end()-2));
+  rpn.stack_push(*(p->_stack.end()-2));
   return rv;
 }
 
@@ -887,21 +875,27 @@ NATIVE_WORD_IMPL(V3_to) {
   return rv;
 }
 
-PRIVATE_NATIVE_WORD_IMPL(SEMICOLON) {
+SCOPED_NATIVE_WORD_IMPL(RpnController::Privates,COMPILED_EVAL) {
+  CompiledWordContext *cw = dynamic_cast<CompiledWordContext*>(ctx);
+  for(auto w : cw->wordlist()) {
+    std::string rest;
+    rpn.m_p->eval(rpn, w, rest);
+  }
+  return 0;
+}
+
+NATIVE_WORD_IMPL(SEMICOLON) {
+  RpnController::Privates *p = dynamic_cast<RpnController::Privates*>(ctx);
   std::string::size_type rv = 0;
-  auto wl = rpn.m_p->_newDefinition;
-#warning "remove this lambda"
-  rpn.m_p->_runtimeDictionary[rpn.m_p->_newWord] = {
-    "user " + rpn.m_p->_newWord,
+  p->_runtimeDictionary[p->_newWord] = {
+    "compiled " + p->_newWord,
     {},
-    [wl](RpnController &rpn_, std::string &rest_) -> std::string::size_type {
-      rpn_.m_p->user_eval(rpn_, rest_, wl);
-      return 0;
-    }
+    SCOPED_NATIVE_WORD_FN(RpnController::Privates,COMPILED_EVAL),
+    p->_newDefinition.clone()
   };
-  rpn.m_p->_isCompiling = false;
-  rpn.m_p->_newWord = "";
-  rpn.m_p->_newDefinition.clear();
+  p->_isCompiling = false;
+  p->_newWord = "";
+  p->_newDefinition.clear();
   return rv;
 }
 	       
@@ -916,98 +910,98 @@ RpnController::Privates::Privates() : _newWord(""), _isCompiling(false), _newDef
 	  WORD_PARAMS_1(STACK_PARAM("x", st_number)),
 	  //	  WORD_PARAMS_1(STACK_PARAM("x", st_vec3)),
 	},
-	NATIVE_WORD_FN(ABS)
+	NATIVE_WORD_FN(ABS), nullptr
       } },
 
     { "COS", {
 	"Cosine (angle -- cos(angle))", {
 	  WORD_PARAMS_1(STACK_PARAM("angle", st_number))
 	},
-	NATIVE_WORD_FN(COS)
+	NATIVE_WORD_FN(COS), nullptr
       } },
 
     { "ACOS", {
 	"Arc-Cosine (x -- acos(x))", {
 	  WORD_PARAMS_1(STACK_PARAM("x", st_number)),
 	},
-	NATIVE_WORD_FN(ACOS)
+	NATIVE_WORD_FN(ACOS), nullptr
       } },
 
     { "SIN", {
 	"Sine (angle -- sin(angle))", {
 	  WORD_PARAMS_1(STACK_PARAM("angle", st_number)),
 	},
-	NATIVE_WORD_FN(SIN)
+	NATIVE_WORD_FN(SIN), nullptr
       } },
 
     { "ASIN", {
 	"Arc Sine (x -- asin(x))", {
 	  WORD_PARAMS_1(STACK_PARAM("x", st_number)),
 	},
-	NATIVE_WORD_FN(ASIN)
+	NATIVE_WORD_FN(ASIN), nullptr
       } },
 
     { "TAN", {
 	"Tangent (angle -- tan(angle))", {
 	  WORD_PARAMS_1(STACK_PARAM("angle", st_number)),
 	},
-	NATIVE_WORD_FN(TAN)
+	NATIVE_WORD_FN(TAN), nullptr
       } },
 
     { "ATAN", {
 	"Arc-Tangent (x -- atan(x))", {
 	  WORD_PARAMS_1(STACK_PARAM("x", st_number)),
 	},
-	NATIVE_WORD_FN(ATAN),
+	NATIVE_WORD_FN(ATAN), nullptr
       } },
 
     { "ATAN2", {
 	"Arc-Tangent of two variables (y x -- atan2(y,x))", {
 	  WORD_PARAMS_2(STACK_PARAM("y", st_number), STACK_PARAM("x", st_number)),
 	},
-	NATIVE_WORD_FN(ATAN2)
+	NATIVE_WORD_FN(ATAN2), nullptr
       } },
 
     { "NEG", {
 	"Negate (x -- -x)", {
 	  WORD_PARAMS_1(STACK_PARAM("x", st_number)),
 	},
-	NATIVE_WORD_FN(NEG)
+	NATIVE_WORD_FN(NEG), nullptr
       } },
 
     { "SQRT", {
 	"Square Root (x -- sqrt(x) )", {
 	  WORD_PARAMS_1(STACK_PARAM("x", st_number)),
 	},
-	NATIVE_WORD_FN(SQRT)
+	NATIVE_WORD_FN(SQRT), nullptr
       } },
 
     { "SQ", {
 	"Square (x -- x^2)", {
 	  WORD_PARAMS_1(STACK_PARAM("x", st_number)),
 	},
-	NATIVE_WORD_FN(SQ)
+	NATIVE_WORD_FN(SQ), nullptr
       } },
 
     { "POW", {
 	"Exponentation (x y -- x^y)", {
 	  WORD_PARAMS_2(STACK_PARAM("x", st_number), STACK_PARAM("y", st_number)),
 	},
-	NATIVE_WORD_FN(POW)
+	NATIVE_WORD_FN(POW), nullptr
       } },
 
     { "INV", {
 	"Invert (x -- 1/x))", {
 	  WORD_PARAMS_1(STACK_PARAM("x", st_number)),
 	},
-	NATIVE_WORD_FN(INV)
+	NATIVE_WORD_FN(INV), nullptr
       } },
 
     { "PI", {
 	"The constant PI", {
 	  WORD_PARAMS_0(),
 	},
-	NATIVE_WORD_FN(PI)
+	NATIVE_WORD_FN(PI), nullptr
       } },
 
     { "+", {
@@ -1015,7 +1009,7 @@ RpnController::Privates::Privates() : _newWord(""), _isCompiling(false), _newDef
 	  WORD_PARAMS_2(STACK_PARAM("x", st_number), STACK_PARAM("y", st_number)), // x + y
 	  WORD_PARAMS_2(STACK_PARAM("vx", st_vec3), STACK_PARAM("vx", st_vec3)), // v1 + v2
 	},
-	NATIVE_WORD_FN(ADD)
+	NATIVE_WORD_FN(ADD), nullptr
       } },
 
     { "-", {
@@ -1023,28 +1017,28 @@ RpnController::Privates::Privates() : _newWord(""), _isCompiling(false), _newDef
 	  WORD_PARAMS_2(STACK_PARAM("x", st_number), STACK_PARAM("y", st_number)),
 	  WORD_PARAMS_2(STACK_PARAM("vx", st_vec3), STACK_PARAM("vy", st_vec3))
 	},
-	NATIVE_WORD_FN(SUB)
+	NATIVE_WORD_FN(SUB), nullptr
       } },
 
     { "*", {
 	"Multiply (x y -- x*y)", {
 	  WORD_PARAMS_2(STACK_PARAM("x", st_number), STACK_PARAM("y", st_number))
 	},
-	NATIVE_WORD_FN(MULT)
+	NATIVE_WORD_FN(MULT), nullptr
       } },
 
     { "*", {
 	"Divide (x y -- y/x)", {
 	  WORD_PARAMS_2(STACK_PARAM("x", st_number),STACK_PARAM("y", st_number))
 	},
-	NATIVE_WORD_FN(DIV)
+	NATIVE_WORD_FN(DIV), nullptr
       } },
 
     { "EVAL", {
 	"Evaluate string as an algebraic expression", {
 	  WORD_PARAMS_1(STACK_PARAM("expr", st_string)),
 	},
-	NATIVE_WORD_FN(EVAL)
+	NATIVE_WORD_FN(EVAL), nullptr
       } },
 
     /*
@@ -1054,35 +1048,35 @@ RpnController::Privates::Privates() : _newWord(""), _isCompiling(false), _newDef
 	"print stack", {
 	  WORD_PARAMS_0(),
 	},
-	NATIVE_WORD_FN(_S)
+	NATIVE_WORD_FN(_S), this
       } },
 	      
     { ".D", {
 	"print dictionary", {
 	  WORD_PARAMS_0(),
 	},
-	NATIVE_WORD_FN(_D)
+	NATIVE_WORD_FN(_D), this
       } },
 
     { ".\"", {
 	"String literal", {
 	  WORD_PARAMS_0(),
 	},
-	NATIVE_WORD_FN(_Q)
+	NATIVE_WORD_FN(_Q), nullptr
       } },
 
     { "(", {
 	"Commment", {
 	  WORD_PARAMS_0(),
 	},
-	NATIVE_WORD_FN(OPAREN)
+	NATIVE_WORD_FN(OPAREN), nullptr
       } },
 
     { ":", {
 	"Define new word", {
 	  WORD_PARAMS_0(),
 	},
-	PRIVATE_NATIVE_WORD_FN(COLON)
+	NATIVE_WORD_FN(COLON), this
       } },
 
 #if 0
@@ -1104,105 +1098,105 @@ RpnController::Privates::Privates() : _newWord(""), _isCompiling(false), _newDef
 	  WORD_PARAMS_2(STACK_PARAM("s2", st_string), STACK_PARAM("a1", st_any)), // s1 + a2 (convert a2 to string and concat)
 	  WORD_PARAMS_2(STACK_PARAM("a2", st_any), STACK_PARAM("s1", st_string)), // a1 + s2 (convert a1 to string and concat)
 	},
-	NATIVE_WORD_FN(CONCAT)
+	NATIVE_WORD_FN(CONCAT), nullptr
       } },
 
     { "DUP", {
 	"Duplicate top of stack", {
 	  WORD_PARAMS_1(STACK_PARAM("s1", st_any))
 	},
-	PRIVATE_NATIVE_WORD_FN(DUP)
+	NATIVE_WORD_FN(DUP), this
       } },
 
     { "SWAP", {
 	"Swap top two stack items", {
 	  WORD_PARAMS_2(STACK_PARAM("s2", st_any), STACK_PARAM("s1", st_any))
 	},
-	NATIVE_WORD_FN(SWAP)
+	NATIVE_WORD_FN(SWAP), nullptr
       } },
 
     { "DEPTH",  {
 	"Push stack depth", {
 	  WORD_PARAMS_0()
 	},
-	NATIVE_WORD_FN(DEPTH)
+	NATIVE_WORD_FN(DEPTH), this
       } },
 
     { "DROP",  {
 	"Drop top of stack", {
 	  WORD_PARAMS_1(STACK_PARAM("s1", st_any))
 	},
-	NATIVE_WORD_FN(DROP)
+	NATIVE_WORD_FN(DROP), nullptr
       } },
 
     { "DROPN",  {
 	"Drop n items top of stack", {
 	  WORD_PARAMS_1(STACK_PARAM("s1", st_integer))
 	},
-	NATIVE_WORD_FN(DROPN)
+	NATIVE_WORD_FN(DROPN), this
       } },
 
     { "OVER",  {
 	"Copy second stack item to top", {
 	  WORD_PARAMS_2(STACK_PARAM("s1", st_any), STACK_PARAM("s2", st_any))
 	},
-	NATIVE_WORD_FN(OVER)
+	NATIVE_WORD_FN(OVER), this
       } },
 
     { "ROLL+", {
 	"Roll stack so that top goes to the bottom ( t1 t2 ... b -- t2 ... b t1 )", {
 	  WORD_PARAMS_0(),
 	},
-	NATIVE_WORD_FN(ROLLU)
+	NATIVE_WORD_FN(ROLLU), nullptr
       } },
 
     { "ROLL-", {
 	"Roll stack so that bottom goes to the top ( t ... b2 b1 -- b1 t ... b2 )", {
 	  WORD_PARAMS_0(),
 	},
-	NATIVE_WORD_FN(ROLLD)
+	NATIVE_WORD_FN(ROLLD), nullptr
       } },
 
     { "->STR", {
 	"Convert top of stack to a string ( val -- str )", {
 	  WORD_PARAMS_1(STACK_PARAM("v1", st_any))
 	},
-	NATIVE_WORD_FN(to_STR)
+	NATIVE_WORD_FN(to_STR), nullptr
       } },
 
     { "STR->", {
 	"Parse string at top of stack to another type ( str -- val )", {
 	  WORD_PARAMS_1(STACK_PARAM("v1", st_string))
 	},
-	NATIVE_WORD_FN(STR_to)
+	NATIVE_WORD_FN(STR_to), nullptr
       } },
 
     { "->{X}", {
 	"Convert value on top of stack to X component of vec3 ( x -- {x,,} )", {
 	  WORD_PARAMS_1(STACK_PARAM("X", st_number))
 	},
-	NATIVE_WORD_FN(to_V3X)
+	NATIVE_WORD_FN(to_V3X), nullptr
       } },
 
     { "->{Y}", {
 	"Convert value on top of stack to Y component of vec3 ( y -- {,y,} )", {
 	  WORD_PARAMS_1(STACK_PARAM("Y", st_number))
 	},
-	NATIVE_WORD_FN(to_V3Y)
+	NATIVE_WORD_FN(to_V3Y), nullptr
       } },
 
     { "->{Z}", {
 	"Convert value on top of stack to Z component of vec3 ( z -- {,,z} )", {
 	  WORD_PARAMS_1(STACK_PARAM("Z", st_number))
 	},
-	NATIVE_WORD_FN(to_V3Z)
+	NATIVE_WORD_FN(to_V3Z), nullptr
       } },
 
     { "{}->", {
 	"Convert vector to components on stack ( v -- z y x )", {
 	  WORD_PARAMS_1(STACK_PARAM("v", st_vec3))
 	},
-	NATIVE_WORD_FN(V3_to)
+	NATIVE_WORD_FN(V3_to), nullptr
       } }
 
   };
@@ -1212,16 +1206,15 @@ RpnController::Privates::Privates() : _newWord(""), _isCompiling(false), _newDef
 	"End Definition", {
 	  WORD_PARAMS_0(),
 	},
-	PRIVATE_NATIVE_WORD_FN(SEMICOLON)
+	NATIVE_WORD_FN(SEMICOLON), this
       } },
 
     { "(", {
 	"Commment", {
 	  WORD_PARAMS_0(),
 	},
-	NATIVE_WORD_FN(OPAREN)
+	NATIVE_WORD_FN(OPAREN), nullptr
       } },
-    
   };
 
 }
