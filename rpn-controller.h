@@ -53,10 +53,22 @@ struct param_t {
   datatype_t type;
 };
 
-#define STACK_PARAM(n,t) { n, t }
-// a word that requires more than 8 paramaters on the stack should probably be re-worked
+// these two are used for a reference to the method (as in a native object 
+// name of the function
+// a plain old (mangled) function name
+#define NATIVE_WORD_FN(nw) native_word_##nw
+#define SCOPED_NATIVE_WORD_FN(clazz, nw) clazz::NATIVE_WORD_FN(nw)
 
-#define WORD_PARAMS_0
+// declares the native word
+#define NATIVE_WORD_IMPL(nw) static std::string::size_type NATIVE_WORD_FN(nw)(RpnController &rpn, std::string &rest)
+
+// declares a native word that is private to the Privates class - this lets it access rpn.m_p
+#define SCOPED_NATIVE_WORD_IMPL(clazz,nw) std::string::size_type SCOPED_NATIVE_WORD_FN(clazz,nw) (RpnController &rpn, std::string &rest)
+
+#define STACK_PARAM(n,t) { n, t }
+
+// a word that requires more than 8 paramaters on the stack should probably be re-worked
+#define WORD_PARAMS_0() {}
 #define WORD_PARAMS_1(p1) { p1 }
 #define WORD_PARAMS_2(p1,p2) { p1, p2 }
 #define WORD_PARAMS_3(p1,p2,p3) { p1, p2, p3 }
@@ -70,10 +82,14 @@ struct param_t {
  * Definition of a word within the dictionary.  This allows for checking against various
  * types of parameters
  */
+//struct nativedef_t {
+//  std::vector<param_t> params;
+//  std::function<std::string::size_type(RpnController &rpn, std::string &rest)> eval;
+//};
+
 struct word_t {
   std::string description;
   std::vector<std::vector<param_t>> params;
-  //  std::function<std::string::size_type(/*const std::string &word,*/std::string &rest)> eval;
   std::function<std::string::size_type(RpnController &rpn, std::string &rest)> eval;
 };
 

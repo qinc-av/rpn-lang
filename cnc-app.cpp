@@ -18,6 +18,81 @@
 struct MachineInterface::Privates {
   Privates(RpnController &rpn);
   std::map<std::string,word_t> _appDict;
+  static MachineInterface::Privates *s_instance;
+
+  NATIVE_WORD_IMPL(MPOS_to) {
+    rpn.stack_push(Vec3(3.4, 4.5, 5.6));
+    return 0;
+  }
+
+  NATIVE_WORD_IMPL(WPOS_to) {
+    rpn.stack_push(Vec3(1.2, 2.3, 3.4));
+    return 0;
+  }
+
+  NATIVE_WORD_IMPL(to_WPOS) {
+    Vec3 np = rpn.stack_pop_as_vec3();
+    printf("->WPOS: popped '%s' from stack\n", to_string(np).c_str());
+    return 0;
+  }
+
+  NATIVE_WORD_IMPL(SPEED_to) {
+    std::string::size_type rv = 0;
+    rpn.stack_push(10000);
+    return rv;
+  }
+
+  NATIVE_WORD_IMPL(to_SPEED) {
+    std::string::size_type rv = 0;
+    return rv;
+  }
+
+  NATIVE_WORD_IMPL(FEED_to) {
+    std::string::size_type rv = 0;
+    return rv;
+  }
+
+  NATIVE_WORD_IMPL(to_FEED) {
+    std::string::size_type rv = 0;
+    return rv;
+  }
+
+  NATIVE_WORD_IMPL(JOG_R) {
+    std::string::size_type rv = 0;
+    return rv;
+  }
+
+  NATIVE_WORD_IMPL(JOG_WA) {
+    std::string::size_type rv = 0;
+    return rv;
+  }
+
+  NATIVE_WORD_IMPL(JOG_MA) {
+    std::string::size_type rv = 0;
+    return rv;
+  }
+
+  NATIVE_WORD_IMPL(PROBE) {
+    std::string::size_type rv = 0;
+    return rv;
+  }
+
+  NATIVE_WORD_IMPL(MODALSTATE_to) {
+    std::string::size_type rv = 0;
+    return rv;
+  }
+
+  NATIVE_WORD_IMPL(to_MODALSTATE) {
+    std::string::size_type rv = 0;
+    return rv;
+  }
+
+  NATIVE_WORD_IMPL(SEND) {
+    std::string::size_type rv = 0;
+    printf("instance is %p\n", s_instance);
+    return rv;
+  }
+
 };
 
 MachineInterface::MachineInterface(RpnController &rpn) {
@@ -28,140 +103,113 @@ MachineInterface::~MachineInterface() {
   delete m_p;
 }
 
+#define PRIVATE_NATIVE_WORD_FN(sym) SCOPED_NATIVE_WORD_FN(MachineInterface::Privates,sym)
+
+MachineInterface::Privates *MachineInterface::Privates::s_instance = nullptr;
+
 MachineInterface::Privates::Privates(RpnController &rpn) {
+  s_instance = this;
   rpn.addDictionary({
-/*
-     * Machine control words
-     */
-    { "MPOS->", { "Push Machine Position to the stack. ( -- mpos )", {
-	  {},
-	},
-		  [](RpnController &rpn, std::string &rest) -> std::string::size_type {
-		    std::string::size_type rv = 0;
-		    return rv;
-		  }
+      /*
+       * Machine control words
+       */
+    { "MPOS->", {
+	"Push Machine Position to the stack. ( -- mpos )", {
+	  WORD_PARAMS_0(),
+	    },
+	  PRIVATE_NATIVE_WORD_FN(MPOS_to)
       } },
 
-    { "WPOS->", { "Push Work Position to the stack. ( -- wpos )", {
-	  {},
-	},
-		  [](RpnController &rpn, std::string &rest) -> std::string::size_type {
-		    std::string::size_type rv = 0;
-		    rpn.stack_push(Vec3(1.2, 2.3, 3.4));
-		    return rv;
-		  }
+    { "WPOS->", {
+	"Push Work Position to the stack. ( -- wpos )", {
+	  WORD_PARAMS_0(),
+	    },
+	  PRIVATE_NATIVE_WORD_FN(WPOS_to)
       } },
 
-    { "->WPOS", { "Set Work Position ( wpos -- )", {
+    { "->WPOS", {
+	"Set Work Position ( wpos -- )", {
 	  { { "newpos", st_vec3 } },
-	},
-		  [](RpnController &rpn, std::string &rest) -> std::string::size_type {
-		    std::string::size_type rv = 0;
-		    Vec3 np = rpn.stack_pop_as_vec3();
-		    printf("->WPOS: popped '%s' from stack\n", to_string(np).c_str());
-		    return rv;
-		  }
+	    },
+	  PRIVATE_NATIVE_WORD_FN(to_WPOS)
       } },
 
-    { "SPEED->", { "Push Spindle Speed to the stack. ( -- speed )", {
-	  {},
-	},
-		   [](RpnController &rpn, std::string &rest) -> std::string::size_type {
-		     std::string::size_type rv = 0;
-		     rpn.stack_push(10000);
-		     return rv;
-		   }
+    { "SPEED->", {
+	"Push Spindle Speed to the stack. ( -- speed )", {
+	  WORD_PARAMS_0(),
+	    },
+	  PRIVATE_NATIVE_WORD_FN(SPEED_to)
       } },
 
-    { "->SPEED", { "Set Spindle Speed ( speed -- )", {
+    { "->SPEED", {
+	"Set Spindle Speed ( speed -- )", {
 	  { { "speed", st_number } },
-	},
-		   [](RpnController &rpn, std::string &rest) -> std::string::size_type {
-		     std::string::size_type rv = 0;
-		     return rv;
-		   }
+	    },
+	  PRIVATE_NATIVE_WORD_FN(to_SPEED)
       } },
 
-    { "FEED->", { "Push jog feed rate to the stack. ( -- feed )", {
-	  {},
-	},
-		  [](RpnController &rpn, std::string &rest) -> std::string::size_type {
-		    std::string::size_type rv = 0;
-		    return rv;
-		  }
+    { "FEED->", {
+	"Push jog feed rate to the stack. ( -- feed )", {
+	  WORD_PARAMS_0(),
+	    },
+	  PRIVATE_NATIVE_WORD_FN(FEED_to)
       } },
 
-    { "->FEED", { "Set jog feed rate ( feed -- )", {
+    { "->FEED", {
+	"Set jog feed rate ( feed -- )", {
 	  { { "feed", st_number } },
-	},
-		  [](RpnController &rpn, std::string &rest) -> std::string::size_type {
-		    std::string::size_type rv = 0;
-		    return rv;
-		  }
+	    },
+	  PRIVATE_NATIVE_WORD_FN(to_FEED)
       } },
 
-    { "JOG-R", { "Jog to relative position ( pos -- )", {
+    { "JOG-R", {
+	"Jog to relative position ( pos -- )", {
 	  { { "offset", st_vec3 } },
-	},
-		 [](RpnController &rpn, std::string &rest) -> std::string::size_type {
-		   std::string::size_type rv = 0;
-		   return rv;
-		 }
+	    },
+	  PRIVATE_NATIVE_WORD_FN(JOG_R)
       } },
 
-    { "JOG-WA", { "Jog to absolute work position ( wpos -- )", {
+    { "JOG-WA", {
+	"Jog to absolute work position ( wpos -- )", {
 	  { { "wpos", st_vec3 } },
-	},
-		  [](RpnController &rpn, std::string &rest) -> std::string::size_type {
-		    std::string::size_type rv = 0;
-		    return rv;
-		  }
+	    },
+	  PRIVATE_NATIVE_WORD_FN(JOG_WA)
       } },
 
-    { "JOG-MA", { "Jog to absolute machine position ( mpos -- )", {
+    { "JOG-MA", {
+	"Jog to absolute machine position ( mpos -- )", {
 	  { { "mpos", st_vec3 } },
-	},
-		  [](RpnController &rpn, std::string &rest) -> std::string::size_type {
-		    std::string::size_type rv = 0;
-		    return rv;
-		  }
+	    },
+	  PRIVATE_NATIVE_WORD_FN(JOG_MA)
       } },
 
-    { "PROBE", { "Probe machine (target feed -- )", {
+      { "PROBE", {
+	"Probe machine (target feed -- )", {
 	  { { "target", st_vec3 }, { "feed" , st_number } }, // primitive G38.2
-	},
-		 [](RpnController &rpn, std::string &rest) -> std::string::size_type {
-		   std::string::size_type rv = 0;
-		   return rv;
-		 }
+	    },
+	  PRIVATE_NATIVE_WORD_FN(PROBE)
       } },
 
-    { "MODAL-STATE->", { "Push machine's modal state on the stack ( -- state )", {
-	  {},
-	},
-			 [](RpnController &rpn, std::string &rest) -> std::string::size_type {
-			   std::string::size_type rv = 0;
-			   return rv;
-			 }
-      } },
+      { "MODAL-STATE->", {
+	  "Push machine's modal state on the stack ( -- state )", {
+	    WORD_PARAMS_0(),
+	      },
+	  PRIVATE_NATIVE_WORD_FN(MODALSTATE_to)
+	} },
 
-    { "->MODAL-STATE", { "Send modal state to the machine ( state -- )", {
+    { "->MODAL-STATE", {
+	"Send modal state to the machine ( state -- )", {
 	  { { "state", st_string } },
-	},
-			 [](RpnController &rpn, std::string &rest) -> std::string::size_type {
-			   std::string::size_type rv = 0;
-			   return rv;
-			 }
+	    },
+	  PRIVATE_NATIVE_WORD_FN(to_MODALSTATE)
       } },
 
 
-    { "SEND", { "Send command", {
+    { "SEND", {
+	"Send command", {
 	  { { "g-code", st_string } },
-	},
-		[](RpnController &rpn, std::string &rest) -> std::string::size_type {
-		  std::string::size_type rv = 0;
-		  return rv;
-		}
+	    },
+	  PRIVATE_NATIVE_WORD_FN(SEND)
       } }
     });
 }
