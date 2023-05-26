@@ -51,6 +51,9 @@ to_string(const datatype_t &dt) {
   case st_vec3:
     rv = "vec3";
     break;
+    //  case st_stacktype:
+    //    rv = "stacktype";
+    //    break;
   case st_number:
     rv = "number";
     break;
@@ -714,6 +717,63 @@ NATIVE_WORD_IMPL(DIV) {
   return rv;
 }
 
+#if 0
+NATIVE_WORD_IMPL(MIN,st_integer,st_integer) {
+}
+NATIVE_WORD_IMPL(MIN,st_integer,st_double) {
+}
+NATIVE_WORD_IMPL(MIN,st_double,st_integer) {
+}
+NATIVE_WORD_IMPL(MIN,st_double,st_double) {
+}
+
+add_word("min", "Leaves the minimum of the top two stack items.  ( b a -- min(a,b) )", 2);
+add_word_implementation(st_double,st_double,function,context);
+#endif
+
+NATIVE_WORD_IMPL(MIN) {
+  auto s1 = rpn.stack_pop();
+  auto s2 = rpn.stack_pop();
+  unsigned vv = type2_pred_v(s1,s2);
+  switch(vv) {
+  case type2_pred(st_integer,st_integer):
+    rpn.stack_push(std::min(std::get<st_integer>(s1),std::get<st_integer>(s2)));
+    break;
+  case type2_pred(st_double,st_integer):
+    rpn.stack_push(std::min(std::get<st_double>(s1),double(std::get<st_integer>(s2))));
+    break;
+  case type2_pred(st_integer,st_double):
+    rpn.stack_push(std::min(double(std::get<st_integer>(s1)),std::get<st_double>(s2)));
+    break;
+  case type2_pred(st_double,st_double):
+    rpn.stack_push(std::min(std::get<st_double>(s1),std::get<st_double>(s2)));
+    break;
+  }
+  return 0;
+}
+
+NATIVE_WORD_IMPL(MAX) {
+  auto s1 = rpn.stack_pop();
+  auto s2 = rpn.stack_pop();
+  unsigned vv = type2_pred_v(s1,s2);
+  switch(vv) {
+  case type2_pred(st_integer,st_integer):
+    rpn.stack_push(std::max(std::get<st_integer>(s1),std::get<st_integer>(s2)));
+    break;
+  case type2_pred(st_double,st_integer):
+    rpn.stack_push(std::max(std::get<st_double>(s1),double(std::get<st_integer>(s2))));
+    break;
+  case type2_pred(st_integer,st_double):
+    rpn.stack_push(std::max(double(std::get<st_integer>(s1)),std::get<st_double>(s2)));
+    break;
+  case type2_pred(st_double,st_double):
+    rpn.stack_push(std::max(std::get<st_double>(s1),std::get<st_double>(s2)));
+    break;
+  }
+  return 0;
+}
+
+
 NATIVE_WORD_IMPL(EVAL) {
   std::string::size_type rv = 0;
   printf("%s: not implemented\n", __func__);
@@ -822,14 +882,20 @@ NATIVE_WORD_IMPL(OVER) {
 }
 
 NATIVE_WORD_IMPL(ROLLU) {
+  RpnController::Privates *p = dynamic_cast<RpnController::Privates*>(ctx);
   std::string::size_type rv = 0;
-  printf("ROLL+: unimplemented\n");
+  auto t = p->_stack.back();
+  p->_stack.pop_back();
+  p->_stack.push_front(t);
   return rv;
 }
 
 NATIVE_WORD_IMPL(ROLLD) {
+  RpnController::Privates *p = dynamic_cast<RpnController::Privates*>(ctx);
   std::string::size_type rv = 0;
-  printf("ROLL-: unimplemented\n");
+  auto b = p->_stack.front();
+  p->_stack.pop_front();
+  p->_stack.push_back(b);
   return rv;
 }
 
@@ -1144,17 +1210,17 @@ RpnController::Privates::Privates() : _newWord(""), _isCompiling(false), _newDef
       } },
 
     { "ROLL+", {
-	"Roll stack so that top goes to the bottom ( t1 t2 ... b -- t2 ... b t1 )", {
+	"Roll stack so that top goes to the bottom ( b .. t2 t1 -- t1 b ... t2 )", {
 	  WORD_PARAMS_0(),
 	},
-	NATIVE_WORD_FN(ROLLU), nullptr
+	NATIVE_WORD_FN(ROLLU), this
       } },
 
     { "ROLL-", {
-	"Roll stack so that bottom goes to the top ( t ... b2 b1 -- b1 t ... b2 )", {
+	"Roll stack so that bottom goes to the top ( b1 b2 ... t -- b2 ... b2 ... t b1 )", {
 	  WORD_PARAMS_0(),
 	},
-	NATIVE_WORD_FN(ROLLD), nullptr
+	NATIVE_WORD_FN(ROLLD), this
       } },
 
     { "->STR", {

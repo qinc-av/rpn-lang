@@ -26,6 +26,7 @@ class WordContext; // an abstract base object that can contain information for s
  */
 struct Vec3 {
   Vec3(double xx=std::nan(""), double yy=std::nan(""), double zz=std::nan("")) : x(xx), y(yy), z(zz) {}
+  //  Vec3 &operator=(const Vec3 &&rhs);
   double x;
   double y;
   double z;
@@ -39,6 +40,7 @@ enum datatype_t {
   st_integer,
   st_string,
   st_vec3,
+  //  st_stacktype,
 
   // these are not real types, they are used for validating parameters
   st_number, // either double or integer
