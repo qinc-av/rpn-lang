@@ -17,17 +17,19 @@
 int
 main(int ac, char **av) {
   rpn::Stack stack;
-  stack.push(StDouble(3.1415));
-  stack.push(StString("wxyz"));
-  stack.push(StInteger(1234));
-  stack.push(StString("abcdefg"));
+  //  stack.push(StDouble(3.1415));
+  stack.push_double(3.1415);
+  stack.push_string("wxyz");
+  //  stack.push(StInteger(1234));
+  stack.push_integer(1234);
+  stack.push(StString(std::string("abcdefg")));
   stack.push(StDouble(19.2));
 
   assert (stack.depth() == 5);
 
   {
-    std::unique_ptr<StDouble> v(static_cast<StDouble*>(stack.pop().release()));
-    printf("popped StDouble %s (%f)\n", v->to_string().c_str(), v->val());
+    double v = stack.pop_double(); // std::unique_ptr<StDouble> v(static_cast<StDouble*>(stack.pop().release()));
+    printf("popped double (%f)\n", v);
   }
 
   {
@@ -52,7 +54,7 @@ main(int ac, char **av) {
   stack.dup();
   stack.print("push(2.7) dup");
 
-  stack.push(StString("marker"));
+  //  stack.push(StString("marker"));
   int n = stack.depth();
   stack.dupn(n);
   stack.print("depth dupn");
@@ -87,7 +89,7 @@ main(int ac, char **av) {
   n=stack.depth();
   for(unsigned i=0; i<n/2; i++) {
     std::string key="v"+std::to_string(i);
-    obj.add_value(key, *stack.pop());
+    obj.inner().add_value(key, *stack.pop());
   }
   stack.push(obj);
   stack.rolld();
@@ -96,7 +98,7 @@ main(int ac, char **av) {
   StArray arr;
   n=stack.depth();
   for(unsigned i=0; i<(n-1); i++) {
-    arr.add_value(*stack.pop());
+    arr.inner().add_value(*stack.pop());
   }
   stack.push(arr);
   stack.print("array");

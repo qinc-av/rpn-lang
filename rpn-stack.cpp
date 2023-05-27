@@ -24,6 +24,26 @@ rpn::Stack::push(const Object &ob) {
   _stack.push_front(std::move(ptr));
 }
 
+void
+rpn::Stack::push_boolean(const bool &val) {
+  push(StBoolean(val));
+}
+
+void
+rpn::Stack::push_string(const std::string &val) {
+  push(StString(val));
+}
+
+void
+rpn::Stack::push_integer(const int64_t &val) {
+  push(StInteger(val));
+}
+
+void
+rpn::Stack::push_double(const double &val) {
+  push(StDouble(val));
+}
+
 std::unique_ptr<rpn::Stack::Object>
 rpn::Stack::pop() {
   std::unique_ptr<Object> rv(nullptr);
@@ -32,6 +52,30 @@ rpn::Stack::pop() {
     _stack.pop_front();
   }
   return rv;
+}
+
+bool
+rpn::Stack::pop_boolean() {
+  std::unique_ptr<StBoolean> v(static_cast<StBoolean*>(pop().release()));
+  return v->val();
+}
+
+std::string
+rpn::Stack::pop_string() {
+  std::unique_ptr<StString> v(static_cast<StString*>(pop().release()));
+  return v->val();
+}
+
+int64_t
+rpn::Stack::pop_integer() {
+  std::unique_ptr<StInteger> v(static_cast<StInteger*>(pop().release()));
+  return v->val();
+}
+
+double
+rpn::Stack::pop_double() {
+  std::unique_ptr<StDouble> v(static_cast<StDouble*>(pop().release()));
+  return v->val();
 }
 
 const rpn::Stack::Object &

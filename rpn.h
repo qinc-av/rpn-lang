@@ -33,6 +33,16 @@ namespace rpn {
     ~Stack() {};
 
     void push(const Object &ob);
+    void push_boolean(const bool &val);
+    void push_string(const std::string &val);
+    void push_integer(const int64_t &val);
+    void push_double(const double &val);
+
+    bool pop_boolean();
+    std::string pop_string();
+    int64_t pop_integer();
+    double pop_double();
+
     std::unique_ptr<Object> pop();
     const Object &peek(int n);
 
@@ -93,23 +103,7 @@ namespace rpn {
   };
 }
 
-/*
- * XXX-ELH: this doesn't work all that well
- */
 #if 0
-template<typename T>
-class TStackObject : public rpn::Stack::Object {
- public:
- TStackObject(const T &v) : _v(v) {}
-  virtual ~TStackObject() {}
-  virtual std::unique_ptr<rpn::Stack::Object> deep_copy() const { return std::make_unique<TStackObject<T>>(*this); };
-  virtual operator std::string() const { return (std::string)_v; };
-  auto val() const { return _v.val(); }
- private:
-  T _v;
-};
-#endif
-
 class StDouble : public rpn::Stack::Object {
  public:
  StDouble(const double &v) : _v(v) {}
@@ -119,6 +113,17 @@ class StDouble : public rpn::Stack::Object {
   auto val() const { return _v; };
  private:
   double _v;
+};
+
+class StBoolean : public rpn::Stack::Object {
+ public:
+ StBoolean(const bool &v) : _v(v) {}
+  ~StBoolean() {}
+  virtual std::unique_ptr<rpn::Stack::Object> deep_copy() const { return std::make_unique<StBoolean>(*this); };
+  virtual operator std::string() const { return _v ? "true" : "false"; };
+  auto val() const { return _v; };
+ private:
+  bool _v;
 };
 
 class StInteger : public rpn::Stack::Object {
@@ -197,11 +202,22 @@ public:
  private:
   std::vector<std::unique_ptr<rpn::Stack::Object>> _v;
 };
+#endif
 
-/*
- * these XTypes were intended to work with the TStackObject<> template
- */
-#if 0
+template<typename T>
+class TStackObject : public rpn::Stack::Object {
+ public:
+  TStackObject() = default; //: _v(v) {}
+ TStackObject(const T &v) : _v(v) {}
+  virtual ~TStackObject() {}
+  virtual std::unique_ptr<rpn::Stack::Object> deep_copy() const { return std::make_unique<TStackObject<T>>(*this); };
+  virtual operator std::string() const { return (std::string)_v; };
+  auto val() const { return _v.val(); };
+  auto &inner() { return _v; };
+ private:
+  T _v;
+};
+
 class XDouble {
  public:
  XDouble(const double &v) : _v(v) {}
@@ -218,6 +234,24 @@ class XInteger {
   auto val() const { return _v; }
  private:
   int64_t _v;
+};
+
+class XBoolean {
+ public:
+ XBoolean(const bool &v) : _v(v) {}
+  virtual operator std::string() const { return _v ? "<true>" : "<false>"; };
+  auto val() const { return _v; }
+ private:
+  bool _v;
+};
+
+class XString {
+ public:
+ XString(const std::string &v) : _v(v) {}
+  virtual operator std::string() const { return _v; };
+  auto val() const { return _v; }
+ private:
+  std::string _v;
 };
 
 #include <map>
@@ -270,6 +304,13 @@ public:
  private:
   std::vector<std::unique_ptr<rpn::Stack::Object>> _v;
 };
-#endif
+
+using StDouble = TStackObject<XDouble>;
+using StInteger = TStackObject<XInteger>;
+using StBoolean = TStackObject<XBoolean>;
+using StString = TStackObject<XString>;
+using StObject = TStackObject<XObject>;
+using StArray = TStackObject<XArray>;
+
 
 /* end of github/elh/rpn-cnc/Rpn.h */
