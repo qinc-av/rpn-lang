@@ -5,3 +5,9 @@ set_target_properties(rpn-cnc PROPERTIES
           CXX_STANDARD 17
           CXX_EXTENSIONS OFF
           )
+
+add_executable(test-stack  rpn-stack.cpp test-stack.cpp)
+set_target_properties(test-stack PROPERTIES
+          CXX_STANDARD 17
+          CXX_EXTENSIONS OFF
+          )

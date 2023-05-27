@@ -18,37 +18,42 @@
  * primitives for stack operations
  */
 
-void rpn::Stack::swap() {
-  if (_stack.size()>1) {
-    std::swap(*_stack.begin(), *(_stack.begin()+1));
-  }
+void
+rpn::Stack::push(const Object &ob) {
+  std::unique_ptr<Object> ptr = ob.deep_copy();
+  _stack.push_front(std::move(ptr));
 }
 
-void rpn::Stack::drop() {
+std::unique_ptr<rpn::Stack::Object>
+rpn::Stack::pop() {
+  std::unique_ptr<Object> rv(nullptr);
   if (_stack.size()>0) {
+    rv = std::move(_stack.front());
     _stack.pop_front();
   }
+  return rv;
 }
 
-void rpn::Stack::dropn(int n) {
+const rpn::Stack::Object &
+rpn::Stack::peek(int n) {
+  if(n>0 && _stack.size()>=n) {
+    return **(_stack.begin()+n-1);
+  } else {
+    std::string err = "peek: invalid paramaters (n ";
+    err += std::to_string(n) + ") (depth " + std::to_string(_stack.size()) + ")";
+    throw std::runtime_error(err);
+  }
+}
+
+void
+rpn::Stack::dropn(int n) {
   if (_stack.size()>=n) {
     _stack.erase(_stack.begin(), _stack.begin()+n);
   }
 }
 
-size_t rpn::Stack::depth() {
-  return _stack.size();
-}
-
-void rpn::Stack::over() {
-  pick(2);
-}
-
-void rpn::Stack::dup() {
-  pick(1);
-}
-
-void rpn::Stack::dupn(int n) {
+void
+rpn::Stack::dupn(int n) {
   if (_stack.size()>=n) {
     for(int i = n; i; i--) {
       std::unique_ptr<Object> ptr = (*(_stack.begin()+(n-1)))->deep_copy();
@@ -60,7 +65,18 @@ void rpn::Stack::dupn(int n) {
   }
 }
 
-void rpn::Stack::pick(int n) {
+void
+rpn::Stack::nipn(int n) {
+  if (_stack.size()>=n) {
+    _stack.erase(_stack.begin()+(n-1));
+  } else {
+    // handle error
+    printf("%s: (size %lu) (n %d)\n", __func__, _stack.size(), n);
+  }
+}
+
+void
+rpn::Stack::pick(int n) {
   if (n>0 && _stack.size()>=n) {
     std::unique_ptr<Object> ptr = (*(_stack.begin()+(n-1)))->deep_copy();
     _stack.push_front(std::move(ptr));
@@ -69,41 +85,91 @@ void rpn::Stack::pick(int n) {
   }
 }
 
-void rpn::Stack::rotu() {
-  rollun(3);
-}
-
-void rpn::Stack::rotd() {
-  rolldn(3);
-}
-
-void rpn::Stack::rollu() {
-  rollun(_stack.size());
-}
-
-void rpn::Stack::rolld() {
-  rolldn(_stack.size());
-}
-
-void rpn::Stack::rollun(int n) {
-  if (n>0 && n<=_stack.size()) {
-    auto i = (_stack.begin()+(n-1));
-    auto ptr = std::move(*i);
-    _stack.erase(i);
-    _stack.push_front(std::move(ptr));
-  }
-}
-
-void rpn::Stack::rolldn(int n) {
+void
+rpn::Stack::rolldn(int n) {
   if (n>0 && n<=_stack.size()) {
     auto i = _stack.begin();
     auto ptr = std::move(*i);
     _stack.erase(i);
     _stack.insert(_stack.begin()+(n-1), std::move(ptr));
+  } else {
+    // handle error
   }
 }
 
-void rpn::Stack::print(const std::string &msg) {
+void
+rpn::Stack::rollun(int n) {
+  if (n>0 && n<=_stack.size()) {
+    auto i = (_stack.begin()+(n-1));
+    auto ptr = std::move(*i);
+    _stack.erase(i);
+    _stack.push_front(std::move(ptr));
+  } else {
+    // handle error
+  }
+}
+
+void
+rpn::Stack::tuckn(int n) {
+  if (n>0 && n<=_stack.size()) {
+    auto ptr = (*_stack.begin())->deep_copy();
+    _stack.insert(_stack.begin()+(n-1), std::move(ptr));
+  } else {
+    // handle error
+  }
+}
+
+void
+rpn::Stack::swap() {
+  if (_stack.size()>1) {
+    std::swap(*_stack.begin(), *(_stack.begin()+1));
+  }
+}
+
+void
+rpn::Stack::drop() {
+  if (_stack.size()>0) {
+    _stack.pop_front();
+  }
+}
+
+size_t
+rpn::Stack::depth() {
+  return _stack.size();
+}
+
+void
+rpn::Stack::rollu() {
+  rollun(_stack.size());
+}
+
+void
+rpn::Stack::rolld() {
+  rolldn(_stack.size());
+}
+
+void
+rpn::Stack::over() {
+  pick(2);
+}
+
+void
+rpn::Stack::dup() {
+  pick(1);
+}
+
+void
+rpn::Stack::rotu() {
+  rollun(3);
+}
+
+void
+rpn::Stack::rotd() {
+  rolldn(3);
+}
+
+void
+rpn::Stack::print(const std::string &msg) {
   static const char *padding = "--------------------------------------------------------------------------------";
   int padlen = 66-msg.size();
   printf("+---- %02zu -- %s %*.*s+\n", _stack.size(), msg.c_str(), padlen, padlen, padding);

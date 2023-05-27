@@ -16,6 +16,7 @@
 
 #include <string>
 #include <deque>
+#include <map>
 
 namespace rpn {
   class Stack {
@@ -25,27 +26,15 @@ namespace rpn {
       virtual ~Object() {};
       virtual operator std::string() const =0;
       virtual std::unique_ptr<Object> deep_copy() const =0;
-      //    std::unique_ptr<RpnStack::Object> deep_copy() const { return std::make_unique<RpnStack::Object>(this->deep_copy()); };
       std::string to_string() const { return static_cast<std::string>(*this); }
     };
 
     Stack() {};
     ~Stack() {};
 
-    void push(const Object &ob) {
-      std::unique_ptr<Object> ptr = ob.deep_copy();
-      _stack.push_front(std::move(ptr));
-    }
-
-    std::unique_ptr<Object> pop() {
-      auto rv = std::move(_stack.front());
-      _stack.pop_front();
-      return rv;
-    }
-
-    const Object &peek() {
-      return *_stack.front();
-    }
+    void push(const Object &ob);
+    std::unique_ptr<Object> pop();
+    const Object &peek(int n);
 
     // basic stack operations
     // XXX-ELH: this needs some cleanup. We should reduce to just the necessary
@@ -53,30 +42,61 @@ namespace rpn {
     size_t depth(); // [prim]
     void dropn(int n); // [prim]
     void dupn(int n); // [prim]
-    void nipn(); // [prim] drop Nos
+    void nipn(int n); // [prim] drop Nos
     void pick(int n); // [prim] copy Nos to top
     void rolldn(int n); // prim
     void rollun(int n); // prim
-    void tuck(); // [prim] copy Tos to 2os
     void tuckn(int n); // [prim] copy Tos to n-pos
+    void swap(); // [prim] for efficiency, not that it matters in 2023
+    void drop(); // [prim] for efficiency, not that it matters in 2023
+    void rollu(); // rollu(depth);
+    void rolld(); // rollu(depth);
 
-    void swap(); // rolld(2);
-    void drop(); // dropn(1);
-    void nip(); // nipn(2); -- drop 2os
     void over(); // pick(2);
     void dup(); // pick(1);
     void rotu(); // rollu(3);
     void rotd(); // rolld(3);
-    void rollu(); // rollu(depth);
-    void rolld(); // rollu(depth);
 
     void print(const std::string &msg="");
   
   private:
     std::deque<std::unique_ptr<Object>> _stack;
   };
+
+  class Controller;
+
+  class WordContext {
+  public:
+    WordContext() {}
+    virtual ~WordContext() {}
+  protected:
+  };
+  using type_t = uint32_t;
+  struct WordDefinition {
+    //    std::string description;
+    std::vector<type_t> params;
+    std::function<bool(Controller &rpn, WordContext *ctx, std::string &rest)> eval;
+    WordContext *context;
+  };
+
+  class Controller {
+  public:
+    Controller() {}
+    ~Controller() {}
+    bool parse(std::string &line);
+    bool parseFile(const std::string &path);
+
+    bool addDefinition(const std::string &word, const WordDefinition &def);
+  private:
+    std::multimap<std::string,WordDefinition> _rtDictionary;
+    std::map<std::string,WordDefinition> _ctDictionary;
+  };
 }
 
+/*
+ * XXX-ELH: this doesn't work all that well
+ */
+#if 0
 template<typename T>
 class TStackObject : public rpn::Stack::Object {
  public:
@@ -84,9 +104,11 @@ class TStackObject : public rpn::Stack::Object {
   virtual ~TStackObject() {}
   virtual std::unique_ptr<rpn::Stack::Object> deep_copy() const { return std::make_unique<TStackObject<T>>(*this); };
   virtual operator std::string() const { return (std::string)_v; };
+  auto val() const { return _v.val(); }
  private:
   T _v;
 };
+#endif
 
 class StDouble : public rpn::Stack::Object {
  public:
@@ -94,16 +116,20 @@ class StDouble : public rpn::Stack::Object {
   ~StDouble() {}
   virtual std::unique_ptr<rpn::Stack::Object> deep_copy() const { return std::make_unique<StDouble>(*this); };
   virtual operator std::string() const { return std::to_string(_v); };
+  auto val() const { return _v; };
  private:
   double _v;
 };
 
-class XDouble {
+class StInteger : public rpn::Stack::Object {
  public:
- XDouble(const double &d) : _d(d) {}
-  virtual operator std::string() const { return std::to_string(_d); };
+ StInteger(const int64_t &v) : _v(v) {}
+  ~StInteger() {}
+  virtual std::unique_ptr<rpn::Stack::Object> deep_copy() const { return std::make_unique<StInteger>(*this); };
+  virtual operator std::string() const { return std::to_string(_v); };
+  auto val() const { return _v; };
  private:
-  double _d;
+  int64_t _v;
 };
 
 class StString : public rpn::Stack::Object {
@@ -112,8 +138,86 @@ class StString : public rpn::Stack::Object {
   ~StString() {}
   virtual std::unique_ptr<rpn::Stack::Object> deep_copy() const { return std::make_unique<StString>(*this); };
   virtual operator std::string() const { return (_v); };
+  auto val() const { return _v; };
  private:
   std::string _v;
+};
+
+#include <map>
+class StObject : public rpn::Stack::Object {
+public:
+  StObject() = default;
+  StObject(const StObject &v)  {
+    for(auto const &m : v._members) {
+      _members.emplace(m.first, m.second->deep_copy());
+    }
+  }
+  virtual std::unique_ptr<rpn::Stack::Object> deep_copy() const { return std::make_unique<StObject>(*this); };
+  void add_value(const std::string &name, const rpn::Stack::Object &val) {
+    _members.emplace(name, val.deep_copy());
+  }
+  virtual operator std::string() const {
+    std::string rv = "{";
+    for(auto const &m : _members) {
+      rv += m.first;
+      rv += ":";
+      rv += m.second->to_string();
+      rv += ", ";
+    }
+    rv += "}";
+    return rv;
+  };
+  auto const &val() const { return _members; };
+ private:
+  std::map<std::string,std::unique_ptr<rpn::Stack::Object>> _members;
+};
+
+class StArray : public rpn::Stack::Object {
+public:
+  StArray() = default;
+  StArray(const StArray &a)  {
+    for(auto const &e : a._v) {
+      _v.push_back(e->deep_copy());
+    }
+  }
+  virtual std::unique_ptr<rpn::Stack::Object> deep_copy() const { return std::make_unique<StArray>(*this); };
+  void add_value(const rpn::Stack::Object &val) {
+    _v.push_back(val.deep_copy());
+  }
+  virtual operator std::string() const {
+    std::string rv = "[";
+    for(auto const &e : _v) {
+      rv += e->to_string();
+      rv += ", ";
+    }
+    rv += "]";
+    return rv;
+  };
+  auto const &val() const { return _v; };
+ private:
+  std::vector<std::unique_ptr<rpn::Stack::Object>> _v;
+};
+
+/*
+ * these XTypes were intended to work with the TStackObject<> template
+ */
+#if 0
+class XDouble {
+ public:
+ XDouble(const double &v) : _v(v) {}
+  virtual operator std::string() const { return std::to_string(_v); };
+  auto val() const { return _v; }
+ private:
+  double _v;
+};
+
+class XInteger {
+ public:
+ XInteger(const int64_t &v) : _v(v) {}
+  virtual operator std::string() const { return std::to_string(_v); };
+  auto val() const { return _v; }
+ private:
+  int64_t _v;
 };
 
 #include <map>
@@ -166,6 +270,6 @@ public:
  private:
   std::vector<std::unique_ptr<rpn::Stack::Object>> _v;
 };
-
+#endif
 
 /* end of github/elh/rpn-cnc/Rpn.h */
