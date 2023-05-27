@@ -38,6 +38,8 @@ main(int ac, char **av) {
     stack.print();
   }
 
+  stack.push_boolean(true);
+
   stack.swap();
   stack.print("swap");
 

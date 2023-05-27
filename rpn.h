@@ -73,7 +73,7 @@ namespace rpn {
     std::deque<std::unique_ptr<Object>> _stack;
   };
 
-  class Controller;
+  class Runtime;
 
   class WordContext {
   public:
@@ -85,21 +85,32 @@ namespace rpn {
   struct WordDefinition {
     //    std::string description;
     std::vector<type_t> params;
-    std::function<bool(Controller &rpn, WordContext *ctx, std::string &rest)> eval;
+    std::function<bool(Runtime &rpn, WordContext *ctx, std::string &rest)> eval;
     WordContext *context;
   };
 
-  class Controller {
+  class Runtime {
   public:
-    Controller() {}
-    ~Controller() {}
+    Runtime();
+    ~Runtime();
     bool parse(std::string &line);
     bool parseFile(const std::string &path);
 
     bool addDefinition(const std::string &word, const WordDefinition &def);
+
+    /*
+     * XXX-ELH- should the stack be public or private?
+     *
+     * Making it public makes it easier for the native words to manipulate it.
+     * It is not an implementation detail, but rather an integral part of what
+     * it is and how it is intended to be used. 
+     */
+
+    Stack stack;
+
+    struct Privates;
   private:
-    std::multimap<std::string,WordDefinition> _rtDictionary;
-    std::map<std::string,WordDefinition> _ctDictionary;
+    Privates *m_p;
   };
 }
 
