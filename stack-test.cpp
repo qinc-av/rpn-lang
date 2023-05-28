@@ -12,6 +12,7 @@
  *
  */
 
+#include <catch2/catch_test_macros.hpp>
 #include "rpn.h"
 
 class CustomArray : public rpn::Stack::Object {
@@ -22,11 +23,19 @@ public:
       _v.push_back(e->deep_copy());
     }
   }
-  virtual std::unique_ptr<rpn::Stack::Object> deep_copy() const { return std::make_unique<CustomArray>(*this); };
+  virtual bool operator==(const rpn::Stack::Object &orhs) override {
+    auto &rhs = OBJECT_CAST(CustomArray)(orhs);
+    bool rv = _v.size() == rhs._v.size();
+    for(auto i=_v.cbegin(), j=rhs._v.cbegin(); rv && i!= _v.cend(); i++,j++) {
+      rv &= (**i == **j);
+    }
+    return rv;
+  }
+  virtual std::unique_ptr<rpn::Stack::Object> deep_copy() const override { return std::make_unique<CustomArray>(*this); };
   void add_value(const rpn::Stack::Object &val) {
     _v.push_back(val.deep_copy());
   }
-  virtual operator std::string() const {
+  virtual operator std::string() const override {
     std::string rv = "[";
     for(auto const &e : _v) {
       rv += e->to_string();
@@ -45,16 +54,100 @@ class CustomObject {
   CustomObject(const std::string &v) : _v(v) {};
   virtual operator std::string() const { return std::string("CustomObject: <") + _v + ">"; };
   auto val() const { return _v; }
+  bool operator==(const CustomObject &rhs) {
+    return _v == rhs._v;
+  }
 private:
   std::string _v;
 };
 
 using StCustomObject = TStackObject<CustomObject>;
 
+static int stackCount = 0;
+static rpn::Stack stack;
+
+static int Factorial( int number ) {
+  //   return number <= 1 ? number : Factorial( number - 1 ) * number;  // fail
+  return number <= 1 ? 1      : Factorial( number - 1 ) * number;  // pass
+}
+
+TEST_CASE( "Factorial of 0 is 1 (fail)", "[single-file]" ) {
+    REQUIRE( Factorial(0) == 1 );
+}
+
+TEST_CASE( "Factorials of 1 and higher are computed (pass)", "[single-file]" ) {
+    REQUIRE( Factorial(1) == 1 );
+    REQUIRE( Factorial(2) == 2 );
+    REQUIRE( Factorial(3) == 6 );
+    REQUIRE( Factorial(10) == 3628800 );
+}
+
+TEST_CASE("push_double - test" "[single-file]") {
+  stack.push_double(3.1415); stackCount++;
+  REQUIRE( stackCount == 1);
+  {
+    auto &tsr = OBJECT_CAST(StDouble)(stack.peek(1));
+    REQUIRE( tsr.val() == 3.1415 );
+  }
+  stack.push_string("wxyz"); stackCount++;
+  REQUIRE (stack.depth() == stackCount);
+
+  stack.push_integer(1234); stackCount++;
+  REQUIRE (stack.depth() == stackCount);
+
+  {
+    CustomArray ar1;
+    ar1.add_value(StDouble(9.8));
+    ar1.add_value(StString(std::string("yyz")));
+    stack.push(ar1); stackCount++;
+    REQUIRE (stack.depth() == stackCount);
+    auto &ar2 = OBJECT_CAST(CustomArray)(stack.peek(1));
+    printf("ar1: %s\n", std::string(ar1).c_str());
+    printf("ar2: %s\n", std::string(ar2).c_str());
+    REQUIRE(ar1 == ar2);
+
+    ar1.add_value(ar2);
+    REQUIRE(!(ar1 == ar2));
+  }
+
+}
+
+// additional test cases
+// TEST_CASE("stack-test: push/pop", "[single-file]") {}
+
+// TEST_CASE("stack-test: clear", "[single-file]") {}
+// TEST_CASE("stack-test: depth", "[single-file]") {}
+// TEST_CASE("stack-test: dropn", "[single-file]") {}
+// TEST_CASE("stack-test: dupn", "[single-file]") {}
+// TEST_CASE("stack-test: nipn", "[single-file]") {}
+// TEST_CASE("stack-test: pick", "[single-file]") {}
+// TEST_CASE("stack-test: rolldn", "[single-file]") {}
+// TEST_CASE("stack-test: rollun", "[single-file]") {}
+// TEST_CASE("stack-test: tuckn", "[single-file]") {}
+// TEST_CASE("stack-test: swap", "[single-file]") {}
+// TEST_CASE("stack-test: drop", "[single-file]") {}
+// TEST_CASE("stack-test: rollu", "[single-file]") {}
+// TEST_CASE("stack-test: rolld", "[single-file]") {}
+// TEST_CASE("stack-test: over", "[single-file]") {}
+// TEST_CASE("stack-test: dup", "[single-file]") {}
+// TEST_CASE("stack-test: rotu", "[single-file]") {}
+// TEST_CASE("stack-test: rotd", "[single-file]") {}
+
+
+// TEST_CASE("object-test StDouble", "[single-file]") {}
+// TEST_CASE("object-test StInteger", "[single-file]") {}
+// TEST_CASE("object-test StString", "[single-file]") {}
+// TEST_CASE("object-test StBoolean", "[single-file]") {}
+// TEST_CASE("object-test StObject", "[single-file]") {}
+// TEST_CASE("object-test StArray", "[single-file]") {}
+// TEST_CASE("object-test CustomArray", "[single-file]") {}
+// TEST_CASE("object-test CustomObject", "[single-file]") {}
+// TEST_CASE("object-test Inheritance", "[single-file]") {}
+
+
 int
-main(int ac, char **av) {
-  int stackCount = 0;
-  rpn::Stack stack;
+rpn_main(int ac, char **av) {
+
   //  stack.push(StDouble(3.1415));
   stack.push_double(3.1415); stackCount++;
   assert (stack.depth() == stackCount);

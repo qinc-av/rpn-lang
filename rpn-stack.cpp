@@ -90,6 +90,11 @@ rpn::Stack::peek(int n) {
 }
 
 void
+rpn::Stack::clear() {
+  _stack.clear();
+}
+
+void
 rpn::Stack::dropn(int n) {
   if (_stack.size()>=n) {
     _stack.erase(_stack.begin(), _stack.begin()+n);
