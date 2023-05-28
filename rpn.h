@@ -87,7 +87,7 @@ namespace rpn {
   using type_t = uint32_t;
   struct WordDefinition {
     //    std::string description;
-    std::vector<type_t> params;
+    std::vector<std::size_t> params;
     std::function<bool(Runtime &rpn, WordContext *ctx, std::string &rest)> eval;
     WordContext *context;
   };
@@ -113,6 +113,7 @@ namespace rpn {
 
     struct Privates;
   private:
+    void addInternalWords(WordContext *wc);
     Privates *m_p;
   };
 }

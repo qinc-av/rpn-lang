@@ -16,8 +16,9 @@ set_target_properties(stack-test PROPERTIES
           )
 target_link_libraries(stack-test PRIVATE Catch2::Catch2WithMain)
 
-add_executable(runtime-test  rpn-stack.cpp rpn-runtime.cpp runtime-test.cpp)
+add_executable(runtime-test  rpn-stack.cpp rpn-runtime.cpp runtime-test.cpp rpn-dict.cpp)
 set_target_properties(runtime-test PROPERTIES
           CXX_STANDARD 17
           CXX_EXTENSIONS OFF
           )
+target_link_libraries(runtime-test PRIVATE Catch2::Catch2WithMain)

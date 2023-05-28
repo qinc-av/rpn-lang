@@ -53,7 +53,7 @@ struct rpn::Runtime::Privates : public rpn::WordContext {
   bool runtime_eval(rpn::Runtime &rpn, const std::string &word, std::string &rest);
   bool compiletime_eval(rpn::Runtime &rpn, const std::string &word, std::string &rest);
 
-  //  bool validate_stack_for_word(const std::pair<std::string,word_t> &de);
+  bool validate_stack_for_word(const rpn::WordDefinition &wd);
 
   /*
    */
@@ -65,6 +65,11 @@ struct rpn::Runtime::Privates : public rpn::WordContext {
   std::string _newWord;
   CompiledWC _newDefinition;
 };
+
+bool
+rpn::Runtime::Privates::validate_stack_for_word(const rpn::WordDefinition &wd) {
+  return true;
+}
 
 bool
 rpn::Runtime::Privates::eval(rpn::Runtime &rpn, const std::string &word, std::string &rest) {
@@ -92,23 +97,22 @@ rpn::Runtime::Privates::runtime_eval(rpn::Runtime &rpn, const std::string &word,
       rpn.stack.push_integer(val);
     }
   } else {
-    const auto &beg = _rtDictionary.lower_bound(word);
+    auto beg = _rtDictionary.lower_bound(word);
     const auto &end = _rtDictionary.upper_bound(word);
     if (beg != _rtDictionary.end()) {
-#if 0
-      if (validate_stack_for_word(*we)) {
-	rv = we->second.eval(rpn,  we->second.context, rest);
-      } else {
-	printf("parameters not right for '%s'\n", word.c_str());
-	print_stack();
-	printf("%s", to_string(*we).c_str());
+      for(auto we=beg; we!=end; we++) {
+	if (validate_stack_for_word(we->second)) {
+	  rv = we->second.eval(rpn,  we->second.context, rest);
+	} else {
+	  printf("parameters not right for '%s'\n", word.c_str());
+	  rpn.stack.print();
+	  //	  printf("%s", to_string(*we).c_str());
+	}
       }
-#endif
     } else {
       printf("not found '%s' in dict\n", word.c_str());
     }
   }
-  return rv;
   return rv;
 }
 
@@ -145,6 +149,7 @@ rpn::Runtime::Privates::compiletime_eval(rpn::Runtime &rpn, const std::string &w
 
 rpn::Runtime::Runtime() {
   m_p = new Privates;
+  addInternalWords(m_p);
 }
 
 rpn::Runtime::~Runtime() {
@@ -158,7 +163,7 @@ rpn::Runtime::~Runtime() {
 
 bool
 rpn::Runtime::addDefinition(const std::string &word, const WordDefinition &def) {
-  //m_p->_runtimeDictionary.insert(newDict.begin(), newDict.end());
+  m_p->_rtDictionary.emplace(word, def);
   return false;
 }
 
