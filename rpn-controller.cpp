@@ -823,7 +823,6 @@ NATIVE_WORD_IMPL(OPAREN) {
 NATIVE_WORD_IMPL(COLON) {
   RpnController::Privates *p = dynamic_cast<RpnController::Privates*>(ctx);
   std::string::size_type rv = 0;
-  p->_isCompiling = true;
   return rv;
 }
 

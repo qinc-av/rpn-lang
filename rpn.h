@@ -44,6 +44,7 @@ namespace rpn {
     std::string pop_string();
     int64_t pop_integer();
     double pop_double();
+    double pop_as_double(); // auto-converts integers to double, returns NaN if it couldn't convert
 
     std::unique_ptr<Object> pop();
     const Object &peek(int n);
@@ -85,10 +86,18 @@ namespace rpn {
   protected:
   };
   using type_t = uint32_t;
+
   struct WordDefinition {
+    enum class Result {
+      ok,
+      parse_error, // parsing problem, definition, comment, string-literal, etc
+      dict_error, // no such word
+      param_error, // parameters not right for the word
+      eval_error, // eval went awry
+    };
     //    std::string description;
     std::vector<std::size_t> params;
-    std::function<bool(Runtime &rpn, WordContext *ctx, std::string &rest)> eval;
+    std::function<Result(Runtime &rpn, WordContext *ctx, std::string &rest)> eval;
     WordContext *context;
   };
 

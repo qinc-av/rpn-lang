@@ -34,7 +34,7 @@ class CompiledWC : public rpn::WordContext {
 public:
   CompiledWC() {};
   void addWord(const std::string &word) { _wordlist.push_back(word); };
-  CompiledWC *clone() const {
+  CompiledWC *deep_copy() const {
     CompiledWC *rv = new CompiledWC;
     rv->_wordlist = _wordlist;
     return rv;
@@ -49,11 +49,14 @@ struct rpn::Runtime::Privates : public rpn::WordContext {
   Privates() {};
   ~Privates() {};
 
-  bool eval(rpn::Runtime &rpn, const std::string &word, std::string &rest);
-  bool runtime_eval(rpn::Runtime &rpn, const std::string &word, std::string &rest);
-  bool compiletime_eval(rpn::Runtime &rpn, const std::string &word, std::string &rest);
+  rpn::WordDefinition::Result eval(rpn::Runtime &rpn, const std::string &word, std::string &rest);
+  rpn::WordDefinition::Result runtime_eval(rpn::Runtime &rpn, const std::string &word, std::string &rest);
+  rpn::WordDefinition::Result compiletime_eval(rpn::Runtime &rpn, const std::string &word, std::string &rest);
 
   bool validate_stack_for_word(const rpn::WordDefinition &wd);
+
+  // add words that require acces to the Privates struct.
+  void addPrivateWords(rpn::Runtime &rpn);
 
   /*
    */
@@ -71,9 +74,79 @@ rpn::Runtime::Privates::validate_stack_for_word(const rpn::WordDefinition &wd) {
   return true;
 }
 
-bool
+#define NATIVE_WORD_FN(name) private_def_##name
+
+#define NATIVE_WORD_IMPL(name)						\
+  static rpn::WordDefinition::Result NATIVE_WORD_FN(name)(rpn::Runtime &rpn, rpn::WordContext *ctx, std::string &rest)
+
+NATIVE_WORD_IMPL(COMPILED_EVAL)  {
+  rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
+  CompiledWC *cwc = dynamic_cast<CompiledWC*>(ctx);
+  return rv;
+}
+
+NATIVE_WORD_IMPL(COLON) {
+  // (rpn::Runtime &rpn, rpn::WordContext *ctx, std::string &rest)
+  rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
+  rpn::Runtime::Privates *p = dynamic_cast<rpn::Runtime::Privates*>(ctx);
+  p->_isCompiling = true;
+  return rv;
+}
+
+NATIVE_WORD_IMPL(SEMICOLON) {
+  // (rpn::Runtime &rpn, rpn::WordContext *ctx, std::string &rest)
+  rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
+  rpn::Runtime::Privates *p = dynamic_cast<rpn::Runtime::Privates*>(ctx);
+  
+  p->_rtDictionary.emplace(p->_newWord, rpn::WordDefinition {
+      {}, NATIVE_WORD_FN(COMPILED_EVAL), p->_newDefinition.deep_copy() });
+  p->_isCompiling = false;
+  p->_newWord = "";
+  p->_newDefinition.clear();
+  return rv;
+}
+
+NATIVE_WORD_IMPL(OPAREN) {
+  // (rpn::Runtime &rpn, rpn::WordContext *ctx, std::string &rest)
+  rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
+  rpn::Runtime::Privates *p = dynamic_cast<rpn::Runtime::Privates*>(ctx);
+  std::string comment;
+  auto cp = nextWord(comment, rest, ')');
+  if (cp == std::string::npos) {
+    rest = comment; // reset the buffer for future error message
+    rv = rpn::WordDefinition::Result::parse_error;
+  }
+  return rv;
+}
+
+NATIVE_WORD_IMPL(DQUOTE) {
+  // (rpn::Runtime &rpn, rpn::WordContext *ctx, std::string &rest)
+  rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
+  rpn::Runtime::Privates *p = dynamic_cast<rpn::Runtime::Privates*>(ctx);
+  std::string literal;
+  auto pos = nextWord(literal, rest, '"');
+  if (pos != std::string::npos) {
+    rpn.stack.push_string(literal);
+  } else {
+    rv = rpn::WordDefinition::Result::parse_error;
+    rest = literal; // reset buffer for error messages and diagnostics
+  }
+  return rv;
+}
+
+void
+rpn::Runtime::Privates::addPrivateWords(rpn::Runtime &rpn) {
+  rpn.addDefinition(":", { {}, NATIVE_WORD_FN(COLON), this });
+  rpn.addDefinition("(", { {}, NATIVE_WORD_FN(OPAREN), this });
+  rpn.addDefinition(".\"", { {}, NATIVE_WORD_FN(DQUOTE), this });
+  _ctDictionary.emplace(";", rpn::WordDefinition { {}, NATIVE_WORD_FN(SEMICOLON), this });
+  _ctDictionary.emplace("(", rpn::WordDefinition { {}, NATIVE_WORD_FN(OPAREN), this });
+  //  _ctDictionary.emplace("\"", rpn::WordDefinition { {}, NATIVE_WORD_FN(DQUOTE), this });
+}
+
+rpn::WordDefinition::Result
 rpn::Runtime::Privates::eval(rpn::Runtime &rpn, const std::string &word, std::string &rest) {
-  bool rv=false;
+  rpn::WordDefinition::Result rv=rpn::WordDefinition::Result::eval_error;
   if (word.size()>0) {
     if (_isCompiling) {
       rv = compiletime_eval(rpn,word,rest);
@@ -84,9 +157,9 @@ rpn::Runtime::Privates::eval(rpn::Runtime &rpn, const std::string &word, std::st
   return rv;
 }
 
-bool
+rpn::WordDefinition::Result
 rpn::Runtime::Privates::runtime_eval(rpn::Runtime &rpn, const std::string &word, std::string &rest) {
-  bool rv=false;
+  rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::dict_error;
   // numbers just push
   if (std::isdigit(word[0])) {
     if (word.find('.') != std::string::npos) {
@@ -96,29 +169,54 @@ rpn::Runtime::Privates::runtime_eval(rpn::Runtime &rpn, const std::string &word,
       long val = strtol(word.c_str(), nullptr, 0);
       rpn.stack.push_integer(val);
     }
+    rv = rpn::WordDefinition::Result::ok;
   } else {
     auto beg = _rtDictionary.lower_bound(word);
     const auto &end = _rtDictionary.upper_bound(word);
-    if (beg != _rtDictionary.end()) {
-      for(auto we=beg; we!=end; we++) {
-	if (validate_stack_for_word(we->second)) {
-	  rv = we->second.eval(rpn,  we->second.context, rest);
-	} else {
-	  printf("parameters not right for '%s'\n", word.c_str());
-	  rpn.stack.print();
-	  //	  printf("%s", to_string(*we).c_str());
-	}
+    for(auto we=beg; we!=end; we++) {
+      if (validate_stack_for_word(we->second)) {
+	rv = we->second.eval(rpn,  we->second.context, rest);
+      } else {
+	rv = rpn::WordDefinition::Result::param_error;
       }
-    } else {
-      printf("not found '%s' in dict\n", word.c_str());
     }
   }
+
+  switch (rv) {
+  case rpn::WordDefinition::Result::ok: {
+    // crickes
+  }
+    break;
+
+  case rpn::WordDefinition::Result::parse_error: {
+    printf("error parsing word '%s' with '%s'\n", word.c_str(), rest.c_str());
+    rest = ""; // discard the rest of the line;
+  }
+    break;
+
+  case rpn::WordDefinition::Result::dict_error: {
+    printf("'%s' not found in dict\n", word.c_str());
+  }
+    break;
+
+  case rpn::WordDefinition::Result::param_error: {
+    printf("parameters not right for '%s'\n", word.c_str());
+    rpn.stack.print();
+  }
+    break;
+
+  case rpn::WordDefinition::Result::eval_error: {
+    printf("error '%s' evaluating\n", word.c_str());
+  }
+    break;
+  }
+
   return rv;
 }
 
-bool
+rpn::WordDefinition::Result
 rpn::Runtime::Privates::compiletime_eval(rpn::Runtime &rpn, const std::string &word, std::string &rest) {
-  bool rv=false;
+  rpn::WordDefinition::Result rv=rpn::WordDefinition::Result::dict_error;
   if (_newWord == "") {
     _newWord = word;
   } else {
@@ -138,7 +236,7 @@ rpn::Runtime::Privates::compiletime_eval(rpn::Runtime &rpn, const std::string &w
 	if (rw != _rtDictionary.end()) {
 	  _newDefinition.addWord(word);
 	} else {
-	  rv = false;
+	  rv = rpn::WordDefinition::Result::dict_error;
 	  printf("unrecognized word at compile time: '%s'\n", word.c_str());
 	}
       }
@@ -149,6 +247,7 @@ rpn::Runtime::Privates::compiletime_eval(rpn::Runtime &rpn, const std::string &w
 
 rpn::Runtime::Runtime() {
   m_p = new Privates;
+  m_p->addPrivateWords(*this);
   addInternalWords(m_p);
 }
 

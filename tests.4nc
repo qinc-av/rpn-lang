@@ -1,5 +1,9 @@
 : circ-area SQ PI * ;
 
+( test bad comment
+
+." test bad string
+
 28
 circ-area
 .S
@@ -7,6 +11,10 @@ circ-area
 5
 6
 OVER
+
+." inverabcdefg"
+.S
+INV
 
 .S
 3 DROPN

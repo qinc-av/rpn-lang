@@ -56,26 +56,41 @@ rpn::Stack::pop() {
 
 bool
 rpn::Stack::pop_boolean() {
-  std::unique_ptr<StBoolean> v(static_cast<StBoolean*>(pop().release()));
+  std::unique_ptr<StBoolean> v(dynamic_cast<StBoolean*>(pop().release()));
   return v->val();
 }
 
 std::string
 rpn::Stack::pop_string() {
-  std::unique_ptr<StString> v(static_cast<StString*>(pop().release()));
+  std::unique_ptr<StString> v(dynamic_cast<StString*>(pop().release()));
   return v->val();
 }
 
 int64_t
 rpn::Stack::pop_integer() {
-  std::unique_ptr<StInteger> v(static_cast<StInteger*>(pop().release()));
+  std::unique_ptr<StInteger> v(dynamic_cast<StInteger*>(pop().release()));
   return v->val();
 }
 
 double
 rpn::Stack::pop_double() {
-  std::unique_ptr<StDouble> v(static_cast<StDouble*>(pop().release()));
+  std::unique_ptr<StDouble> v(dynamic_cast<StDouble*>(pop().release()));
   return v->val();
+}
+
+double
+rpn::Stack::pop_as_double() {
+  auto tos = pop();
+  auto raw = tos.get();
+  double val = std::nan("");
+  auto dp = dynamic_cast<StDouble*>(raw);
+  auto ip = dynamic_cast<StInteger*>(raw);
+  if (dp) {
+    val = dp->val();
+  } else if (ip) {
+    val = double (ip->val());
+  }
+  return val;
 }
 
 const rpn::Stack::Object &
