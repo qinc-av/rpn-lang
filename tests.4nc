@@ -1,4 +1,4 @@
-: circ-area SQ PI * ;
+: circ-area SQ k_PI * ;
 
 ( test bad comment
 
@@ -7,6 +7,10 @@
 28
 circ-area
 .S
+
+8
+2
+^
 
 5
 6

@@ -14,9 +14,21 @@
 
 #include "rpn.h"
 
+#include <typeinfo>
+
 /*
  * primitives for stack operations
  */
+
+std::vector<size_t>
+rpn::Stack::types() const {
+  std::vector<size_t> types;
+  for(auto const &v : _stack) {
+    auto &vt = *v;
+    types.push_back(typeid(vt).hash_code());
+  }
+  return types;
+}
 
 void
 rpn::Stack::push(const Object &ob) {
@@ -56,26 +68,56 @@ rpn::Stack::pop() {
 
 bool
 rpn::Stack::pop_boolean() {
-  std::unique_ptr<StBoolean> v(dynamic_cast<StBoolean*>(pop().release()));
-  return v->val();
+  auto tos = pop();
+  auto typed = dynamic_cast<StBoolean*>(tos.get());
+  if (typed) {
+    return typed->val();
+  }
+  throw std::runtime_error("top of stack not boolean");
 }
 
 std::string
 rpn::Stack::pop_string() {
-  std::unique_ptr<StString> v(dynamic_cast<StString*>(pop().release()));
-  return v->val();
+  auto tos = pop();
+  auto typed = dynamic_cast<StString*>(tos.get());
+  if (typed) {
+    return typed->val();
+  }
+  throw std::runtime_error("top of stack not string");
 }
 
 int64_t
 rpn::Stack::pop_integer() {
-  std::unique_ptr<StInteger> v(dynamic_cast<StInteger*>(pop().release()));
-  return v->val();
+  auto tos = pop();
+  auto typed = dynamic_cast<StInteger*>(tos.get());
+  if (typed) {
+    return typed->val();
+  }
+  auto h1 =typeid(tos.get()).hash_code();
+  auto h2 = typeid(StInteger*).hash_code();
+  std::string msg("top of stack not double (tos ");
+  msg += std::to_string(h1);
+  msg += ") (needed ";
+  msg += std::to_string(h2);
+  msg += ")";
+  throw std::runtime_error(msg);
 }
 
 double
 rpn::Stack::pop_double() {
-  std::unique_ptr<StDouble> v(dynamic_cast<StDouble*>(pop().release()));
-  return v->val();
+  auto tos = pop();
+  auto typed = dynamic_cast<StDouble*>(tos.get());
+  if (typed) {
+    return typed->val();
+  }
+  auto h1 =typeid(tos.get()).hash_code();
+  auto h2 = typeid(StDouble*).hash_code();
+  std::string msg("top of stack not double (tos ");
+  msg += std::to_string(h1);
+  msg += ") (needed ";
+  msg += std::to_string(h2);
+  msg += ")";
+  throw std::runtime_error(msg);
 }
 
 double
@@ -240,10 +282,14 @@ rpn::Stack::print(const std::string &msg) {
   size_t n = _stack.size();
   for(auto i=_stack.rbegin(); i!=_stack.rend(); i++, n--) {
     auto &r = **i; // https://stackoverflow.com/questions/46494928/clang-warning-on-expression-side-effects
+    char hc[32];
+    snprintf(hc, sizeof(hc), "%08lx", typeid(r).hash_code());
     std::string type = typeid(r).name();
     if (type.size() > 30) {
       type.erase(30);
     }
+    type += ":";
+    type += hc;
     std::string strval = (*i)->to_string();
     if (strval.size() > 40) {
       strval.erase(37);

@@ -72,7 +72,8 @@ namespace rpn {
     void rotd(); // rolld(3);
 
     void print(const std::string &msg="");
-  
+
+    std::vector<size_t> types() const;
   private:
     std::deque<std::unique_ptr<Object>> _stack;
   };
