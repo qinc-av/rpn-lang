@@ -47,11 +47,17 @@ namespace rpn {
     double pop_as_double(); // auto-converts integers to double, returns NaN if it couldn't convert
 
     std::unique_ptr<Object> pop();
+
     const Object &peek(int n);
+    bool peek_boolean(int n);
+    std::string peek_string(int n);
+    std::string peek_as_string(int n); // auto-converts to string if the type is not string
+    int64_t peek_integer(int n);
+    double peek_double(int n);
+    double peek_as_double(int n); // auto-converts integers to double, returns NaN if it couldn't convert
 
     // basic stack operations
-    // XXX-ELH: this needs some cleanup. We should reduce to just the necessary
-    // primitives - for example swap() is rolldn(2)
+
     void clear(); // [prim]
     size_t depth(); // [prim]
     void dropn(int n); // [prim]

@@ -146,6 +146,50 @@ rpn::Stack::peek(int n) {
   }
 }
 
+bool
+rpn::Stack::peek_boolean(int n) {
+  auto const &sv = dynamic_cast<const StBoolean&>(peek(n));
+  return sv.val();
+}
+
+std::string
+rpn::Stack::peek_string(int n) {
+  auto const &sv = dynamic_cast<const StString&>(peek(n));
+  return sv.val();
+}
+
+std::string
+rpn::Stack::peek_as_string(int n) {
+  auto const &sv = peek(n);
+  return (std::string)sv;
+}
+
+int64_t
+rpn::Stack::peek_integer(int n) {
+  auto const &sv = dynamic_cast<const StInteger&>(peek(n));
+  return sv.val();
+}
+
+double
+rpn::Stack::peek_double(int n) {
+  auto const &sv = dynamic_cast<const StDouble&>(peek(n));
+  return sv.val();
+}
+
+double
+rpn::Stack::peek_as_double(int n) {
+  auto &raw = peek(n);
+  double val = std::nan("");
+  auto dp = dynamic_cast<const StDouble*>(&raw);
+  auto ip = dynamic_cast<const StInteger*>(&raw);
+  if (dp) {
+    val = dp->val();
+  } else if (ip) {
+    val = double (ip->val());
+  }
+  return val;
+}
+
 void
 rpn::Stack::clear() {
   _stack.clear();
