@@ -15,8 +15,6 @@
 #include "rpn-controller.h"
 #include "cnc-app.h"
 
-#include "rpn.h"
-
 int
 main(int ac, char **av) {
 

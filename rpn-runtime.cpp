@@ -70,21 +70,7 @@ struct rpn::Runtime::Privates : public rpn::WordContext {
   CompiledWC _newDefinition;
 };
 
-bool
-rpn::Runtime::Privates::validate_stack_for_word(const std::vector<size_t> &stack, const rpn::WordDefinition &wd) {
-  bool rv = stack.size() >= wd.params.size();
-  for(auto si=stack.cbegin(), wi=wd.params.cbegin(); rv==true && wi!=wd.params.cend(); si++, wi++) {
-    rv &= (*si == *wi);
-  }
-  return rv;
-}
-
-#define NATIVE_WORD_FN(name) private_def_##name
-
-#define NATIVE_WORD_IMPL(name)						\
-  static rpn::WordDefinition::Result NATIVE_WORD_FN(name)(rpn::Runtime &rpn, rpn::WordContext *ctx, std::string &rest)
-
-NATIVE_WORD_IMPL(COMPILED_EVAL)  {
+NATIVE_WORD_DECL(private, COMPILED_EVAL)  {
   CompiledWC *cwc = dynamic_cast<CompiledWC*>(ctx);
   //  rpn::Runtime::Privates *p = dynamic_cast<rpn::Runtime::Privates*>(ctx);
   rpn::WordDefinition::Result rv = (cwc) ? rpn::WordDefinition::Result::ok : rpn::WordDefinition::Result::eval_error;
@@ -98,7 +84,7 @@ NATIVE_WORD_IMPL(COMPILED_EVAL)  {
   return rv;
 }
 
-NATIVE_WORD_IMPL(COLON) {
+NATIVE_WORD_DECL(private, COLON) {
   // (rpn::Runtime &rpn, rpn::WordContext *ctx, std::string &rest)
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
   rpn::Runtime::Privates *p = dynamic_cast<rpn::Runtime::Privates*>(ctx);
@@ -106,7 +92,7 @@ NATIVE_WORD_IMPL(COLON) {
   return rv;
 }
 
-NATIVE_WORD_IMPL(SEMICOLON) {
+NATIVE_WORD_DECL(private, SEMICOLON) {
   // (rpn::Runtime &rpn, rpn::WordContext *ctx, std::string &rest)
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
   rpn::Runtime::Privates *p = dynamic_cast<rpn::Runtime::Privates*>(ctx);
@@ -114,14 +100,14 @@ NATIVE_WORD_IMPL(SEMICOLON) {
   printf("adding '%s' to the dictionary\n", p->_newWord.c_str());
 
   p->_rtDictionary.emplace(p->_newWord, rpn::WordDefinition {
-      {}, NATIVE_WORD_FN(COMPILED_EVAL), p->_newDefinition.deep_copy() });
+      rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, COMPILED_EVAL), p->_newDefinition.deep_copy() });
   p->_isCompiling = false;
   p->_newWord = "";
   p->_newDefinition.clear();
   return rv;
 }
 
-NATIVE_WORD_IMPL(OPAREN) {
+NATIVE_WORD_DECL(private, OPAREN) {
   // (rpn::Runtime &rpn, rpn::WordContext *ctx, std::string &rest)
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
   rpn::Runtime::Privates *p = dynamic_cast<rpn::Runtime::Privates*>(ctx);
@@ -134,7 +120,7 @@ NATIVE_WORD_IMPL(OPAREN) {
   return rv;
 }
 
-NATIVE_WORD_IMPL(DQUOTE) {
+NATIVE_WORD_DECL(private, DQUOTE) {
   // (rpn::Runtime &rpn, rpn::WordContext *ctx, std::string &rest)
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
   rpn::Runtime::Privates *p = dynamic_cast<rpn::Runtime::Privates*>(ctx);
@@ -151,12 +137,12 @@ NATIVE_WORD_IMPL(DQUOTE) {
 
 void
 rpn::Runtime::Privates::addPrivateWords(rpn::Runtime &rpn) {
-  rpn.addDefinition(":", { {}, NATIVE_WORD_FN(COLON), this });
-  rpn.addDefinition("(", { {}, NATIVE_WORD_FN(OPAREN), this });
-  rpn.addDefinition(".\"", { {}, NATIVE_WORD_FN(DQUOTE), this });
-  _ctDictionary.emplace(";", rpn::WordDefinition { {}, NATIVE_WORD_FN(SEMICOLON), this });
-  _ctDictionary.emplace("(", rpn::WordDefinition { {}, NATIVE_WORD_FN(OPAREN), this });
-  //  _ctDictionary.emplace("\"", rpn::WordDefinition { {}, NATIVE_WORD_FN(DQUOTE), this });
+  rpn.addDefinition(":", { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, COLON), this });
+  rpn.addDefinition("(", { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, OPAREN), this });
+  rpn.addDefinition(".\"", { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, DQUOTE), this });
+  _ctDictionary.emplace(";", rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, SEMICOLON), this });
+  _ctDictionary.emplace("(", rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, OPAREN), this });
+  //  _ctDictionary.emplace("\"", rpn::WordDefinition { {}, NATIVE_WORD_FN(private, DQUOTE), this });
 }
 
 rpn::WordDefinition::Result
@@ -190,9 +176,8 @@ rpn::Runtime::Privates::runtime_eval(rpn::Runtime &rpn, const std::string &word,
     const auto &end = _rtDictionary.upper_bound(word);
     if (beg != end) {
       auto stack_types = rpn.stack.types();
-      printf("found word %s\n", word.c_str());
       for(auto we=beg; we!=end; we++) {
-	if (validate_stack_for_word(stack_types, we->second)) {
+	if (we->second.validator(stack_types, rpn.stack)) {
           rv = we->second.eval(rpn,  we->second.context, rest);
 	  break;
 	} else {
@@ -319,5 +304,42 @@ rpn::Runtime::parseFile(const std::string &path) {
 
   return rv;
 }
+
+/*
+ */
+
+bool
+rpn::StrictTypeValidator::operator()(const std::vector<size_t> &types, rpn::Stack &stack) const {
+  bool rv = types.size() >= _types.size();
+  for(auto si=types.cbegin(), wi=_types.cbegin(); rv==true && wi!=_types.cend(); si++, wi++) {
+    rv &= (*si == *wi);
+  }
+  return rv;
+}
+
+bool
+rpn::StackSizeValidator::operator()(const std::vector<size_t> &types, rpn::Stack &stack) const {
+  bool rv = false;
+  if (_n<0 && types.size()>0 && types[0]==typeid(StInteger).hash_code()) { // negative means to ntos - check top of stack as integer and make sure that the stack is >=
+    auto &nn = dynamic_cast<const StInteger&>(stack.peek(0));
+    rv = (types.size()-1) >= nn.val();
+  } else {
+    rv = (types.size() >=_n);
+  }
+  return rv;
+}
+
+const rpn::StrictTypeValidator rpn::StrictTypeValidator::d1_double({typeid(StDouble).hash_code()});
+const rpn::StrictTypeValidator rpn::StrictTypeValidator::d1_integer({typeid(StInteger).hash_code()});
+const rpn::StrictTypeValidator rpn::StrictTypeValidator::d2_double_double({typeid(StDouble).hash_code(), typeid(StDouble).hash_code()});
+const rpn::StrictTypeValidator rpn::StrictTypeValidator::d2_double_integer({typeid(StDouble).hash_code(), typeid(StInteger).hash_code()});
+const rpn::StrictTypeValidator rpn::StrictTypeValidator::d2_integer_double({typeid(StInteger).hash_code(), typeid(StDouble).hash_code()});
+const rpn::StrictTypeValidator rpn::StrictTypeValidator::d2_integer_integer({typeid(StInteger).hash_code(), typeid(StInteger).hash_code()});
+
+const rpn::StackSizeValidator rpn::StackSizeValidator::zero(0);
+const rpn::StackSizeValidator rpn::StackSizeValidator::one(1);
+const rpn::StackSizeValidator rpn::StackSizeValidator::two(2);
+const rpn::StackSizeValidator rpn::StackSizeValidator::three(3);
+const rpn::StackSizeValidator rpn::StackSizeValidator::ntos(-1); // n top of stack
 
 /* end of github/elh/rpn-cnc/rpn-runtime.cpp */

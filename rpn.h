@@ -80,13 +80,49 @@ namespace rpn {
 
   class Runtime;
 
+  // base class to give a word definition context
   class WordContext {
   public:
     WordContext() {}
     virtual ~WordContext() {}
   protected:
   };
-  using type_t = uint32_t;
+
+  // Class family for validating word definitions against stack type and depth
+  class StackValidator {
+  public:
+    virtual bool operator()(const std::vector<size_t> &types, rpn::Stack &stack) const =0;
+  protected:
+  };
+
+  class StrictTypeValidator : public StackValidator {
+  public:
+    static const StrictTypeValidator d1_double;
+    static const StrictTypeValidator d1_integer;
+    static const StrictTypeValidator d2_double_double;
+    static const StrictTypeValidator d2_double_integer;
+    static const StrictTypeValidator d2_integer_double;
+    static const StrictTypeValidator d2_integer_integer;
+
+    StrictTypeValidator(const std::vector<size_t> &types) : _types(types) {}
+    virtual bool operator()(const std::vector<size_t> &types, rpn::Stack &stack) const override;
+  private:
+    const std::vector<size_t> _types;
+  };
+
+  class StackSizeValidator : public StackValidator {
+  public:
+    static const StackSizeValidator zero;
+    static const StackSizeValidator one;
+    static const StackSizeValidator two;
+    static const StackSizeValidator three;
+    static const StackSizeValidator ntos; // n top of stack
+    
+    StackSizeValidator(size_t n) : _n(n) {}
+    virtual bool operator()(const std::vector<size_t> &types, rpn::Stack &stack) const override;
+  private:
+    size_t _n;
+  };
 
   struct WordDefinition {
     enum class Result {
@@ -97,7 +133,7 @@ namespace rpn {
       eval_error, // eval went awry
     };
     //    std::string description;
-    std::vector<std::size_t> params;
+    const StackValidator &validator;
     std::function<Result(Runtime &rpn, WordContext *ctx, std::string &rest)> eval;
     WordContext *context;
   };
@@ -369,5 +405,67 @@ using StString = TStackObject<XString>;
 using StObject = TStackObject<XObject>;
 using StArray = TStackObject<XArray>;
 
+// convenience macros for adding native methods
+#define NATIVE_WORD_FN(mangler, op) mangler##_func_##op
+
+#define NATIVE_WORD_DECL(mangler, fn) \
+  static rpn::WordDefinition::Result NATIVE_WORD_FN(mangler, fn)(rpn::Runtime &rpn, rpn::WordContext *ctx, std::string &rest)
+   
+#define NATIVE_WORD_FN_0_DOUBLE(mangler, fn, val) \
+  NATIVE_WORD_DECL(mangler, fn) {					\
+    rpn.stack.push_double(val);						\
+    return rpn::WordDefinition::Result::ok;				\
+  }
+
+#define NATIVE_WORD_FN_0_INTEGER(mangler, fn, val) \
+  NATIVE_WORD_DECL(mangler, fn) {					\
+    rpn.stack.push_integer(val);					\
+    return rpn::WordDefinition::Result::ok;				\
+  }
+
+#define NATIVE_WORD_FN_1_NUMBER(mangler, fn)				\
+  NATIVE_WORD_DECL(mangler, fn) {					\
+    double s1 = rpn.stack.pop_as_double();				\
+    rpn.stack.push_double(fn(s1));					\
+    return rpn::WordDefinition::Result::ok;				\
+  }
+  
+#define NATIVE_WORD_FN_1_INTEGER(mangler, fn) \
+  NATIVE_WORD_DECL(mangler, fn) {					\
+    auto s1 = rpn.stack.pop_integer();					\
+    rpn.stack.push_integer(fn(s1));					\
+    return rpn::WordDefinition::Result::ok;				\
+  }
+  
+#define NATIVE_WORD_FN_2_NUMBER(mangler, fn)				\
+  NATIVE_WORD_DECL(mangler, fn) {					\
+    auto s1 = rpn.stack.pop_as_double();				\
+    auto s2 = rpn.stack.pop_as_double();				\
+    rpn.stack.push_double(fn(s2,s1));					\
+    return rpn::WordDefinition::Result::ok;				\
+  }
+  
+#define NATIVE_WORD_FN_2_INTEGER(mangler, fn)				\
+  NATIVE_WORD_DECL(mangler, fn) {					\
+    auto s1 = rpn.stack.pop_integer();					\
+    auto s2 = rpn.stack.pop_integer();					\
+    rpn.stack.push_integer(fn(s2,s1));					\
+    return rpn::WordDefinition::Result::ok;				\
+  }
+
+#define NATIVE_WORD_WDEF(mangler, validator, w, ptr)			\
+  { validator, NATIVE_WORD_FN(mangler, w), ptr }
+
+// common case for binary function that converts to double except for
+// when both parameters are integers
+#define ADD_NATIVE_2_NUMBER_WDEF(mangler, r, symbol, double_func, integer_func, ptr) \
+  r.addDefinition(symbol, NATIVE_WORD_WDEF(mangler, rpn::StrictTypeValidator::d2_double_double, double_func, ptr)); \
+  r.addDefinition(symbol, NATIVE_WORD_WDEF(mangler, rpn::StrictTypeValidator::d2_double_integer, double_func, ptr)); \
+  r.addDefinition(symbol, NATIVE_WORD_WDEF(mangler, rpn::StrictTypeValidator::d2_integer_double, double_func, ptr)); \
+  r.addDefinition(symbol, NATIVE_WORD_WDEF(mangler, rpn::StrictTypeValidator::d2_integer_integer, integer_func, ptr))
+
+#define ADD_NATIVE_1_NUMBER_WDEF(mangler, r, symbol, double_func, integer_func, ptr) \
+  r.addDefinition(symbol, NATIVE_WORD_WDEF(mangler, rpn::StrictTypeValidator::d1_double, double_func, ptr)); \
+  r.addDefinition(symbol, NATIVE_WORD_WDEF(mangler, rpn::StrictTypeValidator::d1_integer, integer_func, ptr))
 
 /* end of github/elh/rpn-cnc/Rpn.h */
