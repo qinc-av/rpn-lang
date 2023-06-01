@@ -1,4 +1,3 @@
-
 /***************************************************
  * file: github/elh/rpn-cnc/Rpn.h
  *
@@ -26,6 +25,8 @@ namespace rpn {
     public:
       virtual ~Object() {};
       virtual bool operator==(const Object &rhs) =0;
+      virtual bool operator>(const Object &rhs) =0;
+      virtual bool operator<(const Object &rhs) =0;
       virtual operator std::string() const =0;
       virtual std::unique_ptr<Object> deep_copy() const =0;
       std::string to_string() const { return static_cast<std::string>(*this); }
@@ -105,10 +106,15 @@ namespace rpn {
   public:
     static const StrictTypeValidator d1_double;
     static const StrictTypeValidator d1_integer;
+    static const StrictTypeValidator d1_boolean;
     static const StrictTypeValidator d2_double_double;
     static const StrictTypeValidator d2_double_integer;
     static const StrictTypeValidator d2_integer_double;
     static const StrictTypeValidator d2_integer_integer;
+    static const StrictTypeValidator d2_boolean_boolean;
+    static const StrictTypeValidator d3_any_any_boolean;
+    static const size_t v_anytype;
+    static const size_t v_numbertype;
 
     StrictTypeValidator(const std::vector<size_t> &types) : _types(types) {}
     virtual bool operator()(const std::vector<size_t> &types, rpn::Stack &stack) const override;
@@ -272,6 +278,7 @@ public:
 #endif
 
 #define OBJECT_CAST(obtype)  dynamic_cast<const obtype&>
+#define OBJECTP_CAST(obtype)  dynamic_cast<const obtype*>
 
 template<typename T>
 class TStackObject : public rpn::Stack::Object {
@@ -279,8 +286,16 @@ class TStackObject : public rpn::Stack::Object {
   TStackObject() = default; //: _v(v) {}
  TStackObject(const T &v) : _v(v) {}
   virtual bool operator==(const Object &orhs) override {
-    auto &rhs = OBJECT_CAST(TStackObject<T>)(orhs);
-    return (_v == rhs._v);
+    auto *rhs = OBJECTP_CAST(TStackObject<T>)(&orhs);
+    return (rhs !=nullptr && _v.val() == rhs->_v.val());
+  }
+  virtual bool operator>(const Object &orhs) override {
+    auto *rhs = OBJECTP_CAST(TStackObject<T>)(&orhs);
+    return (rhs!=nullptr && _v.val() > rhs->_v.val());
+  }
+  virtual bool operator<(const Object &orhs) override {
+    auto *rhs = OBJECTP_CAST(TStackObject<T>)(&orhs);
+    return (rhs!=nullptr && _v.val() < rhs->_v.val());
   }
   virtual ~TStackObject() {}
   virtual std::unique_ptr<rpn::Stack::Object> deep_copy() const override { return std::make_unique<TStackObject<T>>(*this); };

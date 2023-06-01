@@ -1,12 +1,14 @@
-: circ-area SQ k_PI * ;
+: circle-area SQ k_PI * ;
 
 ( test bad comment
 
 ." test bad string
 
 28
-circ-area
+circle-area
 .S
+2463.00864041
+EQ?
 
 8
 2

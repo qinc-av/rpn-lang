@@ -290,12 +290,12 @@ rpn::Stack::depth() {
 
 void
 rpn::Stack::rollu() {
-  rollun(_stack.size());
+  rollun((int)_stack.size());
 }
 
 void
 rpn::Stack::rolld() {
-  rolldn(_stack.size());
+  rolldn((int)_stack.size());
 }
 
 void
@@ -321,7 +321,7 @@ rpn::Stack::rotd() {
 void
 rpn::Stack::print(const std::string &msg) {
   static const char *padding = "--------------------------------------------------------------------------------";
-  int padlen = 66-msg.size();
+  int padlen = 66-(int)msg.size();
   printf("+---- %02zu -- %s %*.*s+\n", _stack.size(), msg.c_str(), padlen, padlen, padding);
   size_t n = _stack.size();
   for(auto i=_stack.rbegin(); i!=_stack.rend(); i++, n--) {

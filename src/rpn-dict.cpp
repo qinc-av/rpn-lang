@@ -19,11 +19,13 @@
 
 static void addStackWords(rpn::Runtime &rpn);
 static void addMathWords(rpn::Runtime &rpn);
+static void addLogicWords(rpn::Runtime &rpn);
 
 void
 rpn::Runtime::addInternalWords(WordContext *wcp) {
   addStackWords(*this);
   addMathWords(*this);
+  addLogicWords(*this);
 }
 
 /****************************************
@@ -175,6 +177,15 @@ MATH_GENERATE(e, M_E);
 MATH_GENERATE(rand, rand());
 MATH_GENERATE(rand48, drand48());
 
+static double change_sign(double x) {
+  return -1. * x;
+}
+MATH_UNARY_FUNC(change_sign);
+static int64_t ichange_sign(int64_t x) {
+  return -1 * x;
+}
+MATH_UNARY_FUNC(ichange_sign);
+
 void
 addMathWords(rpn::Runtime &rpn) {
   ADD_MATH_BINARY_NUMBER_WDEF(rpn, "+", add, iadd);
@@ -199,6 +210,7 @@ addMathWords(rpn::Runtime &rpn) {
   ADD_MATH_UNARY_NUMBER_WDEF(rpn, "LN", log, log);
   ADD_MATH_UNARY_NUMBER_WDEF(rpn, "LN2", ln2, ln2);
   ADD_MATH_UNARY_NUMBER_WDEF(rpn, "LOG", log10, log10);
+  ADD_MATH_UNARY_NUMBER_WDEF(rpn, "CHS", change_sign, ichange_sign);
 
   // these don't really make sense on Integers, but maybe we should
   // allow it anyway?
@@ -216,30 +228,134 @@ addMathWords(rpn::Runtime &rpn) {
 
 }
 
+NATIVE_WORD_DECL(logic, ifte) {
+  bool s1 = rpn.stack.pop_boolean();
+  rpn.stack.nipn(s1 ? 1 : 2);
+  return rpn::WordDefinition::Result::ok;
+}
+
+NATIVE_WORD_DECL(logic, equal) {
+  auto s1 = rpn.stack.pop();
+  auto s2 = rpn.stack.pop();
+  rpn.stack.push_boolean(*s1 == *s2);
+  return rpn::WordDefinition::Result::ok;
+}
+
+NATIVE_WORD_DECL(logic, not_equal) {
+  auto s1 = rpn.stack.pop();
+  auto s2 = rpn.stack.pop();
+  rpn.stack.push_boolean(!(*s1 == *s2));
+  return rpn::WordDefinition::Result::ok;
+}
+
+NATIVE_WORD_DECL(logic, greater) {
+  auto s1 = rpn.stack.pop();
+  auto s2 = rpn.stack.pop();
+  rpn.stack.push_boolean(*s1 > *s2);
+  return rpn::WordDefinition::Result::ok;
+}
+
+NATIVE_WORD_DECL(logic, greater_eq) {
+  auto s1 = rpn.stack.pop();
+  auto s2 = rpn.stack.pop();
+  rpn.stack.push_boolean(!(*s1 > *s2));
+  return rpn::WordDefinition::Result::ok;
+}
+
+NATIVE_WORD_DECL(logic, less) {
+  auto s1 = rpn.stack.pop();
+  auto s2 = rpn.stack.pop();
+  rpn.stack.push_boolean(*s1 < *s2);
+  return rpn::WordDefinition::Result::ok;
+}
+
+NATIVE_WORD_DECL(logic, less_eq) {
+  auto s1 = rpn.stack.pop();
+  auto s2 = rpn.stack.pop();
+  rpn.stack.push_boolean(!(*s1 < *s2));
+  return rpn::WordDefinition::Result::ok;
+}
+
+NATIVE_WORD_DECL(logic, l_not) {
+  auto s1 = rpn.stack.pop_boolean();
+  rpn.stack.push_boolean(!s1);
+  return rpn::WordDefinition::Result::ok;
+}
+
+NATIVE_WORD_DECL(logic, l_and) {
+  auto s1 = rpn.stack.pop_boolean();
+  auto s2 = rpn.stack.pop_boolean();
+  rpn.stack.push_boolean(s1 && s2);
+  return rpn::WordDefinition::Result::ok;
+}
+
+NATIVE_WORD_DECL(logic, l_or) {
+  auto s1 = rpn.stack.pop_boolean();
+  auto s2 = rpn.stack.pop_boolean();
+  rpn.stack.push_boolean(s1 || s2);
+  return rpn::WordDefinition::Result::ok;
+}
+
+NATIVE_WORD_DECL(logic, b_or) {
+  auto s1 = rpn.stack.pop_integer();
+  auto s2 = rpn.stack.pop_integer();
+  rpn.stack.push_integer(s1 | s2);
+  return rpn::WordDefinition::Result::ok;
+}
+NATIVE_WORD_DECL(logic, b_and) {
+  auto s1 = rpn.stack.pop_integer();
+  auto s2 = rpn.stack.pop_integer();
+  rpn.stack.push_integer(s1 & s2);
+  return rpn::WordDefinition::Result::ok;
+}
+NATIVE_WORD_DECL(logic, b_xor) {
+  auto s1 = rpn.stack.pop_integer();
+  auto s2 = rpn.stack.pop_integer();
+  rpn.stack.push_integer(s1 ^ s2);
+  return rpn::WordDefinition::Result::ok;
+}
+NATIVE_WORD_DECL(logic, b_neg) {
+  auto s1 = rpn.stack.pop_integer();
+  rpn.stack.push_integer(~s1);
+  return rpn::WordDefinition::Result::ok;
+}
+
+void
+addLogicWords(rpn::Runtime &rpn) {
+  //    IF
+  //    IFTE
+  //    EQ?
+  rpn.addDefinition("IFTE", NATIVE_WORD_WDEF(logic, rpn::StrictTypeValidator::d3_any_any_boolean, ifte, nullptr));
+  rpn.addDefinition("==", NATIVE_WORD_WDEF(logic, rpn::StackSizeValidator::two, equal, nullptr));
+  rpn.addDefinition(">", NATIVE_WORD_WDEF(logic, rpn::StackSizeValidator::two, greater, nullptr));
+  rpn.addDefinition(">=", NATIVE_WORD_WDEF(logic, rpn::StackSizeValidator::two, greater_eq, nullptr));
+  rpn.addDefinition("<", NATIVE_WORD_WDEF(logic, rpn::StackSizeValidator::two, less, nullptr));
+  rpn.addDefinition("<=", NATIVE_WORD_WDEF(logic, rpn::StackSizeValidator::two, less_eq, nullptr));
+  rpn.addDefinition("!=", NATIVE_WORD_WDEF(logic, rpn::StackSizeValidator::two, not_equal, nullptr));
+
+
+  rpn.addDefinition("NOT", NATIVE_WORD_WDEF(logic, rpn::StrictTypeValidator::d1_boolean, l_not, nullptr));
+  rpn.addDefinition("AND", NATIVE_WORD_WDEF(logic, rpn::StrictTypeValidator::d2_boolean_boolean, l_and, nullptr));
+  rpn.addDefinition("OR", NATIVE_WORD_WDEF(logic, rpn::StrictTypeValidator::d2_boolean_boolean, l_or, nullptr));
+
+  rpn.addDefinition("NEG", NATIVE_WORD_WDEF(logic, rpn::StrictTypeValidator::d1_integer, b_neg, nullptr));
+  rpn.addDefinition("AND", NATIVE_WORD_WDEF(logic, rpn::StrictTypeValidator::d2_integer_integer, b_and, nullptr));
+  rpn.addDefinition("OR", NATIVE_WORD_WDEF(logic, rpn::StrictTypeValidator::d2_integer_integer, b_or, nullptr));
+  rpn.addDefinition("XOR", NATIVE_WORD_WDEF(logic, rpn::StrictTypeValidator::d2_integer_integer, b_xor, nullptr));
+}
+
 /*
  *
  * EVAL
  * HYPOTn
  * MAXn
  * MINn
- * NEG
  *
  * binary ops
  * lshift
  * rshift
- * and
- * or
- * not
- * xor
  */
 
-/****************************************
- * conditionals
- *
- * IF
- * IFTE
- * EQ?
- */
 
 /****************************************
  * memory operations
@@ -265,7 +381,7 @@ addMathWords(rpn::Runtime &rpn) {
 
 #define STACK_OPn_FUNC(op)						\
   static rpn::WordDefinition::Result STACK_OP(op)(rpn::Runtime &rpn, rpn::WordContext *ctx, std::string &rest) { \
-    int64_t n=rpn.stack.pop_integer();					\
+    int n = (int)rpn.stack.pop_integer();					\
     rpn.stack.op(n);							\
     return rpn::WordDefinition::Result::ok;				\
   }

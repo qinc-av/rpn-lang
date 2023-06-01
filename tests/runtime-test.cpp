@@ -17,19 +17,113 @@
 
 rpn::Runtime g_rpn;
 
+TEST_CASE( "parse", "Stack Words" ) {
+  /*
+  "CLEAR"
+  "DEPTH"
+  "SWAP"
+  "ROLLU"
+  "ROLLD"
+  "DUP"
+  "ROTU"
+  "ROTD"
+  "DUPN"
+  "NIPN"
+  "PICK"
+  "ROLLDN"
+  "ROLLUN"
+  "TUCKN"
+  ".S"
+  */
 
-TEST_CASE( "parse", "[single-file]" ) {
-  fprintf(stderr, "parse\n");
-  std::string line("12.32 DROP 1 2 3 4 5 6 2 DROPN");
+  /*
+   "OVER"
+   "DROP"
+   "DROPN"
+  */
+
+  std::string line("12.32 3 OVER DROP 1 2 3 4 5 6 2 DROPN");
   g_rpn.parse(line);
   g_rpn.stack.print("test parse");
-  REQUIRE(1 == 0);
+  // should be 12.32 3 1 2 3 4 "
+  REQUIRE( ((4 == g_rpn.stack.peek_integer(1)) &&
+	    (3 == g_rpn.stack.peek_integer(2)) &&
+	    (2 == g_rpn.stack.peek_integer(3)) &&
+	    (1 == g_rpn.stack.peek_integer(4)) &&
+	    (3 == g_rpn.stack.peek_integer(5)) &&
+	    (12.32 == g_rpn.stack.peek_double(6))) );
 }
 
-TEST_CASE( "parse file", "[single-file]" ) {
+TEST_CASE( "== !=", " runtime logic" ) {
+  std::string line("CLEAR 123 456 ==");
+  g_rpn.parse(line);
+  REQUIRE( (false == g_rpn.stack.peek_boolean(1) ) );
+
+  line = ("CLEAR 123 456 !=");
+  g_rpn.parse(line);
+  REQUIRE( (true == g_rpn.stack.peek_boolean(1) ) );
+
+  line = ("CLEAR 1.0 1 ==");
+  g_rpn.parse(line);
+  REQUIRE( (false == g_rpn.stack.peek_boolean(1) ) );
+
+  line = ("CLEAR .\" abc\" .\" xyz\" !=");
+  g_rpn.parse(line);
+  REQUIRE( (true == g_rpn.stack.peek_boolean(1) ) );
+
+  line = ("CLEAR .\" abc\" .\" abc\" ==");
+  g_rpn.parse(line);
+  REQUIRE( (true == g_rpn.stack.peek_boolean(1) ) );
+
+  line = ("CLEAR 3.14159 3.14159 ==");
+  g_rpn.parse(line);
+  REQUIRE( (true == g_rpn.stack.peek_boolean(1) ) );
+}
+
+TEST_CASE( "AND OR NOT" " runtime logic" ) {
+  std::string line;
+
+  line = ("CLEAR 1 1 == .S NOT .S");
+  g_rpn.parse(line);
+  REQUIRE( (false == g_rpn.stack.peek_boolean(1) ) );
+
+  line = ("1 1 == OR");
+  g_rpn.parse(line);
+  REQUIRE( (true == g_rpn.stack.peek_boolean(1) ) );
+
+  line = ("1 0 == AND");
+  g_rpn.parse(line);
+  REQUIRE( (false == g_rpn.stack.peek_boolean(1) ) );
+
+}
+
+TEST_CASE( "AND OR NOT XOR" " binary logic" ) {
+  std::string line;
+
+  line = ("CLEAR 0x1234 0x4321 AND .S");
+  g_rpn.parse(line);
+  REQUIRE( ((0x1234&0x4321) == g_rpn.stack.peek_integer(1) ) );
+
+  line = ("0x9281 0xabcd OR .S");
+  g_rpn.parse(line);
+  REQUIRE( ((0x9281 | 0xabcd) == g_rpn.stack.peek_integer(1) ) );
+
+  line = ("0x55a8 0xaaaa XOR .S");
+  g_rpn.parse(line);
+  REQUIRE( ((0x55a8 ^ 0xaaaa) == g_rpn.stack.peek_integer(1) ) );
+
+  line = ("DUP NEG .S");
+  g_rpn.parse(line);
+  REQUIRE( ((~(0x55a8 ^ 0xaaaa)) == g_rpn.stack.peek_integer(1) ) );
+
+}
+
+/*
+TEST_CASE( "parse file", "" ) {
   std::string file = "/Users/eric/work/github/elh/rpn-cnc/tests.4nc";
   g_rpn.parseFile(file);
 }
+*/
 
 #if 0
 int
