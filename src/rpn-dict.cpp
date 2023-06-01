@@ -251,28 +251,28 @@ NATIVE_WORD_DECL(logic, not_equal) {
 NATIVE_WORD_DECL(logic, greater) {
   auto s1 = rpn.stack.pop();
   auto s2 = rpn.stack.pop();
-  rpn.stack.push_boolean(*s1 > *s2);
+  rpn.stack.push_boolean(*s2 > *s1);
   return rpn::WordDefinition::Result::ok;
 }
 
 NATIVE_WORD_DECL(logic, greater_eq) {
   auto s1 = rpn.stack.pop();
   auto s2 = rpn.stack.pop();
-  rpn.stack.push_boolean(!(*s1 > *s2));
+  rpn.stack.push_boolean(!(*s2 < *s1));
   return rpn::WordDefinition::Result::ok;
 }
 
 NATIVE_WORD_DECL(logic, less) {
   auto s1 = rpn.stack.pop();
   auto s2 = rpn.stack.pop();
-  rpn.stack.push_boolean(*s1 < *s2);
+  rpn.stack.push_boolean(*s2 < *s1);
   return rpn::WordDefinition::Result::ok;
 }
 
 NATIVE_WORD_DECL(logic, less_eq) {
   auto s1 = rpn.stack.pop();
   auto s2 = rpn.stack.pop();
-  rpn.stack.push_boolean(!(*s1 < *s2));
+  rpn.stack.push_boolean(!(*s2 > *s1));
   return rpn::WordDefinition::Result::ok;
 }
 

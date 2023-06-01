@@ -114,7 +114,7 @@ namespace rpn {
     static const StrictTypeValidator d2_boolean_boolean;
     static const StrictTypeValidator d3_any_any_boolean;
     static const size_t v_anytype;
-    static const size_t v_numbertype;
+    //    static const size_t v_numbertype;  // is harder than it sounds...
 
     StrictTypeValidator(const std::vector<size_t> &types) : _types(types) {}
     virtual bool operator()(const std::vector<size_t> &types, rpn::Stack &stack) const override;
@@ -154,10 +154,11 @@ namespace rpn {
   public:
     Runtime();
     ~Runtime();
-    bool parse(std::string &line);
-    bool parseFile(const std::string &path);
+    rpn::WordDefinition::Result parse(std::string &line);
+    rpn::WordDefinition::Result parseFile(const std::string &path);
 
     bool addDefinition(const std::string &word, const WordDefinition &def);
+    bool addCompiledWord(const std::string &word, const std::string &def, const StackValidator &v = StackSizeValidator::zero);
 
     /*
      * XXX-ELH- should the stack be public or private?
@@ -168,6 +169,7 @@ namespace rpn {
      */
 
     Stack stack;
+    const std::string &status();
 
     struct Privates;
   private:
@@ -290,12 +292,12 @@ class TStackObject : public rpn::Stack::Object {
     return (rhs !=nullptr && _v.val() == rhs->_v.val());
   }
   virtual bool operator>(const Object &orhs) override {
-    auto *rhs = OBJECTP_CAST(TStackObject<T>)(&orhs);
-    return (rhs!=nullptr && _v.val() > rhs->_v.val());
+    auto &rhs = OBJECT_CAST(TStackObject<T>)(orhs);
+    return (_v.val() > rhs._v.val());
   }
   virtual bool operator<(const Object &orhs) override {
-    auto *rhs = OBJECTP_CAST(TStackObject<T>)(&orhs);
-    return (rhs!=nullptr && _v.val() < rhs->_v.val());
+    auto &rhs = OBJECT_CAST(TStackObject<T>)(orhs);
+    return (_v.val() < rhs._v.val());
   }
   virtual ~TStackObject() {}
   virtual std::unique_ptr<rpn::Stack::Object> deep_copy() const override { return std::make_unique<TStackObject<T>>(*this); };

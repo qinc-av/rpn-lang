@@ -64,8 +64,9 @@ struct rpn::Runtime::Privates : public rpn::WordContext {
   std::multimap<std::string,WordDefinition> _rtDictionary;
   std::map<std::string,WordDefinition> _ctDictionary;
 
-  bool _isCompiling;
+  std::string _status;
 
+  bool _isCompiling;
   std::string _newWord;
   CompiledWC _newDefinition;
 };
@@ -77,7 +78,6 @@ NATIVE_WORD_DECL(private, COMPILED_EVAL)  {
   if (rv == rpn::WordDefinition::Result::ok) {
     std::string rest;
     for(auto w : cwc->wordlist()) {
-      //      printf("%s: %s\n", __func__, w.c_str());
       cwc->_p.eval(rpn, w, rest);
     }
   }
@@ -147,14 +147,82 @@ rpn::Runtime::Privates::addPrivateWords(rpn::Runtime &rpn) {
 
 rpn::WordDefinition::Result
 rpn::Runtime::Privates::eval(rpn::Runtime &rpn, const std::string &word, std::string &rest) {
-  rpn::WordDefinition::Result rv=rpn::WordDefinition::Result::eval_error;
-  if (word.size()>0) {
-    if (_isCompiling) {
-      rv = compiletime_eval(rpn,word,rest);
-    } else {
-      rv = runtime_eval(rpn,word,rest);
-    }
+  if (word.size()==0) {
+    return rpn::WordDefinition::Result::ok;
   }
+
+  rpn::WordDefinition::Result rv=rpn::WordDefinition::Result::eval_error;
+  _status = word + ": ";
+  if (_isCompiling) {
+    try {
+      rv = compiletime_eval(rpn,word,rest);
+
+    } catch (const std::bad_cast &bce) {
+      _status += "type error compiling";
+      if (rest.size()>0) _status += (std::string(" '") + rest + "'");
+      rv = rpn::WordDefinition::Result::param_error;
+      _isCompiling = false;
+      _newWord = "";
+      _newDefinition.clear();
+
+    } catch (const std::runtime_error &rte) {
+      rv = rpn::WordDefinition::Result::eval_error;
+      _status += "eval error compiling";
+      if (rest.size()>0) _status += (std::string(" '") + rest + "'");
+      _isCompiling = false;
+      _newWord = "";
+      _newDefinition.clear();
+    }
+
+  } else {
+      try {
+	rv = runtime_eval(rpn,word,rest);
+      } catch (const std::bad_cast &bce) {
+	rv = rpn::WordDefinition::Result::param_error;
+	_status += "type error";
+	if (rest.size()>0) _status += (std::string(" '") + rest + "'");
+
+      } catch (const std::runtime_error &rte) {
+	rv = rpn::WordDefinition::Result::param_error;
+	_status += "eval error";
+	if (rest.size()>0) _status += (std::string(" '") + rest + "'");
+      }
+    }
+
+  if (rv != rpn::WordDefinition::Result::ok) {
+    printf("%s: %s\n", __func__, _status.c_str());
+  }
+
+#if 0
+  switch (rv) {
+  case rpn::WordDefinition::Result::ok: {
+    // crickets
+  }
+    break;
+
+  case rpn::WordDefinition::Result::parse_error: {
+    printf("error parsing word '%s' with '%s'\n", word.c_str(), rest.c_str());
+    rest = ""; // discard the rest of the line;
+  }
+    break;
+
+  case rpn::WordDefinition::Result::dict_error: {
+    printf("'%s' not found in dict\n", word.c_str());
+  }
+    break;
+
+  case rpn::WordDefinition::Result::param_error: {
+    printf("parameters not right for '%s'\n", word.c_str());
+    rpn.stack.print();
+  }
+    break;
+
+  case rpn::WordDefinition::Result::eval_error: {
+    printf("error '%s' evaluating\n", word.c_str());
+  }
+    break;
+  }
+#endif
   return rv;
 }
 
@@ -186,36 +254,6 @@ rpn::Runtime::Privates::runtime_eval(rpn::Runtime &rpn, const std::string &word,
       }
     }
   }
-
-  switch (rv) {
-  case rpn::WordDefinition::Result::ok: {
-    // crickes
-  }
-    break;
-
-  case rpn::WordDefinition::Result::parse_error: {
-    printf("error parsing word '%s' with '%s'\n", word.c_str(), rest.c_str());
-    rest = ""; // discard the rest of the line;
-  }
-    break;
-
-  case rpn::WordDefinition::Result::dict_error: {
-    printf("'%s' not found in dict\n", word.c_str());
-  }
-    break;
-
-  case rpn::WordDefinition::Result::param_error: {
-    printf("parameters not right for '%s'\n", word.c_str());
-    rpn.stack.print();
-  }
-    break;
-
-  case rpn::WordDefinition::Result::eval_error: {
-    printf("error '%s' evaluating\n", word.c_str());
-  }
-    break;
-  }
-
   return rv;
 }
 
@@ -265,26 +303,31 @@ rpn::Runtime::~Runtime() {
 //  m_p->_runtimeDictionary.insert(newDict.begin(), newDict.end());
 //}
 
+const std::string &
+rpn::Runtime::status() {
+  return m_p->_status;
+}
+
 bool
 rpn::Runtime::addDefinition(const std::string &word, const WordDefinition &def) {
   m_p->_rtDictionary.emplace(word, def);
   return false;
 }
 
-bool
+rpn::WordDefinition::Result
 rpn::Runtime::parse(std::string &line) {
-  bool rv=true;
+  rpn::WordDefinition::Result rv=rpn::WordDefinition::Result::ok;
   while (line.size()>0) {
     std::string word;
     auto p1 = nextWord(word,line);
-    auto s = m_p->eval(*this, word, line);
+    rv = m_p->eval(*this, word, line);
   }
   return rv;
 }
 
-bool
+rpn::WordDefinition::Result
 rpn::Runtime::parseFile(const std::string &path) {
-  bool rv=false;
+  rpn::WordDefinition::Result rv=rpn::WordDefinition::Result::ok;
   std::ifstream ifs(path);
 
   std::string tmp;
@@ -293,11 +336,10 @@ rpn::Runtime::parseFile(const std::string &path) {
     lines.push_back(tmp);
   }
 
-  rv=lines.size()>0;
   int lineNo=0;
-  for(auto line = lines.begin(); line!=lines.end() && rv==true; line++, lineNo++) {
+  for(auto line = lines.begin(); line!=lines.end() && rv==rpn::WordDefinition::Result::ok; line++, lineNo++) {
     rv = parse(*line);
-    if (rv == false) {
+    if (rv != rpn::WordDefinition::Result::ok) {
       printf("parse error at %s:%d\n", path.c_str(), lineNo);
     }
   }
