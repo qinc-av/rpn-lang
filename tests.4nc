@@ -1,14 +1,11 @@
 : circle-area SQ k_PI * ;
 
-( test bad comment
-
-." test bad string
-
 28
 circle-area
-.S
+
+DUP
 2463.00864041
-EQ?
+==
 
 8
 2
@@ -18,57 +15,32 @@ EQ?
 6
 OVER
 
-." inverabcdefg"
-.S
-INV
-
-.S
-3 DROPN
-
 ( test multiplication )
 
 2 4 * ( integer mult )
 2.5 4 * ( double * int )
 5 0.2 * ( int * double )
 3.5 6.2 * ( double * double )
-.S
-INV
-.S
-INV
-.S
 
-4 DROPN
+INV
 
-.S
+DUP
+
+INV
 
 DROP
 
-.S
 ." test addition"
 2 4 + ( integer mult )
 2.5 4 + ( double * int )
 5 0.2 + ( int * double )
 3.5 6.2 + ( double * double )
-3.500 ->{X}
-4.5 ->{Y}
-.S
-+
-.S
-
-DEPTH
-DROPN
-.S
 
 ." test subtraction"
 2 4 - ( integer mult )
 2.5 4 - ( double * int )
 5 0.2 - ( int * double )
 3.5 6.2 - ( double * double )
-.S
--
-.S
-3.500 ->{X}
-4.5 ->{Y}
-.S
--
+
+- -
 .S

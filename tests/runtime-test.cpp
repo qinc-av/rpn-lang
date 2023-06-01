@@ -13,6 +13,7 @@
  */
 
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_floating_point.hpp>
 #include "rpn.h"
 
 rpn::Runtime g_rpn;
@@ -393,13 +394,76 @@ TEST_CASE( "AND OR NOT XOR" " binary logic" ) {
 
 }
 
-/*
-TEST_CASE( "parse file", "" ) {
-  std::string file = "/Users/eric/work/github/elh/rpn-cnc/tests.4nc";
-  g_rpn.parseFile(file);
-}
-*/
+TEST_CASE( "file tests.4nc", "parsing" ) {
+  std::string line;
+  {
+    line = ("( test bad comment");
+    auto st = g_rpn.parse(line);
+    REQUIRE( (st == rpn::WordDefinition::Result::parse_error) );
+  }
 
+  {
+    line = (".\" test bad string");
+    auto st = g_rpn.parse(line);
+    REQUIRE( (st == rpn::WordDefinition::Result::parse_error) );
+  }
+
+  {
+    line = (".\" inverabcdefg\" INV");
+    auto st = g_rpn.parse(line);
+    REQUIRE( (st == rpn::WordDefinition::Result::param_error) );
+  }
+
+  {
+    g_rpn.stack.clear();
+    std::string file = "/Users/eric/work/github/elh/rpn-cnc/tests.4nc";
+    auto st = g_rpn.parseFile(file);
+    g_rpn.stack.print("tests.4nc");
+    REQUIRE( (st == rpn::WordDefinition::Result::ok) );
+
+    REQUIRE_THAT(g_rpn.stack.peek_double(18), Catch::Matchers::WithinAbs(2463.008640, 0.000001));
+    REQUIRE( (false == g_rpn.stack.peek_boolean(17) ));
+    REQUIRE( (64 == g_rpn.stack.peek_integer(16) ));
+    REQUIRE( (5  == g_rpn.stack.peek_integer(15) ));
+    REQUIRE( (6  == g_rpn.stack.peek_integer(14) ));
+    REQUIRE( (5  == g_rpn.stack.peek_integer(13) ));
+    REQUIRE( (8  == g_rpn.stack.peek_integer(12) ));
+    REQUIRE( (10.000000 == g_rpn.stack.peek_double(11) ));
+    REQUIRE( (1.000000  == g_rpn.stack.peek_double(10) ));
+    REQUIRE_THAT(g_rpn.stack.peek_double(9), Catch::Matchers::WithinAbs(0.046083, 0.000001));
+    REQUIRE( ("test addition"  == g_rpn.stack.peek_string(8) ));
+    REQUIRE( (6  == g_rpn.stack.peek_integer(7) ));
+    REQUIRE( (6.500000  == g_rpn.stack.peek_double(6) ));
+    REQUIRE( (5.200000  == g_rpn.stack.peek_double(5) ));
+    REQUIRE( (9.700000  == g_rpn.stack.peek_double(4) ));
+    REQUIRE( ("test subtraction" == g_rpn.stack.peek_string(3) ));
+    REQUIRE( (-2  == g_rpn.stack.peek_integer(2) ));
+    REQUIRE( (-9.000000  == g_rpn.stack.peek_double(1) ));
+  }
+}
+
+TEST_CASE( "other tests", "math" ) {
+   std::string line;
+  {
+    g_rpn.stack.clear();
+    line = ("k_PI FLOOR k_PI CEIL");
+    auto st = g_rpn.parse(line);
+    REQUIRE( (st == rpn::WordDefinition::Result::ok) );
+    REQUIRE( (3.  == g_rpn.stack.peek_double(2) ));
+    REQUIRE( (4.  == g_rpn.stack.peek_double(1) ));
+  }
+
+  {
+    g_rpn.stack.clear();
+    line = ("k_PI k_E MIN k_PI k_E MAX");
+    auto st = g_rpn.parse(line);
+    REQUIRE( (st == rpn::WordDefinition::Result::ok) );
+    REQUIRE_THAT(g_rpn.stack.peek_double(2), Catch::Matchers::WithinAbs(M_E, 0.000001));
+    REQUIRE_THAT(g_rpn.stack.peek_double(1), Catch::Matchers::WithinAbs(M_PI, 0.000001));
+  }
+ 
+}
+ 
 #if 0
 int
 main(int ac, char **av) {
