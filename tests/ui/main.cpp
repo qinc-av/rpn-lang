@@ -14,6 +14,7 @@
 
 #include <QApplication>
 #include <QStack>
+#include "rpn.h"
 #include "rpnkeypad.h"
 
 int

@@ -1,5 +1,6 @@
 #include <cmath>
 
+#include "rpn.h"
 #include "rpnkeypad.h"
 #include "ui_rpnkeypad.h"
 
@@ -61,8 +62,8 @@ struct RpnKeypadDialog::Privates {
       auto *b = _rpnd->findChild<QPushButton*>(QString::fromStdString(btn));
       if (b) {
 	b->setText("");
-	//	b->setEnabled(false);
-	//	b->setProperty("rpn-word", QString(QString::fromStdString(btn)));
+	b->setEnabled(false);
+	b->setProperty("rpn-word", QString(QString::fromStdString(btn)));
       } else {
 	fprintf(stderr, "couldn't find button for %s\n", btn.c_str());
       }
@@ -71,10 +72,11 @@ struct RpnKeypadDialog::Privates {
   }
   RpnKeypadDialog *_rpnd;
   Ui::RpnKeypadDialog* _ui;
+  rpn::Runtime _rpn;
+
   void redrawDisplay();
   void pushEntry();
   void programmable_button(const std::string &id);
-  std::map<std::string,ProgrammableButton> _buttons;
 };
 
 RpnKeypadDialog::RpnKeypadDialog(QStack<QJsonValue> &stack, QWidget* parent) : QDialog(parent), _p(new Privates(this))  {
@@ -112,12 +114,12 @@ void RpnKeypadDialog::on_button_dot_clicked() { _p->_ui->lineEdit->insert("."); 
 void RpnKeypadDialog::on_button_enter_clicked()
 {
   if (_p->_ui->lineEdit->text() == "") {
-    //    pushStack(m_stack.top());
-
+    _p->_rpn.stack.dup();
   } else {
-
-    _p->pushEntry();
+    std::string line = _p->_ui->lineEdit->text().toStdString();
+    auto st = _p->_rpn.parse(line);
   }
+  _p->redrawDisplay();
 }
 
 void RpnKeypadDialog::on_button_back_clicked() {
@@ -226,13 +228,13 @@ void RpnKeypadDialog::on_toggle_jog_cut_clicked() {
 
 void
 RpnKeypadDialog::Privates::redrawDisplay() {
-#if 0
-  _p->_ui->textEdit->clear();
-  _p->_ui->textEdit->setAlignment(Qt::AlignRight);
-  foreach(const QJsonValue &v, m_stack) {
-    _p->_ui->textEdit->insertPlainText(toString(v) + "\n");
+  _ui->textEdit->clear();
+  _ui->textEdit->setAlignment(Qt::AlignRight);
+  
+  for(size_t i=_rpn.stack.depth(); i!=0; i--) {
+    const auto &so = _rpn.stack.peek(i);
+    _ui->textEdit->insertPlainText(QString::fromStdString((std::string)so)+"\n");
   }
-#endif
 }
 
 void
