@@ -1,20 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>RpnKeypadDialog</class>
- <widget class="QDialog" name="RpnKeypadDialog">
+ <class>RpnKeypad</class>
+ <widget class="QWidget" name="RpnKeypad">
+  <property name="modal" stdset="0">
+   <bool>false</bool>
+  </property>
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
     <width>658</width>
-    <height>273</height>
+    <height>297</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>RPN Calc</string>
-  </property>
-  <property name="modal">
-   <bool>true</bool>
   </property>
   <layout class="QGridLayout" name="gridLayout_2">
    <item row="0" column="0">
@@ -570,6 +570,13 @@
       </widget>
      </item>
     </layout>
+   </item>
+   <item row="1" column="0">
+    <widget class="QLabel" name="statusLabel">
+     <property name="text">
+      <string>TextLabel</string>
+     </property>
+    </widget>
    </item>
   </layout>
  </widget>

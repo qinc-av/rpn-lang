@@ -10,17 +10,18 @@
 #include <QJsonValue>
 
 QT_BEGIN_NAMESPACE
-namespace Ui { class RpnKeypadDialog; }
+namespace Ui { class RpnKeypad; }
 QT_END_NAMESPACE
 
-class RpnKeypadDialog : public QDialog
+class RpnKeypadUi : public QWidget
 {
     Q_OBJECT
 
 public:
-    RpnKeypadDialog(QStack<QJsonValue> &stack, QWidget* parent = nullptr);
-    ~RpnKeypadDialog();
+    RpnKeypadUi(QWidget* parent = nullptr);
+    ~RpnKeypadUi();
 
+    void assignButton(unsigned row, unsigned column, const QString &label, const std::string &rpnword);
 private slots:
     void on_button_0_clicked();
     void on_button_1_clicked();
@@ -94,8 +95,10 @@ private slots:
     void on_toggle_relative_absolute_clicked();
     void on_toggle_jog_cut_clicked();
 
-public:
+ public:
     struct Privates;
+
  private:
+    virtual bool eventFilter(QObject *watched, QEvent *event) override;
     Privates *_p;
 };

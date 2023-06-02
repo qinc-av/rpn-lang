@@ -21,9 +21,9 @@ int
 main(int ac, char **av) {
   QApplication app(ac, av);
 
-  QStack<QJsonValue> stack;
-  RpnKeypadDialog rpn(stack);
-  rpn.setModal(true);
+  RpnKeypadUi rpn;
+  rpn.assignButton(10,4, "DROP", "DROP");
+  //  rpn.setModal(true);
   rpn.show();
   return app.exec();
 }
