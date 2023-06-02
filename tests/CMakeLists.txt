@@ -2,9 +2,11 @@ cmake_minimum_required (VERSION 3.24)
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/../rpn.cmake)
 
-find_package(Catch2 3 REQUIRED)
+find_package(Catch2 3)
 
 project (rpn-tests)
+
+IF (${Catch2_FOUND})
 add_executable(rpn-controller ${RPN_DIR}/src/rpn-controller.cpp ${RPN_DIR}/src/cnc-app.cpp trpn.cpp)
 set_target_properties(rpn-controller PROPERTIES
           CXX_STANDARD 17
@@ -28,3 +30,4 @@ set_target_properties(runtime-test PROPERTIES
 target_include_directories(runtime-test PRIVATE ${RPN_DIR})
 target_link_libraries(runtime-test PRIVATE Catch2::Catch2WithMain)
 
+ENDIF

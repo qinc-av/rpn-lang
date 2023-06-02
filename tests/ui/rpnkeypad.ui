@@ -25,18 +25,15 @@
      <property name="spacing">
       <number>0</number>
      </property>
-     <item row="2" column="9">
-      <widget class="QPushButton" name="button_push_xy">
-       <property name="styleSheet">
-        <string notr="true">    font: bold;</string>
-       </property>
+     <item row="1" column="9">
+      <widget class="QPushButton" name="pb_1_4">
        <property name="text">
-        <string>XY→</string>
+        <string>b_1_4</string>
        </property>
       </widget>
      </item>
      <item row="10" column="3">
-      <widget class="QPushButton" name="button_sum">
+      <widget class="QPushButton" name="button_add">
        <property name="styleSheet">
         <string notr="true">    font: bold;</string>
        </property>
@@ -46,22 +43,12 @@
       </widget>
      </item>
      <item row="8" column="3">
-      <widget class="QPushButton" name="button_multiplication">
+      <widget class="QPushButton" name="button_multiply">
        <property name="styleSheet">
         <string notr="true">    font: bold;</string>
        </property>
        <property name="text">
         <string>x</string>
-       </property>
-      </widget>
-     </item>
-     <item row="4" column="9">
-      <widget class="QPushButton" name="button_push_y">
-       <property name="styleSheet">
-        <string notr="true">    font: bold;</string>
-       </property>
-       <property name="text">
-        <string>Y→</string>
        </property>
       </widget>
      </item>
@@ -75,16 +62,6 @@
        </property>
       </widget>
      </item>
-     <item row="9" column="5">
-      <widget class="QPushButton" name="button_tan">
-       <property name="styleSheet">
-        <string notr="true">    font: bold;</string>
-       </property>
-       <property name="text">
-        <string>TAN</string>
-       </property>
-      </widget>
-     </item>
      <item row="9" column="0">
       <widget class="QPushButton" name="button_1">
        <property name="styleSheet">
@@ -95,66 +72,33 @@
        </property>
       </widget>
      </item>
-     <item row="3" column="9">
-      <widget class="QPushButton" name="button_push_x">
+     <item row="7" column="5">
+      <widget class="QPushButton" name="pb_7_1">
+       <property name="text">
+        <string>b_7_1</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="5">
+      <widget class="QPushButton" name="toggle_jog_cut_2">
        <property name="styleSheet">
         <string notr="true">    font: bold;</string>
        </property>
        <property name="text">
-        <string>X→</string>
+        <string>Jog</string>
        </property>
-      </widget>
-     </item>
-     <item row="7" column="4">
-      <widget class="QPushButton" name="button_sin">
-       <property name="styleSheet">
-        <string notr="true">    font: bold;</string>
-       </property>
-       <property name="text">
-        <string>SIN</string>
-       </property>
-      </widget>
-     </item>
-     <item row="2" column="7">
-      <widget class="QPushButton" name="button_go_xy">
-       <property name="styleSheet">
-        <string notr="true">    font: bold;</string>
-       </property>
-       <property name="text">
-        <string>XY Go</string>
-       </property>
-      </widget>
-     </item>
-     <item row="1" column="5">
-      <widget class="QPushButton" name="button_roll_up">
-       <property name="styleSheet">
-        <string notr="true">    font: bold;</string>
-       </property>
-       <property name="text">
-        <string>ROL↑</string>
-       </property>
-      </widget>
-     </item>
-     <item row="10" column="9">
-      <widget class="QPushButton" name="button_ok">
-       <property name="text">
-        <string>Ok</string>
-       </property>
-       <property name="autoDefault">
+       <property name="checkable">
         <bool>true</bool>
        </property>
-       <property name="default">
+       <property name="checked">
         <bool>true</bool>
        </property>
       </widget>
      </item>
-     <item row="5" column="7">
-      <widget class="QPushButton" name="button_go_z">
-       <property name="styleSheet">
-        <string notr="true">    font: bold;</string>
-       </property>
+     <item row="3" column="5">
+      <widget class="QPushButton" name="pb_3_1">
        <property name="text">
-        <string>Z Go</string>
+        <string>b_3_1</string>
        </property>
       </widget>
      </item>
@@ -178,6 +122,13 @@
        </property>
       </widget>
      </item>
+     <item row="1" column="6">
+      <widget class="QPushButton" name="pb_1_2">
+       <property name="text">
+        <string>b_1_2</string>
+       </property>
+      </widget>
+     </item>
      <item row="10" column="1">
       <widget class="QPushButton" name="button_0">
        <property name="styleSheet">
@@ -185,16 +136,6 @@
        </property>
        <property name="text">
         <string>0</string>
-       </property>
-      </widget>
-     </item>
-     <item row="9" column="4">
-      <widget class="QPushButton" name="button_sqrt">
-       <property name="styleSheet">
-        <string notr="true">    font: bold;</string>
-       </property>
-       <property name="text">
-        <string>√</string>
        </property>
       </widget>
      </item>
@@ -208,33 +149,10 @@
        </property>
       </widget>
      </item>
-     <item row="2" column="5">
-      <widget class="QPushButton" name="button_roll_down">
-       <property name="styleSheet">
-        <string notr="true">    font: bold;</string>
-       </property>
+     <item row="1" column="5">
+      <widget class="QPushButton" name="pb_1_1">
        <property name="text">
-        <string>ROL↓</string>
-       </property>
-      </widget>
-     </item>
-     <item row="6" column="9">
-      <widget class="QPushButton" name="button_push_spindle">
-       <property name="styleSheet">
-        <string notr="true">    font: bold;</string>
-       </property>
-       <property name="text">
-        <string>Spindle→</string>
-       </property>
-      </widget>
-     </item>
-     <item row="3" column="6">
-      <widget class="QPushButton" name="button_set_x">
-       <property name="styleSheet">
-        <string>    font: bold;</string>
-       </property>
-       <property name="text">
-        <string>→X</string>
+        <string>b_1_1</string>
        </property>
       </widget>
      </item>
@@ -248,45 +166,15 @@
        </property>
       </widget>
      </item>
-     <item row="5" column="5">
-      <widget class="QPushButton" name="button_swap">
-       <property name="styleSheet">
-        <string notr="true">    font: bold;</string>
-       </property>
+     <item row="6" column="5">
+      <widget class="QPushButton" name="pb_6_1">
        <property name="text">
-        <string>Swap</string>
+        <string>b_6_1</string>
        </property>
       </widget>
      </item>
-     <item row="7" column="5">
-      <widget class="QPushButton" name="button_cos_2">
-       <property name="styleSheet">
-        <string notr="true">    font: bold;</string>
-       </property>
-       <property name="text">
-        <string>COS</string>
-       </property>
-      </widget>
-     </item>
-     <item row="2" column="6">
-      <widget class="QPushButton" name="button_set_xy">
-       <property name="styleSheet">
-        <string>    font: bold;</string>
-       </property>
-       <property name="text">
-        <string>→XY</string>
-       </property>
-      </widget>
-     </item>
-     <item row="5" column="9">
-      <widget class="QPushButton" name="button_push_z">
-       <property name="styleSheet">
-        <string notr="true">    font: bold;</string>
-       </property>
-       <property name="text">
-        <string>Z→</string>
-       </property>
-      </widget>
+     <item row="0" column="0" rowspan="6" colspan="5">
+      <widget class="QTextEdit" name="textEdit"/>
      </item>
      <item row="8" column="1">
       <widget class="QPushButton" name="button_5">
@@ -295,26 +183,6 @@
        </property>
        <property name="text">
         <string>5</string>
-       </property>
-      </widget>
-     </item>
-     <item row="8" column="5">
-      <widget class="QPushButton" name="button_cos">
-       <property name="styleSheet">
-        <string notr="true">    font: bold;</string>
-       </property>
-       <property name="text">
-        <string>ATAN2</string>
-       </property>
-      </widget>
-     </item>
-     <item row="7" column="7">
-      <widget class="QPushButton" name="button_set_feed">
-       <property name="styleSheet">
-        <string notr="true">    font: bold;</string>
-       </property>
-       <property name="text">
-        <string>→Feed</string>
        </property>
       </widget>
      </item>
@@ -331,33 +199,10 @@
        </property>
       </widget>
      </item>
-     <item row="8" column="4">
-      <widget class="QPushButton" name="button_set_feed_2">
-       <property name="styleSheet">
-        <string notr="true">    font: bold;</string>
-       </property>
+     <item row="1" column="7">
+      <widget class="QPushButton" name="pb_1_3">
        <property name="text">
-        <string>X²</string>
-       </property>
-      </widget>
-     </item>
-     <item row="5" column="6">
-      <widget class="QPushButton" name="button_set_z">
-       <property name="styleSheet">
-        <string notr="true">    font: bold;</string>
-       </property>
-       <property name="text">
-        <string>→Z</string>
-       </property>
-      </widget>
-     </item>
-     <item row="6" column="7">
-      <widget class="QPushButton" name="button_set_spindle">
-       <property name="styleSheet">
-        <string notr="true">    font: bold;</string>
-       </property>
-       <property name="text">
-        <string>→Spindle</string>
+        <string>b_1_3</string>
        </property>
       </widget>
      </item>
@@ -381,23 +226,10 @@
        </property>
       </widget>
      </item>
-     <item row="4" column="6">
-      <widget class="QPushButton" name="button_set_y">
-       <property name="styleSheet">
-        <string notr="true">    font: bold;</string>
-       </property>
+     <item row="8" column="5">
+      <widget class="QPushButton" name="pb_8_1">
        <property name="text">
-        <string>→Y</string>
-       </property>
-      </widget>
-     </item>
-     <item row="3" column="7">
-      <widget class="QPushButton" name="button_go_x">
-       <property name="styleSheet">
-        <string notr="true">    font: bold;</string>
-       </property>
-       <property name="text">
-        <string>X Go</string>
+        <string>b_8_1</string>
        </property>
       </widget>
      </item>
@@ -411,28 +243,38 @@
        </property>
       </widget>
      </item>
-     <item row="7" column="9">
-      <widget class="QPushButton" name="button_push_feed">
-       <property name="styleSheet">
-        <string notr="true">    font: bold;</string>
-       </property>
+     <item row="9" column="5">
+      <widget class="QPushButton" name="pb_9_1">
        <property name="text">
-        <string>Feed→</string>
+        <string>b_9_1</string>
        </property>
       </widget>
      </item>
-     <item row="4" column="7">
-      <widget class="QPushButton" name="button_go_y">
+     <item row="0" column="9">
+      <widget class="QPushButton" name="toggle_work_machine">
        <property name="styleSheet">
         <string notr="true">    font: bold;</string>
        </property>
        <property name="text">
-        <string> Y Go</string>
+        <string>Work</string>
+       </property>
+       <property name="checkable">
+        <bool>true</bool>
+       </property>
+       <property name="checked">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item row="4" column="5">
+      <widget class="QPushButton" name="pb_4_1">
+       <property name="text">
+        <string>b_4_1</string>
        </property>
       </widget>
      </item>
      <item row="7" column="3">
-      <widget class="QPushButton" name="button_division">
+      <widget class="QPushButton" name="button_divide">
        <property name="styleSheet">
         <string notr="true">    font: bold;</string>
        </property>
@@ -441,23 +283,36 @@
        </property>
       </widget>
      </item>
-     <item row="3" column="5">
-      <widget class="QPushButton" name="button_swap_3">
-       <property name="styleSheet">
-        <string notr="true">    font: bold;</string>
-       </property>
-       <property name="text">
-        <string>DUP2</string>
-       </property>
-      </widget>
-     </item>
      <item row="10" column="2">
-      <widget class="QPushButton" name="button_plus_minus">
+      <widget class="QPushButton" name="button_chs">
        <property name="styleSheet">
         <string notr="true">    font: bold;</string>
        </property>
        <property name="text">
         <string>±</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="6">
+      <widget class="QPushButton" name="toggle_jog_cut">
+       <property name="styleSheet">
+        <string notr="true">    font: bold;</string>
+       </property>
+       <property name="text">
+        <string>Jog</string>
+       </property>
+       <property name="checkable">
+        <bool>true</bool>
+       </property>
+       <property name="checked">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item row="5" column="5">
+      <widget class="QPushButton" name="pb_5_1">
+       <property name="text">
+        <string>b_5_1</string>
        </property>
       </widget>
      </item>
@@ -481,35 +336,6 @@
        </property>
       </widget>
      </item>
-     <item row="4" column="5">
-      <widget class="QPushButton" name="button_swap_2">
-       <property name="styleSheet">
-        <string notr="true">    font: bold;</string>
-       </property>
-       <property name="text">
-        <string>Over</string>
-       </property>
-      </widget>
-     </item>
-     <item row="0" column="0" rowspan="6" colspan="5">
-      <widget class="QTextEdit" name="textEdit"/>
-     </item>
-     <item row="0" column="6">
-      <widget class="QPushButton" name="toggle_jog_cut">
-       <property name="styleSheet">
-        <string notr="true">    font: bold;</string>
-       </property>
-       <property name="text">
-        <string>Jog</string>
-       </property>
-       <property name="checkable">
-        <bool>true</bool>
-       </property>
-       <property name="checked">
-        <bool>true</bool>
-       </property>
-      </widget>
-     </item>
      <item row="0" column="7">
       <widget class="QPushButton" name="toggle_relative_absolute">
        <property name="styleSheet">
@@ -526,19 +352,220 @@
        </property>
       </widget>
      </item>
-     <item row="0" column="9">
-      <widget class="QPushButton" name="toggle_work_machine">
-       <property name="styleSheet">
-        <string notr="true">    font: bold;</string>
-       </property>
+     <item row="2" column="5">
+      <widget class="QPushButton" name="pb_2_1">
        <property name="text">
-        <string>Work</string>
+        <string>b_2_1</string>
        </property>
-       <property name="checkable">
-        <bool>true</bool>
+      </widget>
+     </item>
+     <item row="2" column="6">
+      <widget class="QPushButton" name="pb_2_2">
+       <property name="text">
+        <string>b_2_2</string>
        </property>
-       <property name="checked">
-        <bool>true</bool>
+      </widget>
+     </item>
+     <item row="2" column="7">
+      <widget class="QPushButton" name="pb_2_3">
+       <property name="text">
+        <string>b_2_3</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="9">
+      <widget class="QPushButton" name="pb_2_4">
+       <property name="text">
+        <string>b_2_4</string>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="6">
+      <widget class="QPushButton" name="pb_3_2">
+       <property name="text">
+        <string>b_3_2</string>
+       </property>
+      </widget>
+     </item>
+     <item row="4" column="6">
+      <widget class="QPushButton" name="pb_4_2">
+       <property name="text">
+        <string>b_4_2</string>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="7">
+      <widget class="QPushButton" name="pb_3_3">
+       <property name="text">
+        <string>b_3_3</string>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="9">
+      <widget class="QPushButton" name="pb_3_4">
+       <property name="text">
+        <string>b_3_4</string>
+       </property>
+      </widget>
+     </item>
+     <item row="4" column="7">
+      <widget class="QPushButton" name="pb_4_3">
+       <property name="text">
+        <string>b_4_3</string>
+       </property>
+      </widget>
+     </item>
+     <item row="4" column="9">
+      <widget class="QPushButton" name="pb_4_4">
+       <property name="text">
+        <string>b_4_4</string>
+       </property>
+      </widget>
+     </item>
+     <item row="5" column="6">
+      <widget class="QPushButton" name="pb_5_2">
+       <property name="text">
+        <string>b_5_2</string>
+       </property>
+      </widget>
+     </item>
+     <item row="5" column="7">
+      <widget class="QPushButton" name="pb_5_3">
+       <property name="text">
+        <string>b_5_3</string>
+       </property>
+      </widget>
+     </item>
+     <item row="5" column="9">
+      <widget class="QPushButton" name="pb_5_4">
+       <property name="text">
+        <string>b_5_4</string>
+       </property>
+      </widget>
+     </item>
+     <item row="6" column="6">
+      <widget class="QPushButton" name="pb_6_2">
+       <property name="text">
+        <string>b_6_2</string>
+       </property>
+      </widget>
+     </item>
+     <item row="6" column="7">
+      <widget class="QPushButton" name="pb_6_3">
+       <property name="text">
+        <string>b_6_3</string>
+       </property>
+      </widget>
+     </item>
+     <item row="6" column="9">
+      <widget class="QPushButton" name="pb_6_4">
+       <property name="text">
+        <string>b_6_4</string>
+       </property>
+      </widget>
+     </item>
+     <item row="7" column="6">
+      <widget class="QPushButton" name="pb_7_2">
+       <property name="text">
+        <string>b_7_2</string>
+       </property>
+      </widget>
+     </item>
+     <item row="7" column="7">
+      <widget class="QPushButton" name="pb_7_3">
+       <property name="text">
+        <string>b_7_3</string>
+       </property>
+      </widget>
+     </item>
+     <item row="7" column="9">
+      <widget class="QPushButton" name="pb_7_4">
+       <property name="text">
+        <string>b_7_4</string>
+       </property>
+      </widget>
+     </item>
+     <item row="8" column="6">
+      <widget class="QPushButton" name="pb_8_2">
+       <property name="text">
+        <string>b_8_2</string>
+       </property>
+      </widget>
+     </item>
+     <item row="8" column="7">
+      <widget class="QPushButton" name="pb_8_3">
+       <property name="text">
+        <string>b_8_3</string>
+       </property>
+      </widget>
+     </item>
+     <item row="8" column="9">
+      <widget class="QPushButton" name="pb_8_4">
+       <property name="text">
+        <string>b_8_4</string>
+       </property>
+      </widget>
+     </item>
+     <item row="9" column="6">
+      <widget class="QPushButton" name="pb_9_2">
+       <property name="text">
+        <string>b_9_2</string>
+       </property>
+      </widget>
+     </item>
+     <item row="9" column="7">
+      <widget class="QPushButton" name="pb_9_3">
+       <property name="text">
+        <string>b_9_3</string>
+       </property>
+      </widget>
+     </item>
+     <item row="9" column="9">
+      <widget class="QPushButton" name="pb_9_4">
+       <property name="text">
+        <string>b_9_4</string>
+       </property>
+      </widget>
+     </item>
+     <item row="10" column="6">
+      <widget class="QPushButton" name="pb_10_2">
+       <property name="text">
+        <string>b_10_2</string>
+       </property>
+      </widget>
+     </item>
+     <item row="10" column="7">
+      <widget class="QPushButton" name="pb_10_3">
+       <property name="text">
+        <string>b_10_3</string>
+       </property>
+      </widget>
+     </item>
+     <item row="10" column="9">
+      <widget class="QPushButton" name="pb_10_4">
+       <property name="text">
+        <string>b_10_4</string>
+       </property>
+      </widget>
+     </item>
+     <item row="7" column="4">
+      <widget class="QPushButton" name="pb_7_0">
+       <property name="text">
+        <string>b_7_0</string>
+       </property>
+      </widget>
+     </item>
+     <item row="8" column="4">
+      <widget class="QPushButton" name="pb_8_0">
+       <property name="text">
+        <string>b_8_0</string>
+       </property>
+      </widget>
+     </item>
+     <item row="9" column="4">
+      <widget class="QPushButton" name="pb_9_0">
+       <property name="text">
+        <string>b_9_0</string>
        </property>
       </widget>
      </item>
