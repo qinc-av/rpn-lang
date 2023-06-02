@@ -46,6 +46,12 @@ public:
   std::vector<std::string> _wordlist;
 };
 
+enum runtime_state {
+  st_run,
+  st_define,
+  st_loop
+};
+
 struct rpn::Runtime::Privates : public rpn::WordContext {
   Privates() : _newDefinition(*this), _tracing(false) {};
   ~Privates() {};
@@ -66,7 +72,7 @@ struct rpn::Runtime::Privates : public rpn::WordContext {
 
   std::string _status;
 
-  bool _isCompiling;
+  runtime_state _state;
   std::string _newWord;
   CompiledWC _newDefinition;
 
@@ -90,7 +96,7 @@ NATIVE_WORD_DECL(private, COLON) {
   // (rpn::Runtime &rpn, rpn::WordContext *ctx, std::string &rest)
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
   rpn::Runtime::Privates *p = dynamic_cast<rpn::Runtime::Privates*>(ctx);
-  p->_isCompiling = true;
+  p->_state = st_define;
   return rv;
 }
 
@@ -103,7 +109,7 @@ NATIVE_WORD_DECL(private, SEMICOLON) {
 
   p->_rtDictionary.emplace(p->_newWord, rpn::WordDefinition {
       rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, COMPILED_EVAL), p->_newDefinition.deep_copy() });
-  p->_isCompiling = false;
+  p->_state = st_run;
   p->_newWord = "";
   p->_newDefinition.clear();
   return rv;
@@ -137,14 +143,57 @@ NATIVE_WORD_DECL(private, DQUOTE) {
   return rv;
 }
 
+NATIVE_WORD_DECL(private, ctDQUOTE) {
+  // (rpn::Runtime &rpn, rpn::WordContext *ctx, std::string &rest)
+  rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
+  rpn::Runtime::Privates *p = dynamic_cast<rpn::Runtime::Privates*>(ctx);
+  std::string literal;
+  auto pos = nextWord(literal, rest, '"');
+  if (pos != std::string::npos) {
+    p->_newDefinition.addWord(".\" " + literal + '"');
+  } else {
+    rv = rpn::WordDefinition::Result::parse_error;
+    rest = literal; // reset buffer for error messages and diagnostics
+  }
+  return rv;
+}
+
+NATIVE_WORD_DECL(private, FOR) {
+  rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
+  rpn::Runtime::Privates *p = dynamic_cast<rpn::Runtime::Privates*>(ctx);
+  auto end = rpn.stack.pop_integer();
+  auto start = rpn.stack.pop_integer();
+  //  p->_loopBounds = std::pair<int64_t,int64_t>(start,end);
+  p->_state = st_loop;
+  return rv;
+}
+
+NATIVE_WORD_DECL(private, NEXT) {
+  rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
+  rpn::Runtime::Privates *p = dynamic_cast<rpn::Runtime::Privates*>(ctx);
+  p->_state = st_run;
+  return rv;
+}
+
+NATIVE_WORD_DECL(private, STEP) {
+  rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
+  rpn::Runtime::Privates *p = dynamic_cast<rpn::Runtime::Privates*>(ctx);
+  auto step = rpn.stack.pop_integer();
+  p->_state = st_run;
+  return rv;
+}
+
 void
 rpn::Runtime::Privates::addPrivateWords(rpn::Runtime &rpn) {
   rpn.addDefinition(":", { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, COLON), this });
   rpn.addDefinition("(", { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, OPAREN), this });
   rpn.addDefinition(".\"", { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, DQUOTE), this });
+  rpn.addDefinition("FOR", { rpn::StrictTypeValidator::d2_integer_integer, NATIVE_WORD_FN(private, FOR), this });
   _ctDictionary.emplace(";", rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, SEMICOLON), this });
   _ctDictionary.emplace("(", rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, OPAREN), this });
-  //  _ctDictionary.emplace("\"", rpn::WordDefinition { {}, NATIVE_WORD_FN(private, DQUOTE), this });
+  _ctDictionary.emplace(".\"", rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, ctDQUOTE), this });
+  _ctDictionary.emplace("NEXT", rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, NEXT), this });
+  _ctDictionary.emplace("STEP", rpn::WordDefinition { rpn::StrictTypeValidator::d1_integer, NATIVE_WORD_FN(private, STEP), this });
 }
 
 rpn::WordDefinition::Result
@@ -156,7 +205,7 @@ rpn::Runtime::Privates::eval(rpn::Runtime &rpn, const std::string &word, std::st
   rpn::WordDefinition::Result rv=rpn::WordDefinition::Result::eval_error;
   _status = word + ": ";
   std::string msg;
-  if (_isCompiling) {
+  if (_state != st_run) {
     try {
       rv = compiletime_eval(rpn,word,rest);
 
@@ -164,7 +213,7 @@ rpn::Runtime::Privates::eval(rpn::Runtime &rpn, const std::string &word, std::st
       msg = "type error compiling";
       if (rest.size()>0) msg += (std::string(" '") + rest + "'");
       rv = rpn::WordDefinition::Result::param_error;
-      _isCompiling = false;
+      _state = st_run;
       _newWord = "";
       _newDefinition.clear();
 
@@ -172,7 +221,7 @@ rpn::Runtime::Privates::eval(rpn::Runtime &rpn, const std::string &word, std::st
       rv = rpn::WordDefinition::Result::eval_error;
       msg = "eval error compiling";
       if (rest.size()>0) msg += (std::string(" '") + rest + "'");
-      _isCompiling = false;
+      _state = st_run;
       _newWord = "";
       _newDefinition.clear();
     }
@@ -278,24 +327,28 @@ rpn::Runtime::Privates::compiletime_eval(rpn::Runtime &rpn, const std::string &w
       // found something in the compiletime dict, evaluate it
       rv = cw->second.eval(rpn, cw->second.context, rest);
 
+    } else if (std::isdigit(word[0])) {
+      // numbers just push
+      _newDefinition.addWord(word);
+      rv=rpn::WordDefinition::Result::ok;
+
+    } else if (_state == st_loop && word == _newWord) {
+      // if we're in a loop compiling mode; and this is the loop variable,
+      // push it
+      _newDefinition.addWord(word);
+      rv=rpn::WordDefinition::Result::ok;
+      
     } else {
-      if (std::isdigit(word[0])) {
-	// numbers just push
+      // everything else, we check in the runtime dictionary
+      const auto &rw = _rtDictionary.find(word);
+      if (rw != _rtDictionary.end()) {
 	_newDefinition.addWord(word);
 	rv=rpn::WordDefinition::Result::ok;
 
       } else {
-	// everything else, we check in the runtime dictionary
-	const auto &rw = _rtDictionary.find(word);
-	if (rw != _rtDictionary.end()) {
-	  _newDefinition.addWord(word);
-	  rv=rpn::WordDefinition::Result::ok;
+	rv = rpn::WordDefinition::Result::dict_error;
+	printf("unrecognized word at compile time: '%s'\n", word.c_str());
 
-	} else {
-	  rv = rpn::WordDefinition::Result::dict_error;
-	  printf("unrecognized word at compile time: '%s'\n", word.c_str());
-
-	}
       }
     }
   }

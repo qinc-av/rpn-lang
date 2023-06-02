@@ -14,6 +14,7 @@
 
 #include "rpn.h"
 
+#include <cmath>
 #include <typeinfo>
 
 /*

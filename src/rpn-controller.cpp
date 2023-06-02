@@ -452,7 +452,7 @@ static double rad_to_deg(const double &rad) {
 
 static double nan_add(double a, double b) {
   double rv = std::nan("");
-  switch((isnan(a)<<1)|(isnan(b))) {
+  switch((std::isnan(a)<<1)|(std::isnan(b))) {
   case 0:
     rv = a + b;
     break;
@@ -471,7 +471,7 @@ static double nan_add(double a, double b) {
 
 static double nan_sub(double a, double b) {
   double rv = std::nan("");
-  switch((isnan(a)<<1)|(isnan(b))) {
+  switch((std::isnan(a)<<1)|(std::isnan(b))) {
   case 0:
     rv = a - b;
     break;

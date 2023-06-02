@@ -19,6 +19,9 @@
 #include <vector>
 #include <variant>
 
+#include <functional>
+#include <cmath>
+
 class RpnController;
 class WordContext; // an abstract base object that can contain information for specific word definitions
 /*

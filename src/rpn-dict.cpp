@@ -199,13 +199,14 @@ addMathWords(rpn::Runtime &rpn) {
   ADD_MATH_BINARY_NUMBER_WDEF(rpn, "MAX", fmax, imax);
 
   ADD_MATH_UNARY_NUMBER_WDEF(rpn, "INV", inverse, inverse);
-  ADD_MATH_UNARY_NUMBER_WDEF(rpn, "SQ", square, square);
+  ADD_MATH_UNARY_NUMBER_WDEF(rpn, "SQ", square, isquare);
   ADD_MATH_UNARY_NUMBER_WDEF(rpn, "SQRT", sqrt, sqrt);
   ADD_MATH_UNARY_NUMBER_WDEF(rpn, "COS", cos_deg, cos_deg);
   ADD_MATH_UNARY_NUMBER_WDEF(rpn, "SIN", sin_deg, sin_deg);
   ADD_MATH_UNARY_NUMBER_WDEF(rpn, "TAN", tan_deg, tan_deg);
   ADD_MATH_UNARY_NUMBER_WDEF(rpn, "ACOS", acos_deg, acos_deg);
   ADD_MATH_UNARY_NUMBER_WDEF(rpn, "ASIN", asin_deg, asin_deg);
+  ADD_MATH_UNARY_NUMBER_WDEF(rpn, "ATAN", atan_deg, atan_deg);
   ADD_MATH_UNARY_NUMBER_WDEF(rpn, "EXP", exp, exp);
   ADD_MATH_UNARY_NUMBER_WDEF(rpn, "LN", log, log);
   ADD_MATH_UNARY_NUMBER_WDEF(rpn, "LN2", ln2, ln2);
@@ -433,6 +434,19 @@ void addStackWords(rpn::Runtime &rpn) {
   ADD_STACK_OP(rpn, "ROLLUN", ntos, rollun);
   ADD_STACK_OP(rpn, "TUCKN", ntos, tuckn);
   ADD_STACK_OP(rpn, ".S", zero, print);
+}
+
+void addTypeWords(rpn::Runtime &rpn) {
+  /*
+    "->INTEGER"
+    "->FLOAT"
+    "->STRING"
+    "->OBJECT"
+    "->ARRAY"
+    "ARRAY->"
+    "OBJECT->"
+    "SIZE"
+  */
 }
 
 /* end of github/elh/rpn-cnc/rpn-dict.cpp */

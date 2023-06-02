@@ -23,7 +23,7 @@ public:
       _v.push_back(e->deep_copy());
     }
   }
-  virtual bool operator==(const rpn::Stack::Object &orhs) override {
+  virtual bool operator==(const rpn::Stack::Object &orhs) const override {
     auto &rhs = OBJECT_CAST(CustomArray)(orhs);
     bool rv = _v.size() == rhs._v.size();
     for(auto i=_v.cbegin(), j=rhs._v.cbegin(); rv && i!= _v.cend(); i++,j++) {
@@ -54,7 +54,7 @@ class CustomObject {
   CustomObject(const std::string &v) : _v(v) {};
   virtual operator std::string() const { return std::string("CustomObject: <") + _v + ">"; };
   auto val() const { return _v; }
-  bool operator==(const CustomObject &rhs) {
+  bool operator==(const CustomObject &rhs) const {
     return _v == rhs._v;
   }
 private:

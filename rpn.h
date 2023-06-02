@@ -14,9 +14,13 @@
 
 #pragma once
 
+#include <memory>
+#include <vector>
 #include <string>
 #include <deque>
 #include <map>
+#include <stdexcept>
+#include <functional>
 
 namespace rpn {
   class Stack {
@@ -24,9 +28,9 @@ namespace rpn {
     class Object {
     public:
       virtual ~Object() {};
-      virtual bool operator==(const Object &rhs) =0;
-      virtual bool operator>(const Object &rhs) =0;
-      virtual bool operator<(const Object &rhs) =0;
+      virtual bool operator==(const Object &rhs) const =0;
+      virtual bool operator>(const Object &rhs) const { throw std::runtime_error("operator> invalid for type"); };
+      virtual bool operator<(const Object &rhs) const { throw std::runtime_error("operator> invalid for type"); };
       virtual operator std::string() const =0;
       virtual std::unique_ptr<Object> deep_copy() const =0;
       std::string to_string() const { return static_cast<std::string>(*this); }
@@ -287,15 +291,15 @@ class TStackObject : public rpn::Stack::Object {
  public:
   TStackObject() = default; //: _v(v) {}
  TStackObject(const T &v) : _v(v) {}
-  virtual bool operator==(const Object &orhs) override {
+  virtual bool operator==(const Object &orhs) const override {
     auto *rhs = OBJECTP_CAST(TStackObject<T>)(&orhs);
     return (rhs !=nullptr && _v.val() == rhs->_v.val());
   }
-  virtual bool operator>(const Object &orhs) override {
+  virtual bool operator>(const Object &orhs) const override {
     auto &rhs = OBJECT_CAST(TStackObject<T>)(orhs);
     return (_v.val() > rhs._v.val());
   }
-  virtual bool operator<(const Object &orhs) override {
+  virtual bool operator<(const Object &orhs) const override {
     auto &rhs = OBJECT_CAST(TStackObject<T>)(orhs);
     return (_v.val() < rhs._v.val());
   }
@@ -313,7 +317,7 @@ class XDouble {
  XDouble(const double &v) : _v(v) {}
   virtual operator std::string() const { return std::to_string(_v); };
   auto val() const { return _v; }
-  bool operator==(const XDouble &rhs) {
+  bool operator==(const XDouble &rhs) const {
     return _v == rhs._v;
   }
  private:
@@ -325,7 +329,7 @@ class XInteger {
  XInteger(const int64_t &v) : _v(v) {}
   virtual operator std::string() const { return std::to_string(_v); };
   auto val() const { return _v; }
-  bool operator==(const XInteger &rhs) {
+  bool operator==(const XInteger &rhs) const {
     return _v == rhs._v;
   }
  private:
@@ -337,7 +341,7 @@ class XBoolean {
  XBoolean(const bool &v) : _v(v) {}
   virtual operator std::string() const { return _v ? "<true>" : "<false>"; };
   auto val() const { return _v; }
-  bool operator==(const XBoolean &rhs) {
+  bool operator==(const XBoolean &rhs) const {
     return _v == rhs._v;
   }
  private:
@@ -349,7 +353,7 @@ class XString {
  XString(const std::string &v) : _v(v) {}
   virtual operator std::string() const { return _v; };
   auto val() const { return _v; }
-  bool operator==(const XString &rhs) {
+  bool operator==(const XString &rhs) const {
     return _v == rhs._v;
   }
  private:
@@ -365,7 +369,7 @@ public:
       _v.emplace(m.first, m.second->deep_copy());
     }
   }
-  bool operator==(const XObject &rhs) {
+  bool operator==(const XObject &rhs) const {
     bool rv = _v.size() == rhs._v.size();
     for(auto i=_v.cbegin(), j=rhs._v.cbegin(); rv && i!= _v.cend(); i++,j++) {
       rv &= (i->first == j->first) && (*(i->second) == *(j->second));
@@ -386,6 +390,7 @@ public:
     rv += "}";
     return rv;
   };
+  const auto &val() const { return _v; };
 protected:
   std::map<std::string,std::unique_ptr<rpn::Stack::Object>> _v;
 };
@@ -398,7 +403,7 @@ public:
       _v.push_back(e->deep_copy());
     }
   }
-  bool operator==(const XArray &rhs) {
+  bool operator==(const XArray &rhs) const {
     bool rv = _v.size() == rhs._v.size();
     for(auto i=_v.cbegin(), j=rhs._v.cbegin(); rv && i!= _v.cend(); i++,j++) {
       rv &= (*i == *j);
@@ -417,6 +422,7 @@ public:
     rv += "]";
     return rv;
   };
+  const auto &val() const { return _v; };
  protected:
   std::vector<std::unique_ptr<rpn::Stack::Object>> _v;
 };

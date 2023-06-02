@@ -14,7 +14,10 @@
 
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
+
 #include "rpn.h"
+
+#include <cmath>
 
 rpn::Runtime g_rpn;
 
@@ -463,7 +466,16 @@ TEST_CASE( "other tests", "math" ) {
   }
  
 }
- 
+
+TEST_CASE( "loop tests", "control" ) {
+  std::string line;
+  line = ("CLEAR 0 9 FOR i i NEXT");
+  g_rpn.stack.clear();
+  g_rpn.parse(line);
+  
+}
+
+
 #if 0
 int
 main(int ac, char **av) {
