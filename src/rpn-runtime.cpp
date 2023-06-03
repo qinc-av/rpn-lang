@@ -60,10 +60,12 @@ struct rpn::Runtime::Privates : public rpn::WordContext {
   rpn::WordDefinition::Result runtime_eval(rpn::Runtime &rpn, const std::string &word, std::string &rest);
   rpn::WordDefinition::Result compiletime_eval(rpn::Runtime &rpn, const std::string &word, std::string &rest);
 
-  bool validate_stack_for_word(const std::vector<size_t> &stack, const rpn::WordDefinition &wd);
-
   // add words that require acces to the Privates struct.
   void addPrivateWords(rpn::Runtime &rpn);
+
+  // validates a word in the dictionary and returns an iterator to it (or _rtDictionary.end() )
+  std::multimap<std::string,WordDefinition>::iterator validate_word(const std::string &word, rpn::Stack &stack);
+  bool word_exists(const std::string &word);
 
   /*
    */
@@ -297,18 +299,15 @@ rpn::Runtime::Privates::runtime_eval(rpn::Runtime &rpn, const std::string &word,
     }
     rv = rpn::WordDefinition::Result::ok;
   } else {
-    auto beg = _rtDictionary.lower_bound(word);
-    const auto &end = _rtDictionary.upper_bound(word);
-    if (beg != end) {
-      auto stack_types = rpn.stack.types();
-      for(auto we=beg; we!=end; we++) {
-	if (we->second.validator(stack_types, rpn.stack)) {
-          rv = we->second.eval(rpn,  we->second.context, rest);
-	  break;
-	} else {
-	  rv = rpn::WordDefinition::Result::param_error;
-	}
+    if (word_exists(word)) {
+      auto we = validate_word(word, rpn.stack);
+      if (we != _rtDictionary.end()) {
+	rv = we->second.eval(rpn,  we->second.context, rest);
+      } else {
+	rv = rpn::WordDefinition::Result::param_error;
       }
+    } else {
+      // default to dictionary error
     }
   }
   return rv;
@@ -379,6 +378,38 @@ bool
 rpn::Runtime::addDefinition(const std::string &word, const WordDefinition &def) {
   m_p->_rtDictionary.emplace(word, def);
   return false;
+}
+
+std::multimap<std::string,rpn::WordDefinition>::iterator
+rpn::Runtime::Privates::validate_word(const std::string &word, rpn::Stack &stack) {
+  auto beg = _rtDictionary.lower_bound(word);
+  const auto &end = _rtDictionary.upper_bound(word);
+  if (beg != end) {
+    auto stack_types = stack.types();
+    for(auto we=beg; we!=end; we++) {
+      if (we->second.validator(stack_types, stack)) {
+	return we;
+      }
+    }
+  }
+  return _rtDictionary.end();
+}
+
+bool
+rpn::Runtime::Privates::word_exists(const std::string &word) {
+  auto beg = _rtDictionary.lower_bound(word);
+  const auto &end = _rtDictionary.upper_bound(word);
+  return (beg != end);
+}
+
+bool
+rpn::Runtime::validateWord(const std::string &word) {
+  return m_p->validate_word(word, this->stack) != m_p->_rtDictionary.end();
+}
+
+bool
+rpn::Runtime::wordExists(const std::string &word) {
+  return m_p->word_exists(word);
 }
 
 rpn::WordDefinition::Result

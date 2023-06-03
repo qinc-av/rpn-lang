@@ -16,8 +16,9 @@ endif()
 add_compile_definitions(APP_VERSION="1.1.9")
 add_compile_definitions(QT_NO_DEBUG)
 
-find_package(Qt5 COMPONENTS Core Widgets REQUIRED)
+find_package(Qt5 COMPONENTS Core Widgets)
 
+if (${Qt5_FOUND})
 include_directories(${RPN_DIR})
 
 #if(APPLE)
@@ -49,3 +50,5 @@ target_link_libraries(rpn-test-ui
     Qt5::Widgets
     Qt5::Gui
     )
+
+endif()

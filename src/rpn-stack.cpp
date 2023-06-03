@@ -70,7 +70,7 @@ rpn::Stack::pop() {
 bool
 rpn::Stack::pop_boolean() {
   auto tos = pop();
-  auto typed = dynamic_cast<StBoolean*>(tos.get());
+  auto *typed = dynamic_cast<StBoolean*>(tos.get());
   if (typed) {
     return typed->val();
   }
@@ -80,7 +80,7 @@ rpn::Stack::pop_boolean() {
 std::string
 rpn::Stack::pop_string() {
   auto tos = pop();
-  auto typed = dynamic_cast<StString*>(tos.get());
+  auto *typed = dynamic_cast<StString*>(tos.get());
   if (typed) {
     return typed->val();
   }
@@ -90,7 +90,7 @@ rpn::Stack::pop_string() {
 int64_t
 rpn::Stack::pop_integer() {
   auto tos = pop();
-  auto typed = dynamic_cast<StInteger*>(tos.get());
+  auto *typed = dynamic_cast<StInteger*>(tos.get());
   if (typed) {
     return typed->val();
   }
@@ -107,7 +107,7 @@ rpn::Stack::pop_integer() {
 double
 rpn::Stack::pop_double() {
   auto tos = pop();
-  auto typed = dynamic_cast<StDouble*>(tos.get());
+  auto *typed = dynamic_cast<StDouble*>(tos.get());
   if (typed) {
     return typed->val();
   }
@@ -126,8 +126,8 @@ rpn::Stack::pop_as_double() {
   auto tos = pop();
   auto raw = tos.get();
   double val = std::nan("");
-  auto dp = dynamic_cast<StDouble*>(raw);
-  auto ip = dynamic_cast<StInteger*>(raw);
+  auto *dp = dynamic_cast<StDouble*>(raw);
+  auto *ip = dynamic_cast<StInteger*>(raw);
   if (dp) {
     val = dp->val();
   } else if (ip) {

@@ -164,6 +164,9 @@ namespace rpn {
     bool addDefinition(const std::string &word, const WordDefinition &def);
     bool addCompiledWord(const std::string &word, const std::string &def, const StackValidator &v = StackSizeValidator::zero);
 
+    bool validateWord(const std::string &word);
+    bool wordExists(const std::string &word);
+
     /*
      * XXX-ELH- should the stack be public or private?
      *
@@ -289,7 +292,7 @@ public:
 template<typename T>
 class TStackObject : public rpn::Stack::Object {
  public:
-  TStackObject() = default; //: _v(v) {}
+  //  TStackObject() = default; //: _v(v) {}
  TStackObject(const T &v) : _v(v) {}
   virtual bool operator==(const Object &orhs) const override {
     auto *rhs = OBJECTP_CAST(TStackObject<T>)(&orhs);
@@ -350,7 +353,8 @@ class XBoolean {
 
 class XString {
  public:
- XString(const std::string &v) : _v(v) {}
+  XString(const XString &x): _v(x._v) {}
+  XString(const std::string &v) : _v(v) {}
   virtual operator std::string() const { return _v; };
   auto val() const { return _v; }
   bool operator==(const XString &rhs) const {

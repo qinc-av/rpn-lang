@@ -99,6 +99,13 @@ TEST_CASE("peek and types" "stack") {
     auto &tsr = OBJECT_CAST(StDouble)(stack.peek(5));
     REQUIRE( tsr.val() ==  3.14159265359);
   }
+
+  {
+    const std::string s1 = "string1";
+    stack.push_string(s1);
+    auto s2 = stack.pop_string();
+    REQUIRE(s2 == s1);
+  }
 }
 
 TEST_CASE("stack operations" "stack") {

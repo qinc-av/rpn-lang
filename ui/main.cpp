@@ -21,10 +21,10 @@ int
 main(int ac, char **av) {
   QApplication app(ac, av);
 
-  RpnKeypadUi rpn;
-  rpn.assignButton(10,4, "DROP", "DROP");
-  //  rpn.setModal(true);
-  rpn.show();
+  rpn::Runtime rpn;
+  RpnKeypadController keypad(rpn);
+  keypad.assignButton(10,4, "DROP", "DROP");
+  keypad.show();
   return app.exec();
 }
 

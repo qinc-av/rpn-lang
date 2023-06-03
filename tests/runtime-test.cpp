@@ -234,6 +234,14 @@ TEST_CASE( "parse", "Stack Words" ) {
   /*
     ".S"
   */
+  {
+    line = ("CLEAR .\" abcdefg\"");
+    g_rpn.parse(line);
+    REQUIRE( 1 == g_rpn.stack.depth() );
+    REQUIRE( ("abcdefg" == g_rpn.stack.peek_string(1)) );
+    auto s2 = g_rpn.stack.pop_string();
+    REQUIRE( ("abcdefg" == s2) );
+  }
   
 }
 

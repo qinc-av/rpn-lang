@@ -13,13 +13,17 @@ QT_BEGIN_NAMESPACE
 namespace Ui { class RpnKeypad; }
 QT_END_NAMESPACE
 
-class RpnKeypadUi : public QWidget
+namespace rpn {
+  class Runtime;
+}
+
+class RpnKeypadController : public QWidget
 {
     Q_OBJECT
 
 public:
-    RpnKeypadUi(QWidget* parent = nullptr);
-    ~RpnKeypadUi();
+    RpnKeypadController(rpn::Runtime &rpn, QWidget* parent = nullptr);
+    ~RpnKeypadController();
 
     void assignButton(unsigned row, unsigned column, const QString &label, const std::string &rpnword);
 private slots:
