@@ -161,8 +161,8 @@ static int64_t imax(int64_t a, int64_t b) {
 }
 MATH_BINARY_FUNC(fmin);
 MATH_BINARY_FUNC(fmax);
-MATH_BINARY_FUNC(imin);
-MATH_BINARY_FUNC(imax);
+MATH_BINARY_INTEGER_FUNC(imin);
+MATH_BINARY_INTEGER_FUNC(imax);
 
 MATH_BINARY_FUNC(hypot);
 MATH_UNARY_FUNC(round);
@@ -184,7 +184,7 @@ MATH_UNARY_FUNC(change_sign);
 static int64_t ichange_sign(int64_t x) {
   return -1 * x;
 }
-MATH_UNARY_FUNC(ichange_sign);
+MATH_UNARY_INTEGER_FUNC(ichange_sign);
 
 void
 addMathWords(rpn::Runtime &rpn) {

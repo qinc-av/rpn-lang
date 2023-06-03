@@ -287,7 +287,7 @@ rpn::WordDefinition::Result
 rpn::Runtime::Privates::runtime_eval(rpn::Runtime &rpn, const std::string &word, std::string &rest) {
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::dict_error;
   // numbers just push
-  if (std::isdigit(word[0])) {
+  if (std::isdigit(word[0])||(word[0]=='-'&&std::isdigit(word[1]))) {
     if (word.find('.') != std::string::npos) {
       double val = strtod(word.c_str(), nullptr);
       rpn.stack.push_double(val);

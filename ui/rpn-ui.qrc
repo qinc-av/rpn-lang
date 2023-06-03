@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/">
+        <file>etc/digital-7-font/Digital7Mono-Yz9J4.ttf</file>
+    </qresource>
+</RCC>

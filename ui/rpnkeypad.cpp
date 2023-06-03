@@ -3,6 +3,7 @@
 #include "rpn.h"
 #include "rpnkeypad.h"
 #include "ui_rpnkeypad.h"
+#include <QFontDatabase>
 
 static const std::vector<std::string> skButtonIds {
   "pb_1_1", 
@@ -68,17 +69,32 @@ struct RpnKeypadUi::Privates {
 	fprintf(stderr, "couldn't find button for %s\n", btn.c_str());
       }
     }
+
+    //    auto v = QFontDatabase::addApplicationFont("/Users/eric/work/github/elh/rpn-cnc/ui/etc/digital-7-font/Digital7Mono-Yz9J4.ttf");
+    auto v = QFontDatabase::addApplicationFont(":/etc/digital-7-font/Digital7Mono-Yz9J4.ttf");
+    QString family = QFontDatabase::applicationFontFamilies(v).at(0);
+    _ui->textEdit->setFontFamily(family);
+    _ui->textEdit->setFontPointSize(18);
     redrawDisplay();
   }
   ~Privates() {
     delete _ui;
   }
+  rpn::WordDefinition::Result pushEntry() {
+    rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
+    std::string line = _ui->lineEdit->text().toStdString();
+    if (line != "") {
+      rv = _rpn.parse(line);
+      _ui->lineEdit->clear();
+    }
+    return rv;
+  }
+
   RpnKeypadUi *_rpnd;
   Ui::RpnKeypad* _ui;
   rpn::Runtime _rpn;
 
   void redrawDisplay();
-  void pushEntry();
   void programmable_button(const std::string &id);
 };
 
@@ -140,19 +156,19 @@ void RpnKeypadUi::on_button_dot_clicked() { _p->_ui->lineEdit->insert("."); }
 
 /******************************** enter/back ********************************/
 
-void RpnKeypadUi::on_button_enter_clicked()
-{
+
+void
+RpnKeypadUi::on_button_enter_clicked() {
   if (_p->_ui->lineEdit->text() == "") {
     _p->_rpn.stack.dup();
   } else {
-    std::string line = _p->_ui->lineEdit->text().toStdString();
-    _p->_ui->lineEdit->clear();
-    auto st = _p->_rpn.parse(line);
+    _p->pushEntry();
   }
   _p->redrawDisplay();
 }
 
-void RpnKeypadUi::on_button_back_clicked() {
+void
+RpnKeypadUi::on_button_back_clicked() {
   if (_p->_ui->lineEdit->text() != "") {
     _p->_ui->lineEdit->backspace();
   } else {
@@ -161,30 +177,48 @@ void RpnKeypadUi::on_button_back_clicked() {
   }
 }
 
-void RpnKeypadUi::on_button_chs_clicked()
-{
+void
+RpnKeypadUi::on_button_chs_clicked() {
   if (_p->_ui->lineEdit->text() != "") {
     float val = _p->_ui->lineEdit->text().toFloat() * -1.;
     _p->_ui->lineEdit->setText(QString::number(val));
-    //  } else if (!m_stack.isEmpty()) {
-    //    float val = popStack();
-    //    val *= -1.;
-    //    pushStack(val);
   } else {
-    return; // do nothing
+    std::string line = "CHS";
+    _p->_rpn.parse(line);
   }
+  _p->redrawDisplay();
 }
 
 void RpnKeypadUi::on_button_add_clicked() {
+  if (_p->pushEntry()==rpn::WordDefinition::Result::ok) {
+      std::string line = "+";
+      _p->_rpn.parse(line);
+    }
+  _p->redrawDisplay();
 }
 
 void RpnKeypadUi::on_button_subtract_clicked() {
+  if (_p->pushEntry()==rpn::WordDefinition::Result::ok) {
+      std::string line = "-";
+      _p->_rpn.parse(line);
+    }
+  _p->redrawDisplay();
 }
 
 void RpnKeypadUi::on_button_multiply_clicked() {
+  if (_p->pushEntry()==rpn::WordDefinition::Result::ok) {
+      std::string line = "*";
+      _p->_rpn.parse(line);
+    }
+  _p->redrawDisplay();
 }
 
 void RpnKeypadUi::on_button_divide_clicked() {
+  if (_p->pushEntry()==rpn::WordDefinition::Result::ok) {
+      std::string line = "/";
+      _p->_rpn.parse(line);
+    }
+  _p->redrawDisplay();
 }
 
 /******************************** application programmable buttons ********************************/
@@ -271,16 +305,5 @@ RpnKeypadUi::Privates::redrawDisplay() {
   }
   _ui->statusLabel->setText(QString::fromStdString(_rpn.status()));
   _ui->textEdit->verticalScrollBar()->setValue(_ui->textEdit->verticalScrollBar()->maximum());
-}
-
-void
-RpnKeypadUi::Privates::pushEntry() {
-#if 0
-  if (_p->_ui->lineEdit->text()!="") {
-    float next = _p->_ui->lineEdit->text().toFloat();
-    _p->_ui->lineEdit->clear();
-    pushStack(next);
-  }
-#endif
 }
 

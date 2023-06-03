@@ -1,11 +1,12 @@
 cmake_minimum_required(VERSION 3.24)
 project(rpn-test-ui)
-include(${CMAKE_CURRENT_SOURCE_DIR}/../../rpn.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/../rpn.cmake)
 
 # set(CMAKE_VERBOSE_MAKEFILE ON)
 
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
+set(CMAKE_AUTORCC ON)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall ")
 
@@ -36,6 +37,7 @@ add_executable(rpn-test-ui ${RPN_SRCS}
   rpnkeypad.cpp main.cpp
   rpnkeypad.ui
   rpnkeypad.h
+  rpn-ui.qrc
   )
 set_target_properties(rpn-test-ui PROPERTIES
           CXX_STANDARD 17

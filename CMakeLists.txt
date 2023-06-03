@@ -6,4 +6,4 @@ cmake_minimum_required (VERSION 3.24)
 project(rpn)
 
 add_subdirectory(tests)
-add_subdirectory(tests/ui)
+add_subdirectory(ui)
