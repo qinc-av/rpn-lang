@@ -5,55 +5,6 @@
 #include "ui_rpnkeypad.h"
 #include <QFontDatabase>
 
-static const std::vector<std::string> skButtonIds {
-  "pb_1_1", 
-    "pb_2_1", 
-    "pb_3_1", 
-    "pb_4_1", 
-    "pb_5_1", 
-    "pb_6_1", 
-    "pb_7_1", 
-    "pb_8_1", 
-    "pb_9_1", 
-
-    "pb_1_2", 
-    "pb_2_2", 
-    "pb_3_2", 
-    "pb_4_2", 
-    "pb_5_2", 
-    "pb_6_2", 
-    "pb_7_2", 
-    "pb_8_2", 
-    "pb_9_2", 
-    "pb_10_2",
-
-    "pb_1_3", 
-    "pb_2_3", 
-    "pb_3_3", 
-    "pb_4_3", 
-    "pb_5_3", 
-    "pb_6_3",
-    "pb_7_3", 
-    "pb_8_3", 
-    "pb_9_3", 
-    "pb_10_3",
-
-    "pb_1_4", 
-    "pb_2_4", 
-    "pb_3_4", 
-    "pb_4_4", 
-    "pb_5_4", 
-    "pb_6_4", 
-    "pb_7_4", 
-    "pb_8_4", 
-    "pb_9_4", 
-    "pb_10_4",
-
-    "pb_7_0", 
-    "pb_8_0", 
-    "pb_9_0"
-    };
-
 struct RpnKeypadController::Privates : public rpn::WordContext {
   Privates(rpn::Runtime &rpn, RpnKeypadController *d) : _rpn(rpn), _rpnd(d), _ui(new Ui::RpnKeypad) {
     add_private_words();
@@ -61,18 +12,18 @@ struct RpnKeypadController::Privates : public rpn::WordContext {
     _ui->setupUi(_rpnd);
     _ui->textEdit->setReadOnly(true);
     _ui->textEdit->setAlignment(Qt::AlignRight);
-    for(const auto &btn : skButtonIds) {
-      auto *b = _rpnd->findChild<QPushButton*>(QString::fromStdString(btn));
-      if (b) {
-	b->setText("");
-	b->setEnabled(false);
-	b->setProperty("rpn-word", QString(QString::fromStdString(btn)));
-      } else {
-	fprintf(stderr, "couldn't find button for %s\n", btn.c_str());
-      }
+
+    for(auto *w : programmableButtons()) {
+      QPushButton *b = dynamic_cast<QPushButton*>(w);
+      b->setText("");
+      b->setEnabled(false);
+      b->setProperty("rpn-word", ""); // QString(QString::fromStdString(btn)));
+
+      connect(b, SIGNAL(clicked()), _rpnd, SLOT(on_programmable_button_clicked()));
     }
 
-    auto v = QFontDatabase::addApplicationFont(":/etc/digital-7-font/Digital7Mono-Yz9J4.ttf");
+    //    auto v = QFontDatabase::addApplicationFont(":/etc/digital-7-font/Digital7Mono-Yz9J4.ttf");
+    auto v = QFontDatabase::addApplicationFont(":/etc/led-counter-7/led_counter-7.ttf");
     QString family = QFontDatabase::applicationFontFamilies(v).at(0);
     _ui->textEdit->setFontFamily(family);
     _ui->textEdit->setFontPointSize(18);
@@ -81,6 +32,7 @@ struct RpnKeypadController::Privates : public rpn::WordContext {
   ~Privates() {
     delete _ui;
   }
+  
   rpn::WordDefinition::Result pushEntry() {
     rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
     std::string line = _ui->lineEdit->text().toStdString();
@@ -91,19 +43,23 @@ struct RpnKeypadController::Privates : public rpn::WordContext {
     return rv;
   }
 
+  QList<QWidget*> programmableButtons() {
+    QRegularExpression exp("^pb_");
+    return _rpnd->findChildren<QWidget *>(exp);
+  }
+
   RpnKeypadController *_rpnd;
   Ui::RpnKeypad* _ui;
   rpn::Runtime &_rpn;
 
   void redraw_display();
-  void on_programmable_button(const std::string &id);
   void assign_button(unsigned row, unsigned column, const QString &label, const std::string &rpnword);
   void add_private_words();
 };
 
 RpnKeypadController::RpnKeypadController(rpn::Runtime &rpn, QWidget* parent) : QWidget(parent), _p(new Privates(rpn, this))  {
   setWindowTitle("RPN Keypad");
-  /*_p->_ui->lineEdit->*/installEventFilter(this);
+  installEventFilter(this);
 }
 
 RpnKeypadController::~RpnKeypadController() { delete _p; }
@@ -218,19 +174,6 @@ void RpnKeypadController::on_button_divide_clicked() {
 
 /******************************** application programmable buttons ********************************/
 
-void RpnKeypadController::Privates::on_programmable_button(const std::string &button) {
-  if (pushEntry()==rpn::WordDefinition::Result::ok) {
-    auto qs = QString::fromStdString(button);
-    auto *b = _rpnd->findChild<QPushButton*>(qs);
-    QString qword = b->property("rpn-word").toString();
-    if (qword != "") {
-      std::string word=qword.toStdString();
-      _rpn.parse(word);
-    }
-  }
-  redraw_display();
-}
-
 void
 RpnKeypadController::Privates::assign_button(unsigned row, unsigned column, const QString &label, const std::string &rpnword) {
   char btn[32];
@@ -238,69 +181,25 @@ RpnKeypadController::Privates::assign_button(unsigned row, unsigned column, cons
   auto *b = _rpnd->findChild<QPushButton*>(btn);
   if (b) {
     b->setText(label);
-    b->setText(label);
     b->setProperty("rpn-word", QString(QString::fromStdString(rpnword)));
     b->setEnabled(true);
   }
 }
 
-void RpnKeypadController::on_pb_1_1_clicked(){ _p->on_programmable_button("pb_1_1"); }
-void RpnKeypadController::on_pb_2_1_clicked(){ _p->on_programmable_button("pb_2_1"); }
-void RpnKeypadController::on_pb_3_1_clicked(){ _p->on_programmable_button("pb_3_1"); }
-void RpnKeypadController::on_pb_4_1_clicked(){ _p->on_programmable_button("pb_4_1"); }
-void RpnKeypadController::on_pb_5_1_clicked(){ _p->on_programmable_button("pb_5_1"); }
-void RpnKeypadController::on_pb_6_1_clicked(){ _p->on_programmable_button("pb_6_1"); }
-void RpnKeypadController::on_pb_7_1_clicked(){ _p->on_programmable_button("pb_7_1"); }
-void RpnKeypadController::on_pb_8_1_clicked(){ _p->on_programmable_button("pb_8_1"); }
-void RpnKeypadController::on_pb_9_1_clicked(){ _p->on_programmable_button("pb_9_1"); }
+void RpnKeypadController::on_programmable_button_clicked() {
+  if (_p->pushEntry()==rpn::WordDefinition::Result::ok) {
+    QObject *b = this->sender();
+    QString qword = b->property("rpn-word").toString();
+    if (qword != "") {
+      std::string word=qword.toStdString();
+      _p->_rpn.parse(word);
+    }
+  }
+  _p->redraw_display();
+}
 
-void RpnKeypadController::on_pb_1_2_clicked(){ _p->on_programmable_button("pb_1_2"); }
-void RpnKeypadController::on_pb_2_2_clicked(){ _p->on_programmable_button("pb_2_2"); }
-void RpnKeypadController::on_pb_3_2_clicked(){ _p->on_programmable_button("pb_3_2"); }
-void RpnKeypadController::on_pb_4_2_clicked(){ _p->on_programmable_button("pb_4_2"); }
-void RpnKeypadController::on_pb_5_2_clicked(){ _p->on_programmable_button("pb_5_2"); }
-void RpnKeypadController::on_pb_6_2_clicked(){ _p->on_programmable_button("pb_6_2"); }
-void RpnKeypadController::on_pb_7_2_clicked(){ _p->on_programmable_button("pb_7_2"); }
-void RpnKeypadController::on_pb_8_2_clicked(){ _p->on_programmable_button("pb_8_2"); }
-void RpnKeypadController::on_pb_9_2_clicked(){ _p->on_programmable_button("pb_9_2"); }
-void RpnKeypadController::on_pb_10_2_clicked(){ _p->on_programmable_button("pb_10_2"); }
-
-void RpnKeypadController::on_pb_1_3_clicked(){ _p->on_programmable_button("pb_1_3"); }
-void RpnKeypadController::on_pb_2_3_clicked(){ _p->on_programmable_button("pb_2_3"); }
-void RpnKeypadController::on_pb_3_3_clicked(){ _p->on_programmable_button("pb_3_3"); }
-void RpnKeypadController::on_pb_4_3_clicked(){ _p->on_programmable_button("pb_4_3"); }
-void RpnKeypadController::on_pb_5_3_clicked(){ _p->on_programmable_button("pb_5_3"); }
-void RpnKeypadController::on_pb_6_3_clicked(){ _p->on_programmable_button("pb_6_3"); }
-void RpnKeypadController::on_pb_7_3_clicked(){ _p->on_programmable_button("pb_7_3"); }
-void RpnKeypadController::on_pb_8_3_clicked(){ _p->on_programmable_button("pb_8_3"); }
-void RpnKeypadController::on_pb_9_3_clicked(){ _p->on_programmable_button("pb_9_3"); }
-void RpnKeypadController::on_pb_10_3_clicked(){ _p->on_programmable_button("pb_10_3"); }
-
-void RpnKeypadController::on_pb_1_4_clicked(){ _p->on_programmable_button("pb_1_4"); }
-void RpnKeypadController::on_pb_2_4_clicked(){ _p->on_programmable_button("pb_2_4"); }
-void RpnKeypadController::on_pb_3_4_clicked(){ _p->on_programmable_button("pb_3_4"); }
-void RpnKeypadController::on_pb_4_4_clicked(){ _p->on_programmable_button("pb_4_4"); }
-void RpnKeypadController::on_pb_5_4_clicked(){ _p->on_programmable_button("pb_5_4"); }
-void RpnKeypadController::on_pb_6_4_clicked(){ _p->on_programmable_button("pb_6_4"); }
-void RpnKeypadController::on_pb_7_4_clicked(){ _p->on_programmable_button("pb_7_4"); }
-void RpnKeypadController::on_pb_8_4_clicked(){ _p->on_programmable_button("pb_8_4"); }
-void RpnKeypadController::on_pb_9_4_clicked(){ _p->on_programmable_button("pb_9_4"); }
-void RpnKeypadController::on_pb_10_4_clicked(){ _p->on_programmable_button("pb_10_4"); }
-
-void RpnKeypadController::on_pb_7_0_clicked(){ _p->on_programmable_button("pb_7_0"); }
-void RpnKeypadController::on_pb_8_0_clicked(){ _p->on_programmable_button("pb_8_0"); }
-void RpnKeypadController::on_pb_9_0_clicked(){ _p->on_programmable_button("pb_9_0"); }
 
 /******************************** Stack display  ********************************/
-
-void RpnKeypadController::on_toggle_work_machine_clicked() {
-}
-
-void RpnKeypadController::on_toggle_relative_absolute_clicked() {
-}
-
-void RpnKeypadController::on_toggle_jog_cut_clicked() {
-}
 
 void
 RpnKeypadController::Privates::redraw_display() {
