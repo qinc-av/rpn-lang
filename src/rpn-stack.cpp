@@ -237,6 +237,18 @@ rpn::Stack::pick(int n) {
 }
 
 void
+rpn::Stack::reversen(int n) {
+  if (n>0 && n<=_stack.size()) {
+    std::reverse(_stack.begin(), _stack.begin()+(n));
+  }
+}
+
+void
+rpn::Stack::reverse() {
+  std::reverse(_stack.begin(), _stack.end());
+}
+
+void
 rpn::Stack::rolldn(int n) {
   if (n>0 && n<=_stack.size()) {
     auto i = _stack.begin();

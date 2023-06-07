@@ -27,11 +27,11 @@ TEST_CASE( "parse", "Stack Words" ) {
     "CLEAR"
    "OVER"
    "DROP"
-   "DROPN"
+   "DROPn"
   */
 
   std::string line;
-  line = ("CLEAR 12.32 3 OVER DROP 1 2 3 4 5 6 2 DROPN");
+  line = ("CLEAR 12.32 3 OVER DROP 1 2 3 4 5 6 2 DROPn");
   g_rpn.parse(line);
   g_rpn.stack.print("test parse");
   // should be 12.32 3 1 2 3 4 "
@@ -64,15 +64,15 @@ TEST_CASE( "parse", "Stack Words" ) {
 	    (9988 == g_rpn.stack.peek_integer(3)) &&
 	    (4 == g_rpn.stack.peek_integer(4))));
 
-  line = ("3 DROPN");
+  line = ("3 DROPn");
   g_rpn.parse(line);
   REQUIRE( 7 == g_rpn.stack.depth() );
   REQUIRE( ((4 == g_rpn.stack.peek_integer(1)) &&
 	    (6 == g_rpn.stack.peek_integer(2))) );
   /*
-    "DUPN"
+    "DUPn"
   */
-  line = ("3 DUPN");
+  line = ("3 DUPn");
   g_rpn.parse(line);
   REQUIRE( 10 == g_rpn.stack.depth() );
   REQUIRE( ((4 == g_rpn.stack.peek_integer(1)) &&
@@ -146,9 +146,9 @@ TEST_CASE( "parse", "Stack Words" ) {
   REQUIRE( (2 == g_rpn.stack.peek_integer(1)) );
 
   /*
-    "NIPN"
+    "NIPn"
   */
-  line = ("CLEAR 10 9 8 7 6 5 4 3 2 1 5 NIPN");
+  line = ("CLEAR 10 9 8 7 6 5 4 3 2 1 5 NIPn");
   g_rpn.parse(line);
   REQUIRE( 9 == g_rpn.stack.depth() );
   REQUIRE( (10 == g_rpn.stack.peek_integer(9)) );
@@ -180,9 +180,9 @@ TEST_CASE( "parse", "Stack Words" ) {
   REQUIRE( (7 == g_rpn.stack.peek_integer(1)) );
 
   /*
-    "ROLLDN"
+    "ROLLDn"
   */
-  line = ("CLEAR 10 9 8 7 6 5 4 3 2 1 7 ROLLDN");
+  line = ("CLEAR 10 9 8 7 6 5 4 3 2 1 7 ROLLDn");
   g_rpn.parse(line);
   REQUIRE( 10 == g_rpn.stack.depth() );
   REQUIRE( (10 == g_rpn.stack.peek_integer(10)) );
@@ -197,9 +197,9 @@ TEST_CASE( "parse", "Stack Words" ) {
   REQUIRE( (2 == g_rpn.stack.peek_integer(1)) );
 
   /*
-    "ROLLUN"
+    "ROLLUn"
   */
-  line = ("CLEAR 10 9 8 7 6 5 4 3 2 1 5 ROLLUN");
+  line = ("CLEAR 10 9 8 7 6 5 4 3 2 1 5 ROLLUn");
   g_rpn.parse(line);
   REQUIRE( 10 == g_rpn.stack.depth() );
   REQUIRE( (10 == g_rpn.stack.peek_integer(10)) );
@@ -214,9 +214,9 @@ TEST_CASE( "parse", "Stack Words" ) {
   REQUIRE( (5 == g_rpn.stack.peek_integer(1)) );
 
   /*
-    "TUCKN"
+    "TUCKn"
   */
-  line = ("CLEAR 10 9 8 7 6 5 4 3 2 1 5 TUCKN");
+  line = ("CLEAR 10 9 8 7 6 5 4 3 2 1 5 TUCKn");
   g_rpn.parse(line);
   REQUIRE( 11 == g_rpn.stack.depth() );
   REQUIRE( (10 == g_rpn.stack.peek_integer(11)) );
@@ -241,6 +241,40 @@ TEST_CASE( "parse", "Stack Words" ) {
     REQUIRE( ("abcdefg" == g_rpn.stack.peek_string(1)) );
     auto s2 = g_rpn.stack.pop_string();
     REQUIRE( ("abcdefg" == s2) );
+  }
+
+  /* REVERSE */
+  {
+    line = ("CLEAR 1 2 3 4 5 6 7 8 9 10 REVERSE");
+    g_rpn.parse(line);
+    REQUIRE( 10 == g_rpn.stack.depth() );
+    REQUIRE( (10 == g_rpn.stack.peek_integer(10)) );
+    REQUIRE( (9 == g_rpn.stack.peek_integer(9)) );
+    REQUIRE( (8 == g_rpn.stack.peek_integer(8)) );
+    REQUIRE( (7 == g_rpn.stack.peek_integer(7)) );
+    REQUIRE( (6 == g_rpn.stack.peek_integer(6)) );
+    REQUIRE( (5 == g_rpn.stack.peek_integer(5)) );
+    REQUIRE( (4 == g_rpn.stack.peek_integer(4)) );
+    REQUIRE( (3 == g_rpn.stack.peek_integer(3)) );
+    REQUIRE( (2 == g_rpn.stack.peek_integer(2)) );
+    REQUIRE( (1 == g_rpn.stack.peek_integer(1)) );
+  }
+
+  /* REVERSEn */
+  {
+    line = ("CLEAR 1 2 3 4 5 6 7 8 9 10 7 REVERSEn .S");
+    g_rpn.parse(line);
+    REQUIRE( 10 == g_rpn.stack.depth() );
+    REQUIRE( (1 == g_rpn.stack.peek_integer(10)) );
+    REQUIRE( (2 == g_rpn.stack.peek_integer(9)) );
+    REQUIRE( (3 == g_rpn.stack.peek_integer(8)) );
+    REQUIRE( (10 == g_rpn.stack.peek_integer(7)) );
+    REQUIRE( (9 == g_rpn.stack.peek_integer(6)) );
+    REQUIRE( (8 == g_rpn.stack.peek_integer(5)) );
+    REQUIRE( (7 == g_rpn.stack.peek_integer(4)) );
+    REQUIRE( (6 == g_rpn.stack.peek_integer(3)) );
+    REQUIRE( (5 == g_rpn.stack.peek_integer(2)) );
+    REQUIRE( (4 == g_rpn.stack.peek_integer(1)) );
   }
   
 }
@@ -477,9 +511,52 @@ TEST_CASE( "other tests", "math" ) {
 
 TEST_CASE( "loop tests", "control" ) {
   std::string line;
-  line = ("CLEAR 0 9 FOR i i NEXT");
-  g_rpn.stack.clear();
-  g_rpn.parse(line);
+  // simple single for loop
+  {
+    line = ("0 5 FOR i i 10 * NEXT .S");
+    g_rpn.stack.clear();
+    g_rpn.parse(line);
+    REQUIRE( (0. == g_rpn.stack.peek_double(5)) );
+    REQUIRE( (10 == g_rpn.stack.peek_double(4)) );
+    REQUIRE( (20. == g_rpn.stack.peek_double(3)) );
+    REQUIRE( (30. == g_rpn.stack.peek_double(2)) );
+    REQUIRE( (40. == g_rpn.stack.peek_double(1)) );
+  }
+
+  // nested for loops
+  {
+    line = ("0 5 FOR i 0 5 FOR j i 10 * j NEXT NEXT .S");
+    g_rpn.stack.clear();
+    g_rpn.parse(line);
+  }
+
+  // loop in a define
+  {
+    line = (": abc-1 FOR i i 6 * NEXT ;  0 5 abc-1");
+    g_rpn.stack.clear();
+    g_rpn.parse(line);
+  }
+
+  // nested loop in a define
+  {
+    line = (": abc-2 FOR i FOR j i 10 *  j+ NEXT NEXT ;  0 5 0 4 abc-2");
+    g_rpn.stack.clear();
+    g_rpn.parse(line);
+  }
+
+  // indefinite loop
+  {
+    line = ("5 DO DUP 1 - DUP DUP 0 == UNTIL");
+    g_rpn.stack.clear();
+    g_rpn.parse(line);
+  }
+
+  // indefinite loop
+  {
+    line = ("5 3 DO DUP 1 - DUP DUP 0 == UNTIL");
+    g_rpn.stack.clear();
+    g_rpn.parse(line);
+  }
   
 }
 

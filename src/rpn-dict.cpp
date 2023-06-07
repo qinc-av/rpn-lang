@@ -397,6 +397,7 @@ STACK_OP_FUNC(dup);
 STACK_OP_FUNC(rotu);
 STACK_OP_FUNC(rotd);
 STACK_OP_FUNC(print);
+STACK_OP_FUNC(reverse);
 
 STACK_OPn_FUNC(dropn);
 STACK_OPn_FUNC(dupn);
@@ -405,6 +406,7 @@ STACK_OPn_FUNC(pick);
 STACK_OPn_FUNC(rolldn);
 STACK_OPn_FUNC(rollun);
 STACK_OPn_FUNC(tuckn);
+STACK_OPn_FUNC(reversen);
 
 // depth is special because we push the value back on the stack
 static rpn::WordDefinition::Result STACK_OP(depth)(rpn::Runtime &rpn, rpn::WordContext *ctx, std::string &rest) {
@@ -426,14 +428,16 @@ void addStackWords(rpn::Runtime &rpn) {
   ADD_STACK_OP(rpn, "DUP", one, dup);
   ADD_STACK_OP(rpn, "ROTU", three, rotu);
   ADD_STACK_OP(rpn, "ROTD", three, rotd);
-  ADD_STACK_OP(rpn, "DROPN", ntos, dropn);
-  ADD_STACK_OP(rpn, "DUPN", ntos, dupn);
-  ADD_STACK_OP(rpn, "NIPN", ntos, nipn);
+  ADD_STACK_OP(rpn, "DROPn", ntos, dropn);
+  ADD_STACK_OP(rpn, "DUPn", ntos, dupn);
+  ADD_STACK_OP(rpn, "NIPn", ntos, nipn);
   ADD_STACK_OP(rpn, "PICK", ntos, pick);
-  ADD_STACK_OP(rpn, "ROLLDN", ntos, rolldn);
-  ADD_STACK_OP(rpn, "ROLLUN", ntos, rollun);
-  ADD_STACK_OP(rpn, "TUCKN", ntos, tuckn);
+  ADD_STACK_OP(rpn, "ROLLDn", ntos, rolldn);
+  ADD_STACK_OP(rpn, "ROLLUn", ntos, rollun);
+  ADD_STACK_OP(rpn, "TUCKn", ntos, tuckn);
   ADD_STACK_OP(rpn, ".S", zero, print);
+  ADD_STACK_OP(rpn, "REVERSE", zero, reverse);
+  ADD_STACK_OP(rpn, "REVERSEn", ntos, reversen);
 }
 
 void addTypeWords(rpn::Runtime &rpn) {

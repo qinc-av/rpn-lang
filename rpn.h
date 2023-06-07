@@ -82,6 +82,9 @@ namespace rpn {
     void rotu(); // rollu(3);
     void rotd(); // rolld(3);
 
+    void reverse();
+    void reversen(int n);
+
     void print(const std::string &msg="");
 
     std::vector<size_t> types() const;
@@ -147,6 +150,7 @@ namespace rpn {
       dict_error, // no such word
       param_error, // parameters not right for the word
       eval_error, // eval went awry
+      compile_error, // error in compiling
     };
     //    std::string description;
     const StackValidator &validator;
@@ -292,8 +296,8 @@ public:
 template<typename T>
 class TStackObject : public rpn::Stack::Object {
  public:
-  //  TStackObject() = default; //: _v(v) {}
- TStackObject(const T &v) : _v(v) {}
+  TStackObject() = default; //: _v(v) {}
+  TStackObject(const T &v) : _v(v) {}
   virtual bool operator==(const Object &orhs) const override {
     auto *rhs = OBJECTP_CAST(TStackObject<T>)(&orhs);
     return (rhs !=nullptr && _v.val() == rhs->_v.val());
