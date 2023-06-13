@@ -30,19 +30,30 @@ nextWord(std::string &word, std::string &buffer, char delim=' ') {
   return p1;
 }
 
+enum CompileType {
+  ct_worddef,
+  ct_forloop,
+  ct_whileloop,
+  ct_lambda,
+  ct_mathexpr
+};
+
 struct Progn : public rpn::WordContext, public rpn::Stack::Object {
 public:
-  Progn(rpn::Runtime::Privates &p) : _p(p) {};
-  Progn(const Progn &other) : _p(other._p), _wordlist(other._wordlist) {
+  Progn(rpn::Runtime::Privates &p, CompileType t) : _p(p), _type(t) {};
+  Progn(const Progn &other) : _p(other._p), _wordlist(other._wordlist), _type(other._type), _ident(other._ident) {
+    /*
     for(auto const &v : other._locals) {
       _locals.emplace(v.first, v.second->deep_copy());
     }
+    */
   }
 
   virtual bool operator==(const Object &orhs) const override {
-    auto &rhs = OBJECT_CAST(Progn)(orhs);
-    return ((_wordlist == rhs._wordlist) &&
-	    (_locals == rhs._locals));
+    auto &rhs = OBJECT_CAST(const Progn)(orhs);
+    return ((_type == rhs._type) &&
+	    (_wordlist == rhs._wordlist)/* &&
+					   (_locals == rhs._locals) */);
   }
 
   virtual operator std::string() const override {
@@ -58,30 +69,26 @@ public:
 
   void addWord(const std::string &word) { _wordlist.push_back(word); };
 
-  rpn::WordDefinition::Result eval();
+  rpn::WordDefinition::Result eval(rpn::Runtime &rpn);
+
+  rpn::WordDefinition::Result eval_forloop(rpn::Runtime &rpn);
+  rpn::WordDefinition::Result eval_whileloop(rpn::Runtime &rpn);
+  rpn::WordDefinition::Result eval_lambda(rpn::Runtime &rpn);
+  rpn::WordDefinition::Result eval_mathexpr(rpn::Runtime &rpn);
+
   const std::vector<std::string> &wordlist() const { return _wordlist; };
 
   void clear() { _wordlist.clear(); };
 
   rpn::Runtime::Privates &_p;
   std::vector<std::string> _wordlist;
-  std::map<std::string,std::unique_ptr<rpn::Stack::Object>> _locals;
-};
-
-struct LoopContext {
-  std::string loopVar;
-  double start;
-  double end;
-};
-
-enum runtime_state {
-  st_run,
-  st_define,
-  st_loop
+  //  std::map<std::string,std::unique_ptr<rpn::Stack::Object>> _locals;
+  CompileType _type;
+  std::string _ident; // value and usage depends on type
 };
 
 struct rpn::Runtime::Privates : public rpn::WordContext {
-  Privates() : _newDefinition(*this), _tracing(true), _loopVars({}), _loopCount(0) {};
+  Privates() : _tracing(false) {};
   ~Privates() {};
 
   rpn::WordDefinition::Result eval(rpn::Runtime &rpn, const std::string &word, std::string &rest);
@@ -91,13 +98,15 @@ struct rpn::Runtime::Privates : public rpn::WordContext {
   // add words that require acces to the Privates struct.
   void add_private_words(rpn::Runtime &rpn);
 
-  rpn::WordDefinition::Result for_loop(rpn::Runtime &rpn, double increment);
-
   // validates a word in the dictionary and returns an iterator to it (or _rtDictionary.end() )
   std::multimap<std::string,WordDefinition>::iterator validate_word(const std::string &word, rpn::Stack &stack);
   bool word_exists(const std::string &word);
 
   bool is_local_variable(const std::string &word);
+
+  rpn::WordDefinition::Result start_compile(CompileType t, bool needIdent);
+  rpn::WordDefinition::Result end_compile(Progn *&progp, CompileType t);
+  void print_locals(const std::string &label);
 
   /*
    */
@@ -106,50 +115,125 @@ struct rpn::Runtime::Privates : public rpn::WordContext {
 
   std::string _status;
 
-  runtime_state _state;
-  std::string _newWord;
-  Progn _newDefinition;
-
-  LoopContext _loopContext;
-  std::vector<std::string> _loopVars;
-  size_t _loopCount;
-
+  std::vector<Progn> _vprogn;
+  bool _needIdent;
   bool _tracing;
+  std::map<std::string,std::unique_ptr<rpn::Stack::Object>> _locals;
 };
 
-NATIVE_WORD_DECL(private, COMPILED_EVAL)  {
-  Progn *cwc = dynamic_cast<Progn*>(ctx);
-  //  rpn::Runtime::Privates *p = dynamic_cast<rpn::Runtime::Privates*>(ctx);
-  rpn::WordDefinition::Result rv = (cwc) ? rpn::WordDefinition::Result::ok : rpn::WordDefinition::Result::eval_error;
-  if (rv == rpn::WordDefinition::Result::ok) {
-    std::string rest;
-    for(auto w : cwc->wordlist()) {
-      cwc->_p.eval(rpn, w, rest);
+rpn::WordDefinition::Result
+Progn::eval_forloop(rpn::Runtime &rpn) {
+  rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
+  double end = rpn.stack.pop_as_double();
+  double start = rpn.stack.pop_as_double();
+  for(; rv==rpn::WordDefinition::Result::ok && start<end; start += 1) {
+    _p._locals[_ident] = std::make_unique<StDouble>(StDouble(start));
+    rv = eval_lambda(rpn);
+  }
+  return rv;
+}
+
+rpn::WordDefinition::Result
+Progn::eval_whileloop(rpn::Runtime &rpn) {
+  rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
+  return rv;
+}
+
+rpn::WordDefinition::Result
+Progn::eval_lambda(rpn::Runtime &rpn) {
+  rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
+  std::string rest;
+  //  _p.print_locals("enter-lambda");
+  //  rpn.stack.print("enter-lambda");
+  for(auto wi= _wordlist.cbegin(); rv==rpn::WordDefinition::Result::ok && wi != _wordlist.cend(); wi++) {
+    auto const &lv = _p._locals.find(*wi);
+
+    if (lv != _p._locals.end()) {
+      auto *pn = dynamic_cast<Progn*>(&(*lv->second));
+      if (pn != nullptr) {
+	rpn.stack.print("recursive progn");
+	pn->eval(rpn);
+
+      } else {
+	rpn.stack.push(*lv->second);
+      }
+
+    } else {
+
+      //      printf("pre-eval %s\n", wi->c_str());
+      //      rpn.stack.print();
+      rv = _p.eval(rpn, *wi, rest);
+      //      rpn.stack.print("post-eval");
     }
   }
+  //  rpn.stack.print("exit-lambda");
+  //  _p.print_locals("exit-lambda");
+  return rv;
+}
+
+rpn::WordDefinition::Result
+Progn::eval_mathexpr(rpn::Runtime &rpn) {
+  rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
+  return rv;
+}
+
+rpn::WordDefinition::Result
+Progn::eval(rpn::Runtime &rpn) {
+  rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
+  switch (_type) {
+  case ct_worddef:
+    rv = eval_lambda(rpn);
+    break;
+
+  case ct_forloop:
+    rv = eval_forloop(rpn);
+    break;
+
+  case ct_whileloop:
+    rv = eval_whileloop(rpn);
+    break;
+
+  case ct_lambda:
+    rv = eval_lambda(rpn);
+    break;
+
+  case ct_mathexpr:
+    rv = eval_mathexpr(rpn);
+    break;
+  }
+  return rv;
+}
+
+NATIVE_WORD_DECL(private, COMPILED_EVAL)  {
+  Progn *progn = dynamic_cast<Progn*>(ctx);
+  //  rpn::Runtime::Privates *p = dynamic_cast<rpn::Runtime::Privates*>(ctx);
+  rpn::WordDefinition::Result rv = (progn) ? rpn::WordDefinition::Result::ok : rpn::WordDefinition::Result::eval_error;
+  rv = progn->eval(rpn);
   return rv;
 }
 
 NATIVE_WORD_DECL(private, COLON) {
   // (rpn::Runtime &rpn, rpn::WordContext *ctx, std::string &rest)
-  rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
   rpn::Runtime::Privates *p = dynamic_cast<rpn::Runtime::Privates*>(ctx);
-  p->_state = st_define;
-  return rv;
+  return p->start_compile(ct_worddef, true);
 }
 
 NATIVE_WORD_DECL(private, SEMICOLON) {
   // (rpn::Runtime &rpn, rpn::WordContext *ctx, std::string &rest)
-  rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
   rpn::Runtime::Privates *p = dynamic_cast<rpn::Runtime::Privates*>(ctx);
 
-  printf("adding '%s' to the dictionary\n", p->_newWord.c_str());
+  Progn *progp=nullptr;
+  rpn::WordDefinition::Result rv = p->end_compile(progp, ct_worddef);
+  if (rv == rpn::WordDefinition::Result::ok) {
 
-  p->_rtDictionary.emplace(p->_newWord, rpn::WordDefinition {
-      rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, COMPILED_EVAL), new Progn(p->_newDefinition) });
-  p->_state = st_run;
-  p->_newWord = "";
-  p->_newDefinition.clear();
+    printf("adding '%s' to the dictionary\n", progp->_ident.c_str());
+    p->_rtDictionary.emplace(progp->_ident, rpn::WordDefinition {
+	rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, COMPILED_EVAL), progp });
+
+  } else {
+
+    rv = rpn::WordDefinition::Result::compile_error;
+  }
   return rv;
 }
 
@@ -188,7 +272,7 @@ NATIVE_WORD_DECL(private, ct_DQUOTE) {
   std::string literal;
   auto pos = nextWord(literal, rest, '"');
   if (pos != std::string::npos) {
-    p->_newDefinition.addWord(".\" " + literal + '"');
+    p->_vprogn.back().addWord(".\" " + literal + '"');
   } else {
     rv = rpn::WordDefinition::Result::parse_error;
     rest = literal; // reset buffer for error messages and diagnostics
@@ -197,95 +281,65 @@ NATIVE_WORD_DECL(private, ct_DQUOTE) {
 }
 
 NATIVE_WORD_DECL(private, FOR) {
-  rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
   rpn::Runtime::Privates *p = dynamic_cast<rpn::Runtime::Privates*>(ctx);
-  p->_loopContext.end = rpn.stack.pop_as_double();
-  p->_loopContext.start = rpn.stack.pop_as_double();
-  p->_state = st_loop;
-  p->_loopCount++;
-  return rv;
+  return p->start_compile(ct_forloop, true);
 }
 
 NATIVE_WORD_DECL(private, ct_FOR) {
-  rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
   rpn::Runtime::Privates *p = dynamic_cast<rpn::Runtime::Privates*>(ctx);
-  std::string var;
-  auto pos = nextWord(var, rest);
-  if (pos != std::string::npos) {
-    p->_loopVars.push_back(var);
-    p->_loopCount++;
-    p->_newDefinition.addWord("FOR");
-    p->_newDefinition.addWord(var);
-  } else {
-    rv = rpn::WordDefinition::Result::compile_error;
-  }
+  return p->start_compile(ct_forloop, true);
+}
+
+rpn::WordDefinition::Result
+rpn::Runtime::Privates::start_compile(CompileType t, bool needIdent) {
+  rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
+  _needIdent = needIdent;
+  _vprogn.push_back(Progn(*this, t));
   return rv;
 }
 
 rpn::WordDefinition::Result
-rpn::Runtime::Privates::for_loop(rpn::Runtime &rpn, double increment) {
-  rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
-  auto loopVar = _loopVars.back();
-  _loopVars.pop_back();
-  _loopCount--;
+rpn::Runtime::Privates::end_compile(Progn *&progp, CompileType t) {
+  rpn::WordDefinition::Result rv = ((_vprogn.size()>0) && _vprogn.back()._type == t)?
+    rpn::WordDefinition::Result::ok : rpn::WordDefinition::Result::compile_error;
 
-  if (loopVar != _loopContext.loopVar) {
-    printf("compile_error %s %s\n", loopVar.c_str(), _loopContext.loopVar.c_str());
-    rv = rpn::WordDefinition::Result::compile_error;
-
-  } else {
-    _newWord = "";
-    Progn wdef = _newDefinition;
-    _newDefinition.clear();
-    LoopContext lctx = _loopContext;
-    _loopContext.loopVar = "";
-    _loopContext.start = 0.;
-    _loopContext.end = 0.;
-
-    _state = st_run;
-    printf("%s: (var %s) (begin %f) (end %f) (incr %f)\n",
-	   __func__, loopVar.c_str(), lctx.start, lctx.end, increment);
-    printf("  << ");
-    for(const auto &w : wdef._wordlist) {
-      printf("%s ", w.c_str());
-    }
-    printf(" >>\n");
-
-    std::string rest;
-    for(double cv = lctx.start; rv==rpn::WordDefinition::Result::ok && cv<lctx.end; cv+=increment) {
-      for(auto wi = wdef._wordlist.cbegin(); rv==rpn::WordDefinition::Result::ok && wi != wdef._wordlist.cend(); wi++) {
-	printf("for_loop-eval(lv %s %f): %s\n", loopVar.c_str(), cv, wi->c_str());
-	//	if (*wi == loopVar) {
-	//	  rpn.stack.push_double(cv);
-	//	} else {
-	  rv = eval(rpn, *wi, rest);
-	  //	}
-      }
-    }
+  progp=nullptr;
+  if (rv == rpn::WordDefinition::Result::ok) {
+    progp = new Progn(_vprogn.back());
+    _vprogn.pop_back();
   }
+
   return rv;
 }
 
-
 NATIVE_WORD_DECL(private, ct_NEXT) {
-  rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
   rpn::Runtime::Privates *p = dynamic_cast<rpn::Runtime::Privates*>(ctx);
 
-  if (p->_state != st_loop || p->_loopVars.size()==0) {
-    // not in a loop or something went wrong
-    rv = rpn::WordDefinition::Result::compile_error;
+  Progn *progp=nullptr;
+  rpn::WordDefinition::Result rv = p->end_compile(progp, ct_forloop);
 
-  } else if (p->_loopVars.size()>1) {
-    // nested level loop, keep pushing
+  if (rv == rpn::WordDefinition::Result::ok) {
 
-    p->_loopVars.pop_back();
-    p->_loopCount--;
-    p->_newDefinition.addWord("NEXT");
+    if (p->_vprogn.size() == 0) {
+      // back to top level, evaluate here
+      rv = progp->eval(rpn);
+
+      delete progp;
+      p->_locals.clear();
+
+    } else {
+
+      // in a definition or nested loops
+
+      std::string word = std::to_string((uint64_t)progp);
+      p->_locals.emplace(word, progp);
+      p->_vprogn.back().addWord(word);
+
+    }
 
   } else {
-    // current top-level loop, let's run this one.
 
-    rv = p->for_loop(rpn, 1);
+    rv = rpn::WordDefinition::Result::compile_error;
   }
 
   return rv;
@@ -295,7 +349,6 @@ NATIVE_WORD_DECL(private, ct_STEP) {
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
   rpn::Runtime::Privates *p = dynamic_cast<rpn::Runtime::Privates*>(ctx);
   auto step = rpn.stack.pop_integer();
-  p->_state = st_run;
   return rv;
 }
 
@@ -323,7 +376,7 @@ rpn::Runtime::Privates::eval(rpn::Runtime &rpn, const std::string &word, std::st
   rpn::WordDefinition::Result rv=rpn::WordDefinition::Result::eval_error;
   _status = word + ": ";
   std::string msg;
-  if (_state != st_run) {
+  if (_vprogn.size() != 0) {
     try {
       rv = compiletime_eval(rpn,word,rest);
 
@@ -331,17 +384,13 @@ rpn::Runtime::Privates::eval(rpn::Runtime &rpn, const std::string &word, std::st
       msg = "type error compiling";
       if (rest.size()>0) msg += (std::string(" '") + rest + "'");
       rv = rpn::WordDefinition::Result::param_error;
-      _state = st_run;
-      _newWord = "";
-      _newDefinition.clear();
+      _vprogn.clear();
 
     } catch (const std::runtime_error &rte) {
       rv = rpn::WordDefinition::Result::eval_error;
       msg = "eval error compiling";
       if (rest.size()>0) msg += (std::string(" '") + rest + "'");
-      _state = st_run;
-      _newWord = "";
-      _newDefinition.clear();
+      _vprogn.clear();
     }
 
   } else {
@@ -435,26 +484,30 @@ rpn::Runtime::Privates::runtime_eval(rpn::Runtime &rpn, const std::string &word,
   return rv;
 }
 
+void
+rpn::Runtime::Privates::print_locals(const std::string &label) {
+  printf("--- %s ---\n", label.c_str());
+  for(auto const &lv : _locals) {
+    printf("  %s: %s\n", lv.first.c_str(), lv.second->to_string().c_str());
+  }
+}
+
 bool
 rpn::Runtime::Privates::is_local_variable(const std::string &word) {
-  bool rv = (_state==st_loop && (std::find(_loopVars.begin(), _loopVars.end(), word) != _loopVars.end()));
-  printf("%s: '%s' ? [",  __func__, word.c_str());
-  for(const auto &v : _loopVars) {
-    printf("%s ", v.c_str());
+  bool rv = (_locals.find(word) != _locals.end());
+  for(auto  pn =_vprogn.cbegin(); rv==false && pn != _vprogn.cend(); pn++) {
+    rv = (rv || (word == pn->_ident));
   }
-  printf("] %d\n", rv);
   return rv;
 }
 
 rpn::WordDefinition::Result
 rpn::Runtime::Privates::compiletime_eval(rpn::Runtime &rpn, const std::string &word, std::string &rest) {
   rpn::WordDefinition::Result rv=rpn::WordDefinition::Result::dict_error;
-  if (_newWord == "") {
-    _newWord = word;
-    if (_state == st_loop && (_loopCount != _loopVars.size())) {
-      _loopContext.loopVar = _newWord;
-      _loopVars.push_back(_newWord);
-    }
+  if (_needIdent && (_vprogn.back()._ident=="")) {
+    _vprogn.back()._ident = word;
+    _needIdent = false;
+
     rv=rpn::WordDefinition::Result::ok;
 
   } else {
@@ -465,20 +518,20 @@ rpn::Runtime::Privates::compiletime_eval(rpn::Runtime &rpn, const std::string &w
 
     } else if (std::isdigit(word[0])) {
       // numbers just push
-      _newDefinition.addWord(word);
+      _vprogn.back().addWord(word);
       rv=rpn::WordDefinition::Result::ok;
 
     } else if (is_local_variable(word)) {
       // if we're in a loop compiling mode; and this is the loop variable,
       // push it
-      _newDefinition.addWord(word);
+      _vprogn.back().addWord(word);
       rv=rpn::WordDefinition::Result::ok;
       
     } else {
       // everything else, we check in the runtime dictionary
       const auto &rw = _rtDictionary.find(word);
       if (rw != _rtDictionary.end()) {
-	_newDefinition.addWord(word);
+	_vprogn.back().addWord(word);
 	rv=rpn::WordDefinition::Result::ok;
 
       } else {
@@ -494,17 +547,15 @@ rpn::Runtime::Privates::compiletime_eval(rpn::Runtime &rpn, const std::string &w
 rpn::Runtime::Runtime() {
   m_p = new Privates;
   m_p->add_private_words(*this);
-  addInternalWords(m_p);
+  addStackWords();
+  addLogicWords();
+  addMathWords();
+  addTypeWords();
 }
 
 rpn::Runtime::~Runtime() {
   if (m_p) delete m_p;
 }
-
-//void
-//rpn::Runtime::addDictionary(const std::map<std::string,word_t> &newDict) {
-//  m_p->_runtimeDictionary.insert(newDict.begin(), newDict.end());
-//}
 
 const std::string &
 rpn::Runtime::status() {
@@ -613,11 +664,44 @@ const size_t rpn::StrictTypeValidator::v_anytype = typeid(rpn::Stack::Object).ha
 const rpn::StrictTypeValidator rpn::StrictTypeValidator::d1_double({typeid(StDouble).hash_code()});
 const rpn::StrictTypeValidator rpn::StrictTypeValidator::d1_integer({typeid(StInteger).hash_code()});
 const rpn::StrictTypeValidator rpn::StrictTypeValidator::d1_boolean({typeid(StBoolean).hash_code()});
+const rpn::StrictTypeValidator rpn::StrictTypeValidator::d1_vec3({typeid(StVec3).hash_code()});
+const rpn::StrictTypeValidator rpn::StrictTypeValidator::d1_object({typeid(StObject).hash_code()});
+const rpn::StrictTypeValidator rpn::StrictTypeValidator::d1_array({typeid(StArray).hash_code()});
+
 const rpn::StrictTypeValidator rpn::StrictTypeValidator::d2_boolean_boolean({typeid(StBoolean).hash_code(), typeid(StBoolean).hash_code()});
 const rpn::StrictTypeValidator rpn::StrictTypeValidator::d2_double_double({typeid(StDouble).hash_code(), typeid(StDouble).hash_code()});
 const rpn::StrictTypeValidator rpn::StrictTypeValidator::d2_double_integer({typeid(StDouble).hash_code(), typeid(StInteger).hash_code()});
 const rpn::StrictTypeValidator rpn::StrictTypeValidator::d2_integer_double({typeid(StInteger).hash_code(), typeid(StDouble).hash_code()});
 const rpn::StrictTypeValidator rpn::StrictTypeValidator::d2_integer_integer({typeid(StInteger).hash_code(), typeid(StInteger).hash_code()});
+
+const rpn::StrictTypeValidator rpn::StrictTypeValidator::d2_double_vec3({typeid(StDouble).hash_code(), typeid(StVec3).hash_code()});
+const rpn::StrictTypeValidator rpn::StrictTypeValidator::d2_vec3_double({typeid(StVec3).hash_code(), typeid(StDouble).hash_code()});
+
+const rpn::StrictTypeValidator rpn::StrictTypeValidator::d2_integer_vec3({typeid(StInteger).hash_code(), typeid(StVec3).hash_code()});
+const rpn::StrictTypeValidator rpn::StrictTypeValidator::d2_vec3_integer({typeid(StVec3).hash_code(), typeid(StInteger).hash_code()});
+
+const rpn::StrictTypeValidator rpn::StrictTypeValidator::d2_vec3_vec3({typeid(StVec3).hash_code(), typeid(StVec3).hash_code()});
+
+const rpn::StrictTypeValidator rpn::StrictTypeValidator::d2_string_any({typeid(StString).hash_code(),rpn::StrictTypeValidator::v_anytype});
+const rpn::StrictTypeValidator rpn::StrictTypeValidator::d2_any_string({rpn::StrictTypeValidator::v_anytype,typeid(StString).hash_code()});
+
+const rpn::StrictTypeValidator rpn::StrictTypeValidator::d2_array_any({typeid(StArray).hash_code(), rpn::StrictTypeValidator::v_anytype});
+const rpn::StrictTypeValidator rpn::StrictTypeValidator::d2_any_array({rpn::StrictTypeValidator::v_anytype,typeid(StArray).hash_code()});
+const rpn::StrictTypeValidator rpn::StrictTypeValidator::d2_object_any({typeid(StObject).hash_code(),rpn::StrictTypeValidator::v_anytype});
+const rpn::StrictTypeValidator rpn::StrictTypeValidator::d2_any_object({rpn::StrictTypeValidator::v_anytype,typeid(StObject).hash_code()});
+
+const rpn::StrictTypeValidator rpn::StrictTypeValidator::d3_double_double_double({typeid(StDouble).hash_code(),typeid(StDouble).hash_code(),typeid(StDouble).hash_code()});
+const rpn::StrictTypeValidator rpn::StrictTypeValidator::d3_integer_double_double({typeid(StInteger).hash_code(),typeid(StDouble).hash_code(),typeid(StDouble).hash_code()});
+const rpn::StrictTypeValidator rpn::StrictTypeValidator::d3_double_integer_double({typeid(StDouble).hash_code(),typeid(StInteger).hash_code(),typeid(StDouble).hash_code()});
+const rpn::StrictTypeValidator rpn::StrictTypeValidator::d3_double_double_integer({typeid(StDouble).hash_code(),typeid(StDouble).hash_code(),typeid(StInteger).hash_code()});
+
+const rpn::StrictTypeValidator rpn::StrictTypeValidator::d3_integer_integer_integer({typeid(StInteger).hash_code(),typeid(StInteger).hash_code(),typeid(StInteger).hash_code()});
+const rpn::StrictTypeValidator rpn::StrictTypeValidator::d3_double_integer_integer({typeid(StDouble).hash_code(),typeid(StInteger).hash_code(),typeid(StInteger).hash_code()});
+const rpn::StrictTypeValidator rpn::StrictTypeValidator::d3_integer_double_integer({typeid(StInteger).hash_code(),typeid(StDouble).hash_code(),typeid(StInteger).hash_code()});
+const rpn::StrictTypeValidator rpn::StrictTypeValidator::d3_integer_integer_double({typeid(StInteger).hash_code(),typeid(StInteger).hash_code(),typeid(StDouble).hash_code()});
+
+const rpn::StrictTypeValidator rpn::StrictTypeValidator::d3_object_string_any({typeid(StObject).hash_code(),typeid(StString).hash_code(),rpn::StrictTypeValidator::v_anytype});
+const rpn::StrictTypeValidator rpn::StrictTypeValidator::d3_string_any_object({typeid(StString).hash_code(),rpn::StrictTypeValidator::v_anytype,typeid(StObject).hash_code()});
 const rpn::StrictTypeValidator rpn::StrictTypeValidator::d3_any_any_boolean({rpn::StrictTypeValidator::v_anytype, rpn::StrictTypeValidator::v_anytype, typeid(StBoolean).hash_code()} );
 
 const rpn::StackSizeValidator rpn::StackSizeValidator::zero(0);

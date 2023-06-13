@@ -136,7 +136,7 @@ rpn::Stack::pop_as_double() {
   return val;
 }
 
-const rpn::Stack::Object &
+rpn::Stack::Object &
 rpn::Stack::peek(int n) {
   if(n>0 && _stack.size()>=n) {
     return **(_stack.begin()+n-1);

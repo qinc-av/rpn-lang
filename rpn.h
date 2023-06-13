@@ -53,7 +53,7 @@ namespace rpn {
 
     std::unique_ptr<Object> pop();
 
-    const Object &peek(int n);
+    Object &peek(int n);
     bool peek_boolean(int n);
     std::string peek_string(int n);
     std::string peek_as_string(int n); // auto-converts to string if the type is not string
@@ -114,12 +114,46 @@ namespace rpn {
     static const StrictTypeValidator d1_double;
     static const StrictTypeValidator d1_integer;
     static const StrictTypeValidator d1_boolean;
+    static const StrictTypeValidator d1_object;
+    static const StrictTypeValidator d1_string;
+    static const StrictTypeValidator d1_array;
+    static const StrictTypeValidator d1_vec3;
+
+    static const StrictTypeValidator d2_vec3_vec3;
     static const StrictTypeValidator d2_double_double;
     static const StrictTypeValidator d2_double_integer;
     static const StrictTypeValidator d2_integer_double;
     static const StrictTypeValidator d2_integer_integer;
     static const StrictTypeValidator d2_boolean_boolean;
+
+    static const StrictTypeValidator d2_vec3_double;
+    static const StrictTypeValidator d2_double_vec3;
+    static const StrictTypeValidator d2_vec3_integer;
+    static const StrictTypeValidator d2_integer_vec3;
+
+    static const StrictTypeValidator d2_array_any;
+    static const StrictTypeValidator d2_any_array;
+
+    static const StrictTypeValidator d2_string_any;
+    static const StrictTypeValidator d2_any_string;
+
+    static const StrictTypeValidator d2_object_any;
+    static const StrictTypeValidator d2_any_object;
+
+    static const StrictTypeValidator d3_double_double_double;
+    static const StrictTypeValidator d3_integer_double_double;
+    static const StrictTypeValidator d3_double_integer_double;
+    static const StrictTypeValidator d3_double_double_integer;
+
+    static const StrictTypeValidator d3_integer_integer_integer;
+    static const StrictTypeValidator d3_double_integer_integer;
+    static const StrictTypeValidator d3_integer_double_integer;
+    static const StrictTypeValidator d3_integer_integer_double;
+
     static const StrictTypeValidator d3_any_any_boolean;
+    static const StrictTypeValidator d3_object_string_any;
+    static const StrictTypeValidator d3_string_any_object;
+
     static const size_t v_anytype;
     //    static const size_t v_numbertype;  // is harder than it sounds...
 
@@ -184,114 +218,16 @@ namespace rpn {
 
     struct Privates;
   private:
-    void addInternalWords(WordContext *wc);
+    void addStackWords();
+    void addMathWords();
+    void addLogicWords();
+    void addTypeWords();
     Privates *m_p;
   };
 }
 
-#if 0
-class StDouble : public rpn::Stack::Object {
- public:
- StDouble(const double &v) : _v(v) {}
-  ~StDouble() {}
-  virtual std::unique_ptr<rpn::Stack::Object> deep_copy() const { return std::make_unique<StDouble>(*this); };
-  virtual operator std::string() const { return std::to_string(_v); };
-  auto val() const { return _v; };
- private:
-  double _v;
-};
-
-class StBoolean : public rpn::Stack::Object {
- public:
- StBoolean(const bool &v) : _v(v) {}
-  ~StBoolean() {}
-  virtual std::unique_ptr<rpn::Stack::Object> deep_copy() const { return std::make_unique<StBoolean>(*this); };
-  virtual operator std::string() const { return _v ? "true" : "false"; };
-  auto val() const { return _v; };
- private:
-  bool _v;
-};
-
-class StInteger : public rpn::Stack::Object {
- public:
- StInteger(const int64_t &v) : _v(v) {}
-  ~StInteger() {}
-  virtual std::unique_ptr<rpn::Stack::Object> deep_copy() const { return std::make_unique<StInteger>(*this); };
-  virtual operator std::string() const { return std::to_string(_v); };
-  auto val() const { return _v; };
- private:
-  int64_t _v;
-};
-
-class StString : public rpn::Stack::Object {
- public:
- StString(const std::string &v) : _v(v) {}
-  ~StString() {}
-  virtual std::unique_ptr<rpn::Stack::Object> deep_copy() const { return std::make_unique<StString>(*this); };
-  virtual operator std::string() const { return (_v); };
-  auto val() const { return _v; };
- private:
-  std::string _v;
-};
-
-#include <map>
-class StObject : public rpn::Stack::Object {
-public:
-  StObject() = default;
-  StObject(const StObject &v)  {
-    for(auto const &m : v._members) {
-      _members.emplace(m.first, m.second->deep_copy());
-    }
-  }
-  virtual std::unique_ptr<rpn::Stack::Object> deep_copy() const { return std::make_unique<StObject>(*this); };
-  void add_value(const std::string &name, const rpn::Stack::Object &val) {
-    _members.emplace(name, val.deep_copy());
-  }
-  virtual operator std::string() const {
-    std::string rv = "{";
-    for(auto const &m : _members) {
-      rv += m.first;
-      rv += ":";
-      rv += m.second->to_string();
-      rv += ", ";
-    }
-    rv += "}";
-    return rv;
-  };
-  auto const &val() const { return _members; };
- private:
-  std::map<std::string,std::unique_ptr<rpn::Stack::Object>> _members;
-};
-
-class StArray : public rpn::Stack::Object {
-public:
-  StArray() = default;
-  StArray(const StArray &a)  {
-    for(auto const &e : a._v) {
-      _v.push_back(e->deep_copy());
-    }
-  }
-  virtual std::unique_ptr<rpn::Stack::Object> deep_copy() const { return std::make_unique<StArray>(*this); };
-  void add_value(const rpn::Stack::Object &val) {
-    _v.push_back(val.deep_copy());
-  }
-  virtual operator std::string() const {
-    std::string rv = "[";
-    for(auto const &e : _v) {
-      rv += e->to_string();
-      rv += ", ";
-    }
-    rv += "]";
-    return rv;
-  };
-  auto const &val() const { return _v; };
- private:
-  std::vector<std::unique_ptr<rpn::Stack::Object>> _v;
-};
-#endif
-
-#define OBJECT_CAST(obtype)  dynamic_cast<const obtype&>
-#define OBJECTP_CAST(obtype)  dynamic_cast<const obtype*>
+#define OBJECT_CAST(obtype)  dynamic_cast<obtype&>
+#define OBJECTP_CAST(obtype)  dynamic_cast<obtype*>
 
 template<typename T>
 class TStackObject : public rpn::Stack::Object {
@@ -299,15 +235,15 @@ class TStackObject : public rpn::Stack::Object {
   TStackObject() = default; //: _v(v) {}
   TStackObject(const T &v) : _v(v) {}
   virtual bool operator==(const Object &orhs) const override {
-    auto *rhs = OBJECTP_CAST(TStackObject<T>)(&orhs);
+    auto *rhs = OBJECTP_CAST(const TStackObject<T>)(&orhs);
     return (rhs !=nullptr && _v.val() == rhs->_v.val());
   }
   virtual bool operator>(const Object &orhs) const override {
-    auto &rhs = OBJECT_CAST(TStackObject<T>)(orhs);
+    auto &rhs = OBJECT_CAST(const TStackObject<T>)(orhs);
     return (_v.val() > rhs._v.val());
   }
   virtual bool operator<(const Object &orhs) const override {
-    auto &rhs = OBJECT_CAST(TStackObject<T>)(orhs);
+    auto &rhs = OBJECT_CAST(const TStackObject<T>)(orhs);
     return (_v.val() < rhs._v.val());
   }
   virtual ~TStackObject() {}
@@ -442,6 +378,49 @@ using StString = TStackObject<XString>;
 using StObject = TStackObject<XObject>;
 using StArray = TStackObject<XArray>;
 
+class StVec3 : public rpn::Stack::Object {
+public:
+  StVec3(const StVec3 &other) : _x(other._x), _y(other._y), _z(other._z) {};
+  StVec3(const double &x=std::nan(""), const double &y=std::nan(""), const double &z=std::nan("")) : _x(x), _y(y), _z(z) {};
+  virtual ~StVec3() {};
+  virtual bool operator==(const Object &orhs) const override {
+    const StVec3 &rhs = OBJECT_CAST(const StVec3)(orhs);
+    // we might need to include some abs epsilon calculation here
+    return (((_x == rhs._x) || (std::isnan(_x) && std::isnan(rhs._x))) &&
+	    ((_y == rhs._y) || (std::isnan(_y) && std::isnan(rhs._y))) &&
+	    ((_z == rhs._z) || (std::isnan(_z) && std::isnan(rhs._z))));
+  };
+
+  //  virtual bool operator>(const Object &rhs) const { throw std::runtime_error("operator> invalid for type"); };
+  //  virtual bool operator<(const Object &rhs) const { throw std::runtime_error("operator> invalid for type"); };
+
+  virtual operator std::string() const override {
+    std::string rv = "<";
+    if (!std::isnan(_x)) {
+      rv += " x:";
+      rv += std::to_string(_x);
+    }
+    if (!std::isnan(_y)) {
+      rv += " y:";
+      rv += std::to_string(_y);
+    }
+    if (!std::isnan(_z)) {
+      rv += " z:";
+      rv += std::to_string(_z);
+    }
+    rv += " >";
+    return rv;
+  }
+  virtual std::unique_ptr<Object> deep_copy() const override { return std::make_unique<StVec3>(*this); }
+
+public:
+  // should these be public or private?
+  // we'll make them public so that the rpn words can work with them more easily
+  double _x;
+  double _y;
+  double _z;
+};
+
 // convenience macros for adding native methods
 #define NATIVE_WORD_FN(mangler, op) mangler##_func_##op
 
@@ -504,5 +483,6 @@ using StArray = TStackObject<XArray>;
 #define ADD_NATIVE_1_NUMBER_WDEF(mangler, r, symbol, double_func, integer_func, ptr) \
   r.addDefinition(symbol, NATIVE_WORD_WDEF(mangler, rpn::StrictTypeValidator::d1_double, double_func, ptr)); \
   r.addDefinition(symbol, NATIVE_WORD_WDEF(mangler, rpn::StrictTypeValidator::d1_integer, integer_func, ptr))
+
 
 /* end of github/elh/rpn-cnc/Rpn.h */

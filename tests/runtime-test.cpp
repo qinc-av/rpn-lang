@@ -525,9 +525,16 @@ TEST_CASE( "loop tests", "control" ) {
 
   // nested for loops
   {
-    line = ("0 5 FOR i 0 5 FOR j i 10 * j NEXT NEXT .S");
+    line = ("0 5 FOR i 0 5 FOR j i 10 * j + NEXT NEXT .S");
     g_rpn.stack.clear();
     g_rpn.parse(line);
+  }
+
+  {
+    line = ("0 5 FOR i 0 5 FOR j  0 j FOR k i 100 * j 10 * + k + NEXT NEXT NEXT");
+    g_rpn.stack.clear();
+    g_rpn.parse(line);
+    g_rpn.stack.print("nested-for i,j,k");
   }
 
   // loop in a define
@@ -539,7 +546,7 @@ TEST_CASE( "loop tests", "control" ) {
 
   // nested loop in a define
   {
-    line = (": abc-2 FOR i FOR j i 10 *  j+ NEXT NEXT ;  0 5 0 4 abc-2");
+    line = (": abc-2 FOR i FOR j i 10 *  j + NEXT NEXT ;  0 5 0 4 abc-2");
     g_rpn.stack.clear();
     g_rpn.parse(line);
   }
@@ -558,6 +565,43 @@ TEST_CASE( "loop tests", "control" ) {
     g_rpn.parse(line);
   }
   
+}
+
+TEST_CASE( "bolt-circle", "control" ) {
+  std::string line;
+
+  {
+    g_rpn.stack.clear();
+    std::string file = "/Users/eric/work/github/elh/rpn-cnc/bolt-circle.rpn";
+    auto st = g_rpn.parseFile(file);
+
+    line = ("5 5.5 0 bolt-circle");
+    g_rpn.parse(line);
+
+    line = ("5 139.7 0 bolt-circle");
+    g_rpn.parse(line);
+
+    g_rpn.stack.print("bolt-circle.rpn");
+    REQUIRE( (st == rpn::WordDefinition::Result::ok) );
+  }
+}
+
+TEST_CASE( "object", "types" ) {
+  std::string line;
+  {
+    line = ("3.6 .\" abc\" ->OBJECT 2.8 \" def\" +");
+    g_rpn.stack.clear();
+    g_rpn.parse(line);
+  }
+}
+
+TEST_CASE( "array", "types" ) {
+}
+TEST_CASE( "vec3", "types" ) {
+}
+TEST_CASE( "double", "types" ) {
+}
+TEST_CASE( "string", "types" ) {
 }
 
 

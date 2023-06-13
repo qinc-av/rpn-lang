@@ -24,7 +24,7 @@ public:
     }
   }
   virtual bool operator==(const rpn::Stack::Object &orhs) const override {
-    auto &rhs = OBJECT_CAST(CustomArray)(orhs);
+    auto &rhs = OBJECT_CAST(const CustomArray)(orhs);
     bool rv = _v.size() == rhs._v.size();
     for(auto i=_v.cbegin(), j=rhs._v.cbegin(); rv && i!= _v.cend(); i++,j++) {
       rv &= (**i == **j);

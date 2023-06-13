@@ -25,7 +25,7 @@ public:
     RpnKeypadController(rpn::Runtime &rpn, QWidget* parent = nullptr);
     ~RpnKeypadController();
 
-    void assignButton(unsigned row, unsigned column, const QString &label, const std::string &rpnword);
+    void assignButton(unsigned column, unsigned row, const std::string &rpnword, const QString &label);
 private slots:
     void on_button_0_clicked();
     void on_button_1_clicked();
