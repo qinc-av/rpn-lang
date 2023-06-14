@@ -3,21 +3,32 @@
 #include "rpn.h"
 #include "rpnkeypad.h"
 #include "ui_rpnkeypad.h"
+
 #include <QFontDatabase>
+#include <QMenu>
+#include <QMenuBar>
+#include <QFileDialog>
 
 struct RpnKeypadController::Privates : public rpn::WordContext {
   Privates(rpn::Runtime &rpn, RpnKeypadController *d) : _rpn(rpn), _rpnd(d), _ui(new Ui::RpnKeypad) {
 
     _ui->setupUi(_rpnd);
+    QMenuBar *menubar = new QMenuBar(_rpnd);
+    QMenu *mFile = menubar->addMenu("&File");
+    QAction *actionFileOpen = new QAction("Open", _rpnd);
+    mFile->addAction(actionFileOpen);
+    _ui->verticalLayout->insertWidget(0, menubar);
+    menubar->setNativeMenuBar(false);
+
+    connect(actionFileOpen, &QAction::triggered, _rpnd, &RpnKeypadController::on_file_open);
+    
     _ui->textEdit->setReadOnly(true);
     _ui->textEdit->setAlignment(Qt::AlignRight);
 
     for(auto *w : programmableButtons()) {
       QPushButton *b = dynamic_cast<QPushButton*>(w);
-      b->setText("");
-      b->setEnabled(false);
       b->setProperty("rpn-word", ""); // QString(QString::fromStdString(btn)));
-
+      b->setFixedWidth(75);
       connect(b, SIGNAL(clicked()), _rpnd, SLOT(on_programmable_button_clicked()));
     }
 
@@ -34,7 +45,23 @@ struct RpnKeypadController::Privates : public rpn::WordContext {
   ~Privates() {
     delete _ui;
   }
-  
+
+  void clear_assigned_buttons() {
+    for(auto *w : programmableButtons()) {
+      QPushButton *b = dynamic_cast<QPushButton*>(w);
+      b->setText("");
+      b->setEnabled(false);
+    }
+    assign_button(1, 1, "calc-keys", "MATH");
+    assign_button(2, 1, "stack-keys", "STACK");
+    assign_button(3, 1, "logic-keys", "LOGIC");
+    assign_button(4, 1, "type-keys", "TYPES");
+
+    assign_button(0,8, "CLEAR");
+    assign_button(0,9, "OVER");
+    assign_button(0,10, "SWAP");
+  }
+
   rpn::WordDefinition::Result pushEntry() {
     rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
     std::string line = _ui->lineEdit->text().toStdString();
@@ -50,9 +77,9 @@ struct RpnKeypadController::Privates : public rpn::WordContext {
     return _rpnd->findChildren<QWidget *>(exp);
   }
 
+  rpn::Runtime &_rpn;
   RpnKeypadController *_rpnd;
   Ui::RpnKeypad* _ui;
-  rpn::Runtime &_rpn;
 
   void redraw_display();
   void assign_button(unsigned column, unsigned row, const std::string &rpnword, const QString &label="");
@@ -81,6 +108,16 @@ RpnKeypadController::eventFilter(QObject *watched, QEvent *event) {
     }
   }
   return false; // process this event further
+}
+
+/******************************** Menubar actions ***********************/
+void RpnKeypadController::on_file_open() {
+  QString fileName = QFileDialog::getOpenFileName(this,
+						  "Open RPN Script", "", "RPN Files (*.rpn *.4th *.4nc)");
+  if (fileName != "") {
+    _p->_rpn.parseFile(fileName.toStdString());
+    _p->redraw_display();
+  }
 }
 
 /******************************** DIGITS ********************************/
@@ -113,7 +150,8 @@ void RpnKeypadController::on_button_dot_clicked() { _p->_ui->lineEdit->insert(".
 void
 RpnKeypadController::on_button_enter_clicked() {
   if (_p->_ui->lineEdit->text() == "") {
-    _p->_rpn.stack.dup();
+    std::string line = "DUP";
+    _p->_rpn.parse(line);
   } else {
     _p->pushEntry();
   }
@@ -125,9 +163,10 @@ RpnKeypadController::on_button_back_clicked() {
   if (_p->_ui->lineEdit->text() != "") {
     _p->_ui->lineEdit->backspace();
   } else {
-    _p->_rpn.stack.drop();
-    _p->redraw_display();
+    std::string line = "DROP";
+    _p->_rpn.parse(line);
   }
+  _p->redraw_display();
 }
 
 void
@@ -245,6 +284,7 @@ NATIVE_WORD_DECL(keypad, ASSIGN_KEY) {
 NATIVE_WORD_DECL(keypad, CALC_KEYS) {
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
   RpnKeypadController::Privates *p = dynamic_cast<RpnKeypadController::Privates*>(ctx);
+  p->clear_assigned_buttons();
 
   p->assign_button(1,2, "HYPOT");
   p->assign_button(1,3, "ATAN2");
@@ -279,6 +319,8 @@ NATIVE_WORD_DECL(keypad, CALC_KEYS) {
 NATIVE_WORD_DECL(keypad, STACK_KEYS) {
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
   RpnKeypadController::Privates *p = dynamic_cast<RpnKeypadController::Privates*>(ctx);
+  p->clear_assigned_buttons();
+
   p->assign_button(1,2, "DROP");
   p->assign_button(1,3, "DEPTH");
   p->assign_button(1,4, "SWAP");
@@ -296,23 +338,83 @@ NATIVE_WORD_DECL(keypad, STACK_KEYS) {
   p->assign_button(2,6, "ROLLDn");
   p->assign_button(2,7, "ROLLUn");
   p->assign_button(2,8, "TUCKn");
-  p->assign_button(2,9, "REVERSE");
-  p->assign_button(2,10, "REVERSEn");
-
-  p->assign_button(3,2, "CLEAR");
+  p->assign_button(2,9, "REVERSE", "REV");
+  p->assign_button(2,10, "REVERSEn", "REVn");
 
   return rv;
 }
+
+NATIVE_WORD_DECL(keypad, LOGIC_KEYS) {
+  rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
+  RpnKeypadController::Privates *p = dynamic_cast<RpnKeypadController::Privates*>(ctx);
+  p->clear_assigned_buttons();
+
+  p->assign_button(1,2, "IFTE");
+  p->assign_button(1,3, "==");
+  p->assign_button(1,4, ">");
+  p->assign_button(1,5, ">=");
+  p->assign_button(1,6, "<");
+  p->assign_button(1,7, "<=");
+  p->assign_button(1,8, "!=");
+  //  p->assign_button(1,9, "");
+  //  p->assign_button(1,10, "");
+
+  p->assign_button(2,2, "NOT");
+  p->assign_button(2,3, "AND");
+  p->assign_button(2,4, "OR");
+
+  p->assign_button(2,5, "XOR");
+
+  return rv;
+}
+
+NATIVE_WORD_DECL(keypad, TYPE_KEYS) {
+  rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
+  RpnKeypadController::Privates *p = dynamic_cast<RpnKeypadController::Privates*>(ctx);
+  p->clear_assigned_buttons();
+
+  p->assign_button(1,2, "->INT");
+  p->assign_button(1,3, "->FLOAT", "->FLT");
+  p->assign_button(1,4, "->STRING", "->STR");
+  p->assign_button(1,5, "->OBJECT", "->{}");
+  p->assign_button(1,6, "OBJECT->", "{}->");
+  p->assign_button(1,7, "->ARRAY", "->[]");
+  p->assign_button(1,8, "ARRAY->", "[]->");
+  //  p->assign_button(1,9, "->VEC3", "->V3");
+  //  p->assign_button(1,10, "VEC3->", "V3->");
+
+  p->assign_button(2,2, "->VEC3", "->V3");
+  p->assign_button(2,3, "VEC3->", "V3->");
+  p->assign_button(2,4, "->VEC3x", "->V3x");
+  p->assign_button(2,5, "->VEC3y", "->V3y");
+  p->assign_button(2,6, "->VEC3z", "->V3z");
+  /*
+  p->assign_button(2,7, "LN");
+  p->assign_button(2,8, "LN2");
+  p->assign_button(2,9, "LOG");
+  p->assign_button(2,10, "CHS");
+
+  p->assign_button(3,2,"ROUND");
+  p->assign_button(3,3,"CEIL");
+  p->assign_button(3,4, "FLOOR");
+  p->assign_button(3,5, "k_PI");
+  p->assign_button(3,6, "k_E");
+  p->assign_button(3,7, "RAND");
+  p->assign_button(3,8, "RAND48");
+  */
+  return rv;
+}
+
 
 void
 RpnKeypadController::Privates::add_private_words() {
   _rpn.addDefinition("assign-key", { skAssignValidator, NATIVE_WORD_FN(keypad, ASSIGN_KEY), this });
   _rpn.addDefinition("calc-keys", { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(keypad, CALC_KEYS), this });
   _rpn.addDefinition("stack-keys", { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(keypad, STACK_KEYS), this });
+  _rpn.addDefinition("logic-keys", { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(keypad, LOGIC_KEYS), this });
+  _rpn.addDefinition("type-keys", { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(keypad, TYPE_KEYS), this });
 
-  assign_button(1, 1, "calc-keys", "MATH");
-  assign_button(2, 1, "stack-keys", "STACK");
-
+  clear_assigned_buttons();
 }
 
 

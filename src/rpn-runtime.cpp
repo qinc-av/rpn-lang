@@ -17,9 +17,9 @@
 #include "rpn.h"
 
 static std::string::size_type
-nextWord(std::string &word, std::string &buffer, char delim=' ') {
+nextWord(std::string &word, std::string &buffer, const std::string &delim=" \n") {
   word = "";
-  auto p1 = buffer.find(delim, 0);
+  auto p1 = buffer.find_first_of(delim, 0);
   if (p1 == std::string::npos) { // not found
     word = buffer;
     buffer = "";
@@ -242,7 +242,7 @@ NATIVE_WORD_DECL(private, OPAREN) {
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
   rpn::Runtime::Privates *p = dynamic_cast<rpn::Runtime::Privates*>(ctx);
   std::string comment;
-  auto cp = nextWord(comment, rest, ')');
+  auto cp = nextWord(comment, rest, ")");
   if (cp == std::string::npos) {
     rest = comment; // reset the buffer for future error message
     rv = rpn::WordDefinition::Result::parse_error;
@@ -255,7 +255,7 @@ NATIVE_WORD_DECL(private, DQUOTE) {
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
   rpn::Runtime::Privates *p = dynamic_cast<rpn::Runtime::Privates*>(ctx);
   std::string literal;
-  auto pos = nextWord(literal, rest, '"');
+  auto pos = nextWord(literal, rest, "\"");
   if (pos != std::string::npos) {
     rpn.stack.push_string(literal);
   } else {
@@ -270,7 +270,7 @@ NATIVE_WORD_DECL(private, ct_DQUOTE) {
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
   rpn::Runtime::Privates *p = dynamic_cast<rpn::Runtime::Privates*>(ctx);
   std::string literal;
-  auto pos = nextWord(literal, rest, '"');
+  auto pos = nextWord(literal, rest, "\"");
   if (pos != std::string::npos) {
     p->_vprogn.back().addWord(".\" " + literal + '"');
   } else {

@@ -572,14 +572,30 @@ TEST_CASE( "bolt-circle", "control" ) {
 
   {
     g_rpn.stack.clear();
+    /*
     std::string file = "/Users/eric/work/github/elh/rpn-cnc/bolt-circle.rpn";
     auto st = g_rpn.parseFile(file);
+    */
+    line = R"(
+: bolt-circle ( n diam angle -- < positions > )
+0 4 PICK ( n diam angle 0 n )
+FOR i ( n diam angle )
+  360 i *  ( n diam angle angle2 )
+  4 PICK / OVER + ( n diam angle angle2 )
+  DUP COS 4 PICK 2 / *  ->VEC3x ( n diam angle angle2 x-loc )
+  SWAP SIN 4 PICK 2 / * ->VEC3y + ( n diam angle xy-loc )
+  4 ROLLDn ( xy-loc n diam angle )
+NEXT
+3 DROPn
+;
+)";
+    auto st = g_rpn.parse(line);
 
     line = ("5 5.5 0 bolt-circle");
-    g_rpn.parse(line);
+    st = g_rpn.parse(line);
 
     line = ("5 139.7 0 bolt-circle");
-    g_rpn.parse(line);
+    st = g_rpn.parse(line);
 
     g_rpn.stack.print("bolt-circle.rpn");
     REQUIRE( (st == rpn::WordDefinition::Result::ok) );

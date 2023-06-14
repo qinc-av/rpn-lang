@@ -19,6 +19,7 @@
 #include <string>
 #include <deque>
 #include <map>
+#include <cmath>
 #include <stdexcept>
 #include <functional>
 

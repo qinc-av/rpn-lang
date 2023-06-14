@@ -50,6 +50,8 @@ private slots:
 
     void on_programmable_button_clicked();
 
+    void on_file_open();
+
  public:
     struct Privates;
 
