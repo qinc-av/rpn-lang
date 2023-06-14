@@ -19,13 +19,13 @@
 #define STACK_OP(op) NATIVE_WORD_FN(stack,op)
 
 #define STACK_OP_FUNC(op)							\
-  static rpn::WordDefinition::Result STACK_OP(op)(rpn::Runtime &rpn, rpn::WordContext *ctx, std::string &rest) { \
+  static rpn::WordDefinition::Result STACK_OP(op)(rpn::Interpreter &rpn, rpn::WordContext *ctx, std::string &rest) { \
     rpn.stack.op();							\
     return rpn::WordDefinition::Result::ok;				\
   }
 
 #define STACK_OPn_FUNC(op)						\
-  static rpn::WordDefinition::Result STACK_OP(op)(rpn::Runtime &rpn, rpn::WordContext *ctx, std::string &rest) { \
+  static rpn::WordDefinition::Result STACK_OP(op)(rpn::Interpreter &rpn, rpn::WordContext *ctx, std::string &rest) { \
     int n = (int)rpn.stack.pop_integer();					\
     rpn.stack.op(n);							\
     return rpn::WordDefinition::Result::ok;				\
@@ -53,7 +53,7 @@ STACK_OPn_FUNC(tuckn);
 STACK_OPn_FUNC(reversen);
 
 // depth is special because we push the value back on the stack
-static rpn::WordDefinition::Result STACK_OP(depth)(rpn::Runtime &rpn, rpn::WordContext *ctx, std::string &rest) {
+static rpn::WordDefinition::Result STACK_OP(depth)(rpn::Interpreter &rpn, rpn::WordContext *ctx, std::string &rest) {
   rpn.stack.push_integer(rpn.stack.depth());
   return rpn::WordDefinition::Result::ok;
 }
@@ -62,8 +62,8 @@ static rpn::WordDefinition::Result STACK_OP(depth)(rpn::Runtime &rpn, rpn::WordC
   r.addDefinition(symbol, NATIVE_WORD_WDEF(stack, rpn::StackSizeValidator::vv, func, nullptr))
 
 void
-rpn::Runtime::addStackWords() {
-  rpn::Runtime &rpn(*this);
+rpn::Interpreter::addStackWords() {
+  rpn::Interpreter &rpn(*this);
 
   ADD_STACK_OP(rpn, "DROP", one, drop);
   ADD_STACK_OP(rpn, "CLEAR", zero, clear);

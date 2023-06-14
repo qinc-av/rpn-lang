@@ -21,7 +21,7 @@ int
 main(int ac, char **av) {
   QApplication app(ac, av);
 
-  rpn::Runtime rpn;
+  rpn::Interpreter rpn;
   RpnKeypadController keypad(rpn);
   keypad.assignButton(10,4, "DROP", "DROP");
   keypad.show();

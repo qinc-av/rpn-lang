@@ -19,7 +19,7 @@
 
 #include <cmath>
 
-rpn::Runtime g_rpn;
+rpn::Interpreter g_rpn;
 
 TEST_CASE( "parse", "Stack Words" ) {
 

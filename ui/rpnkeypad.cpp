@@ -10,7 +10,7 @@
 #include <QFileDialog>
 
 struct RpnKeypadController::Privates : public rpn::WordContext {
-  Privates(rpn::Runtime &rpn, RpnKeypadController *d) : _rpn(rpn), _rpnd(d), _ui(new Ui::RpnKeypad) {
+  Privates(rpn::Interpreter &rpn, RpnKeypadController *d) : _rpn(rpn), _rpnd(d), _ui(new Ui::RpnKeypad) {
 
     _ui->setupUi(_rpnd);
     QMenuBar *menubar = new QMenuBar(_rpnd);
@@ -77,7 +77,7 @@ struct RpnKeypadController::Privates : public rpn::WordContext {
     return _rpnd->findChildren<QWidget *>(exp);
   }
 
-  rpn::Runtime &_rpn;
+  rpn::Interpreter &_rpn;
   RpnKeypadController *_rpnd;
   Ui::RpnKeypad* _ui;
 
@@ -86,7 +86,7 @@ struct RpnKeypadController::Privates : public rpn::WordContext {
   void add_private_words();
 };
 
-RpnKeypadController::RpnKeypadController(rpn::Runtime &rpn, QWidget* parent) : QWidget(parent), _p(new Privates(rpn, this))  {
+RpnKeypadController::RpnKeypadController(rpn::Interpreter &rpn, QWidget* parent) : QWidget(parent), _p(new Privates(rpn, this))  {
   setWindowTitle("RPN Keypad");
   installEventFilter(this);
 }

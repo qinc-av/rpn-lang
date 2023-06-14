@@ -93,7 +93,7 @@ namespace rpn {
     std::deque<std::unique_ptr<Object>> _stack;
   };
 
-  class Runtime;
+  class Interpreter;
 
   // base class to give a word definition context
   class WordContext {
@@ -189,14 +189,14 @@ namespace rpn {
     };
     //    std::string description;
     const StackValidator &validator;
-    std::function<Result(Runtime &rpn, WordContext *ctx, std::string &rest)> eval;
+    std::function<Result(Interpreter &rpn, WordContext *ctx, std::string &rest)> eval;
     WordContext *context;
   };
 
-  class Runtime {
+  class Interpreter {
   public:
-    Runtime();
-    ~Runtime();
+    Interpreter();
+    ~Interpreter();
     rpn::WordDefinition::Result parse(std::string &line);
     rpn::WordDefinition::Result parseFile(const std::string &path);
 
@@ -426,7 +426,7 @@ public:
 #define NATIVE_WORD_FN(mangler, op) mangler##_func_##op
 
 #define NATIVE_WORD_DECL(mangler, fn) \
-  static rpn::WordDefinition::Result NATIVE_WORD_FN(mangler, fn)(rpn::Runtime &rpn, rpn::WordContext *ctx, std::string &rest)
+  static rpn::WordDefinition::Result NATIVE_WORD_FN(mangler, fn)(rpn::Interpreter &rpn, rpn::WordContext *ctx, std::string &rest)
    
 #define NATIVE_WORD_FN_0_DOUBLE(mangler, fn, val) \
   NATIVE_WORD_DECL(mangler, fn) {					\

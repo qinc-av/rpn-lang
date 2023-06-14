@@ -14,7 +14,7 @@ namespace Ui { class RpnKeypad; }
 QT_END_NAMESPACE
 
 namespace rpn {
-  class Runtime;
+  class Interpreter;
 }
 
 class RpnKeypadController : public QWidget
@@ -22,7 +22,7 @@ class RpnKeypadController : public QWidget
     Q_OBJECT
 
 public:
-    RpnKeypadController(rpn::Runtime &rpn, QWidget* parent = nullptr);
+    RpnKeypadController(rpn::Interpreter &rpn, QWidget* parent = nullptr);
     ~RpnKeypadController();
 
     void assignButton(unsigned column, unsigned row, const std::string &rpnword, const QString &label);

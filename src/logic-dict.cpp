@@ -107,7 +107,7 @@ NATIVE_WORD_DECL(logic, b_neg) {
 }
 
 void
-rpn::Runtime::addLogicWords() {
+rpn::Interpreter::addLogicWords() {
   //    IF
   //    IFTE
   //    EQ?
