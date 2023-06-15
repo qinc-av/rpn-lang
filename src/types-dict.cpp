@@ -284,7 +284,7 @@ NATIVE_WORD_DECL(vec3, to_vec3z) {
 }
 
 void
-rpn::Interpreter::addTypeWords() {
+rpn::Interp::addTypeWords() {
   addDefinition("->INT", NATIVE_WORD_WDEF(types, rpn::StackSizeValidator::one, to_int, nullptr));
   addDefinition("->FLOAT", NATIVE_WORD_WDEF(types, rpn::StackSizeValidator::one, to_float, nullptr));
   addDefinition("->STRING", NATIVE_WORD_WDEF(types, rpn::StackSizeValidator::one, to_string, nullptr));

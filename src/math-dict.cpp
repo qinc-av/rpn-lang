@@ -175,8 +175,8 @@ static int64_t ichange_sign(int64_t x) {
 MATH_UNARY_INTEGER_FUNC(ichange_sign);
 
 void
-rpn::Interpreter::addMathWords() {
-  rpn::Interpreter &rpn(*this);
+rpn::Interp::addMathWords() {
+  rpn::Interp &rpn(*this);
 
   ADD_MATH_BINARY_NUMBER_WDEF(rpn, "+", add, iadd);
   ADD_MATH_BINARY_NUMBER_WDEF(rpn, "-", subtract, isubtract);

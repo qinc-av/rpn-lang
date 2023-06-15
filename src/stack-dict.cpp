@@ -19,13 +19,13 @@
 #define STACK_OP(op) NATIVE_WORD_FN(stack,op)
 
 #define STACK_OP_FUNC(op)							\
-  static rpn::WordDefinition::Result STACK_OP(op)(rpn::Interpreter &rpn, rpn::WordContext *ctx, std::string &rest) { \
+  static rpn::WordDefinition::Result STACK_OP(op)(rpn::Interp &rpn, rpn::WordContext *ctx, std::string &rest) { \
     rpn.stack.op();							\
     return rpn::WordDefinition::Result::ok;				\
   }
 
 #define STACK_OPn_FUNC(op)						\
-  static rpn::WordDefinition::Result STACK_OP(op)(rpn::Interpreter &rpn, rpn::WordContext *ctx, std::string &rest) { \
+  static rpn::WordDefinition::Result STACK_OP(op)(rpn::Interp &rpn, rpn::WordContext *ctx, std::string &rest) { \
     int n = (int)rpn.stack.pop_integer();					\
     rpn.stack.op(n);							\
     return rpn::WordDefinition::Result::ok;				\
@@ -53,7 +53,7 @@ STACK_OPn_FUNC(tuckn);
 STACK_OPn_FUNC(reversen);
 
 // depth is special because we push the value back on the stack
-static rpn::WordDefinition::Result STACK_OP(depth)(rpn::Interpreter &rpn, rpn::WordContext *ctx, std::string &rest) {
+static rpn::WordDefinition::Result STACK_OP(depth)(rpn::Interp &rpn, rpn::WordContext *ctx, std::string &rest) {
   rpn.stack.push_integer(rpn.stack.depth());
   return rpn::WordDefinition::Result::ok;
 }
@@ -62,8 +62,8 @@ static rpn::WordDefinition::Result STACK_OP(depth)(rpn::Interpreter &rpn, rpn::W
   r.addDefinition(symbol, NATIVE_WORD_WDEF(stack, rpn::StackSizeValidator::vv, func, nullptr))
 
 void
-rpn::Interpreter::addStackWords() {
-  rpn::Interpreter &rpn(*this);
+rpn::Interp::addStackWords() {
+  rpn::Interp &rpn(*this);
 
   ADD_STACK_OP(rpn, "DROP", one, drop);
   ADD_STACK_OP(rpn, "CLEAR", zero, clear);
@@ -85,6 +85,13 @@ rpn::Interpreter::addStackWords() {
   ADD_STACK_OP(rpn, ".S", zero, print);
   ADD_STACK_OP(rpn, "REVERSE", zero, reverse);
   ADD_STACK_OP(rpn, "REVERSEn", ntos, reversen);
+
+  std::string line = R"(
+: DUP2 2 DUPn ;
+: DROP2 DROP DROP ;
+)";
+  auto st = rpn.parse(line);
+
 }
 
 /* end of github/elh/rpn-cnc/src/stack-dict.cpp */

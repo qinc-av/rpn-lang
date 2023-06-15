@@ -19,7 +19,7 @@
 
 #include <cmath>
 
-rpn::Interpreter g_rpn;
+rpn::Interp g_rpn;
 
 TEST_CASE( "parse", "Stack Words" ) {
 
@@ -464,7 +464,9 @@ TEST_CASE( "file tests.4nc", "parsing" ) {
     std::string file = "/Users/eric/work/github/elh/rpn-cnc/tests.4nc";
     auto st = g_rpn.parseFile(file);
     g_rpn.stack.print("tests.4nc");
+
     REQUIRE( (st == rpn::WordDefinition::Result::ok) );
+    REQUIRE( (18 == g_rpn.stack.depth() ) );
 
     REQUIRE_THAT(g_rpn.stack.peek_double(18), Catch::Matchers::WithinAbs(2463.008640, 0.000001));
     REQUIRE( (false == g_rpn.stack.peek_boolean(17) ));
@@ -493,7 +495,10 @@ TEST_CASE( "other tests", "math" ) {
     g_rpn.stack.clear();
     line = ("k_PI FLOOR k_PI CEIL");
     auto st = g_rpn.parse(line);
+
     REQUIRE( (st == rpn::WordDefinition::Result::ok) );
+    REQUIRE( (2 == g_rpn.stack.depth() ) );
+
     REQUIRE( (3.  == g_rpn.stack.peek_double(2) ));
     REQUIRE( (4.  == g_rpn.stack.peek_double(1) ));
   }
@@ -502,7 +507,10 @@ TEST_CASE( "other tests", "math" ) {
     g_rpn.stack.clear();
     line = ("k_PI k_E MIN k_PI k_E MAX");
     auto st = g_rpn.parse(line);
+
     REQUIRE( (st == rpn::WordDefinition::Result::ok) );
+    REQUIRE( (2 == g_rpn.stack.depth() ) );
+
     REQUIRE_THAT(g_rpn.stack.peek_double(2), Catch::Matchers::WithinAbs(M_E, 0.000001));
     REQUIRE_THAT(g_rpn.stack.peek_double(1), Catch::Matchers::WithinAbs(M_PI, 0.000001));
   }
@@ -515,7 +523,11 @@ TEST_CASE( "loop tests", "control" ) {
   {
     line = ("0 5 FOR i i 10 * NEXT .S");
     g_rpn.stack.clear();
-    g_rpn.parse(line);
+    auto st = g_rpn.parse(line);
+
+    REQUIRE( (st == rpn::WordDefinition::Result::ok) );
+    REQUIRE( (5 == g_rpn.stack.depth() ) );
+
     REQUIRE( (0. == g_rpn.stack.peek_double(5)) );
     REQUIRE( (10 == g_rpn.stack.peek_double(4)) );
     REQUIRE( (20. == g_rpn.stack.peek_double(3)) );
@@ -527,28 +539,178 @@ TEST_CASE( "loop tests", "control" ) {
   {
     line = ("0 5 FOR i 0 5 FOR j i 10 * j + NEXT NEXT .S");
     g_rpn.stack.clear();
-    g_rpn.parse(line);
-  }
+    auto st = g_rpn.parse(line);
 
+    REQUIRE( (st == rpn::WordDefinition::Result::ok) );
+    REQUIRE( (25 == g_rpn.stack.depth() ) );
+
+    REQUIRE( (0. == g_rpn.stack.peek_double(25)) );
+    REQUIRE( (1. == g_rpn.stack.peek_double(24)) );
+    REQUIRE( (2. == g_rpn.stack.peek_double(23)) );
+    REQUIRE( (3. == g_rpn.stack.peek_double(22)) );
+    REQUIRE( (4. == g_rpn.stack.peek_double(21)) );
+    REQUIRE( (10. == g_rpn.stack.peek_double(20)) );
+    REQUIRE( (11. == g_rpn.stack.peek_double(19)) );
+    REQUIRE( (12. == g_rpn.stack.peek_double(18)) );
+    REQUIRE( (13. == g_rpn.stack.peek_double(17)) );
+    REQUIRE( (14. == g_rpn.stack.peek_double(16)) );
+    REQUIRE( (20. == g_rpn.stack.peek_double(15)) );
+    REQUIRE( (21. == g_rpn.stack.peek_double(14)) );
+    REQUIRE( (22. == g_rpn.stack.peek_double(13)) );
+    REQUIRE( (23. == g_rpn.stack.peek_double(12)) );
+    REQUIRE( (24. == g_rpn.stack.peek_double(11)) );
+    REQUIRE( (30. == g_rpn.stack.peek_double(10)) );
+    REQUIRE( (31. == g_rpn.stack.peek_double(9)) );
+    REQUIRE( (32. == g_rpn.stack.peek_double(8)) );
+    REQUIRE( (33. == g_rpn.stack.peek_double(7)) );
+    REQUIRE( (34. == g_rpn.stack.peek_double(6)) );
+    REQUIRE( (40. == g_rpn.stack.peek_double(5)) );
+    REQUIRE( (41. == g_rpn.stack.peek_double(4)) );
+    REQUIRE( (42. == g_rpn.stack.peek_double(3)) );
+    REQUIRE( (43. == g_rpn.stack.peek_double(2)) );
+    REQUIRE( (44. == g_rpn.stack.peek_double(1)) );
+  }
+  /*
+    REQUIRE( (0. == g_rpn.stack.peek_double(9)) );
+    REQUIRE( (0. == g_rpn.stack.peek_double(8)) );
+    REQUIRE( (0. == g_rpn.stack.peek_double(7)) );
+    REQUIRE( (0. == g_rpn.stack.peek_double(6)) );
+    REQUIRE( (0. == g_rpn.stack.peek_double(5)) );
+    REQUIRE( (0. == g_rpn.stack.peek_double(4)) );
+    REQUIRE( (0. == g_rpn.stack.peek_double(3)) );
+    REQUIRE( (0. == g_rpn.stack.peek_double(2)) );
+    REQUIRE( (0. == g_rpn.stack.peek_double(1)) );
+    REQUIRE( (0. == g_rpn.stack.peek_double(0)) );
+  */
   {
     line = ("0 5 FOR i 0 5 FOR j  0 j FOR k i 100 * j 10 * + k + NEXT NEXT NEXT");
     g_rpn.stack.clear();
-    g_rpn.parse(line);
+    auto st = g_rpn.parse(line);
     g_rpn.stack.print("nested-for i,j,k");
+
+    REQUIRE( (st == rpn::WordDefinition::Result::ok) );
+    REQUIRE( (50 == g_rpn.stack.depth() ) );
+
+    int index=0;
+    for(int i=0; i<5; i++)
+      for(int j=0; j<5; j++)
+	for(int k=0; k<j; k++) {
+	  double val = double((i*100)+(j*10)+k);
+	  REQUIRE( (val == g_rpn.stack.peek_double(50-index)) );
+      index++;
+	}
+    /*
+    REQUIRE( (0. == g_rpn.stack.peek_double(48)) );
+    REQUIRE( (0. == g_rpn.stack.peek_double(47)) );
+    REQUIRE( (0. == g_rpn.stack.peek_double(46)) );
+    REQUIRE( (0. == g_rpn.stack.peek_double(45)) );
+    REQUIRE( (0. == g_rpn.stack.peek_double(44)) );
+    REQUIRE( (0. == g_rpn.stack.peek_double(43)) );
+    REQUIRE( (0. == g_rpn.stack.peek_double(42)) );
+    REQUIRE( (0. == g_rpn.stack.peek_double(41)) );
+    REQUIRE( (0. == g_rpn.stack.peek_double(40)) );
+
+    REQUIRE( (0. == g_rpn.stack.peek_double(39)) );
+    REQUIRE( (0. == g_rpn.stack.peek_double(38)) );
+    REQUIRE( (0. == g_rpn.stack.peek_double(37)) );
+    REQUIRE( (0. == g_rpn.stack.peek_double(36)) );
+    REQUIRE( (0. == g_rpn.stack.peek_double(35)) );
+    REQUIRE( (0. == g_rpn.stack.peek_double(34)) );
+    REQUIRE( (0. == g_rpn.stack.peek_double(33)) );
+    REQUIRE( (0. == g_rpn.stack.peek_double(32)) );
+    REQUIRE( (0. == g_rpn.stack.peek_double(31)) );
+    REQUIRE( (0. == g_rpn.stack.peek_double(30)) );
+
+    REQUIRE( (0. == g_rpn.stack.peek_double(29)) );
+    REQUIRE( (0. == g_rpn.stack.peek_double(28)) );
+    REQUIRE( (0. == g_rpn.stack.peek_double(27)) );
+    REQUIRE( (0. == g_rpn.stack.peek_double(26)) );
+    REQUIRE( (0. == g_rpn.stack.peek_double(25)) );
+    REQUIRE( (0. == g_rpn.stack.peek_double(24)) );
+    REQUIRE( (0. == g_rpn.stack.peek_double(23)) );
+    REQUIRE( (0. == g_rpn.stack.peek_double(22)) );
+    REQUIRE( (0. == g_rpn.stack.peek_double(21)) );
+    REQUIRE( (0. == g_rpn.stack.peek_double(20)) );
+
+    REQUIRE( (0. == g_rpn.stack.peek_double(19)) );
+    REQUIRE( (0. == g_rpn.stack.peek_double(18)) );
+    REQUIRE( (0. == g_rpn.stack.peek_double(17)) );
+    REQUIRE( (0. == g_rpn.stack.peek_double(16)) );
+    REQUIRE( (0. == g_rpn.stack.peek_double(15)) );
+    REQUIRE( (0. == g_rpn.stack.peek_double(14)) );
+    REQUIRE( (0. == g_rpn.stack.peek_double(13)) );
+    REQUIRE( (0. == g_rpn.stack.peek_double(12)) );
+    REQUIRE( (0. == g_rpn.stack.peek_double(11)) );
+    REQUIRE( (0. == g_rpn.stack.peek_double(10)) );
+
+    REQUIRE( (0. == g_rpn.stack.peek_double(9)) );
+    REQUIRE( (0. == g_rpn.stack.peek_double(8)) );
+    REQUIRE( (0. == g_rpn.stack.peek_double(7)) );
+    REQUIRE( (0. == g_rpn.stack.peek_double(6)) );
+    REQUIRE( (0. == g_rpn.stack.peek_double(5)) );
+    REQUIRE( (0. == g_rpn.stack.peek_double(4)) );
+    REQUIRE( (0. == g_rpn.stack.peek_double(3)) );
+    REQUIRE( (0. == g_rpn.stack.peek_double(2)) );
+    REQUIRE( (0. == g_rpn.stack.peek_double(1)) );
+    */
   }
 
   // loop in a define
   {
     line = (": abc-1 FOR i i 6 * NEXT ;  0 5 abc-1");
     g_rpn.stack.clear();
-    g_rpn.parse(line);
-  }
+    auto st = g_rpn.parse(line);
+    g_rpn.stack.print("loop in defined word");
+
+    REQUIRE( (st == rpn::WordDefinition::Result::ok) );
+    REQUIRE( (5 == g_rpn.stack.depth() ) );
+
+    REQUIRE( (0. == g_rpn.stack.peek_double(5)) );
+    REQUIRE( (6. == g_rpn.stack.peek_double(4)) );
+    REQUIRE( (12. == g_rpn.stack.peek_double(3)) );
+    REQUIRE( (18. == g_rpn.stack.peek_double(2)) );
+    REQUIRE( (24. == g_rpn.stack.peek_double(1)) );
+
+  } 
 
   // nested loop in a define
+  // this one is tricky... each time through the outer loop, the inner loop needs to
+  // be properly set up (on the stack), but once the inner loop bounds have been popped
+  // for the first run, there's no way to get them back for the subsequent iterations
+  //
+  // we will need progn local vars to make the syntax easier
   {
-    line = (": abc-2 FOR i FOR j i 10 *  j + NEXT NEXT ;  0 5 0 4 abc-2");
+    line = (": abc-2 FOR i DUP2 FOR j i 10 * j + 3 ROLLDn NEXT  NEXT DROP2 ;  0 5 0 4 abc-2");
     g_rpn.stack.clear();
-    g_rpn.parse(line);
+    auto st = g_rpn.parse(line);
+    g_rpn.stack.print("nested-for (i,j) in defined word");
+
+    REQUIRE( (st == rpn::WordDefinition::Result::ok) );
+    REQUIRE( (20 == g_rpn.stack.depth() ) );
+
+    REQUIRE( (0. == g_rpn.stack.peek_double(20)) );
+
+    REQUIRE( (1. == g_rpn.stack.peek_double(19)) );
+    REQUIRE( (2. == g_rpn.stack.peek_double(18)) );
+    REQUIRE( (3. == g_rpn.stack.peek_double(17)) );
+    REQUIRE( (4. == g_rpn.stack.peek_double(16)) );
+    REQUIRE( (10. == g_rpn.stack.peek_double(15)) );
+    REQUIRE( (11. == g_rpn.stack.peek_double(14)) );
+    REQUIRE( (12. == g_rpn.stack.peek_double(13)) );
+    REQUIRE( (13. == g_rpn.stack.peek_double(12)) );
+    REQUIRE( (14. == g_rpn.stack.peek_double(11)) );
+    REQUIRE( (20. == g_rpn.stack.peek_double(10)) );
+
+    REQUIRE( (21. == g_rpn.stack.peek_double(9)) );
+    REQUIRE( (22. == g_rpn.stack.peek_double(8)) );
+    REQUIRE( (23. == g_rpn.stack.peek_double(7)) );
+    REQUIRE( (24. == g_rpn.stack.peek_double(6)) );
+    REQUIRE( (30. == g_rpn.stack.peek_double(5)) );
+    REQUIRE( (31. == g_rpn.stack.peek_double(4)) );
+    REQUIRE( (32. == g_rpn.stack.peek_double(3)) );
+    REQUIRE( (33. == g_rpn.stack.peek_double(2)) );
+    REQUIRE( (34. == g_rpn.stack.peek_double(1)) );
+
   }
 
   // indefinite loop
