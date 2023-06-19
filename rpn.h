@@ -51,6 +51,7 @@ namespace rpn {
     int64_t pop_integer();
     double pop_double();
     double pop_as_double(); // auto-converts integers to double, returns NaN if it couldn't convert
+    bool pop_as_boolean(); // auto-converts boolean, integer, double, and string, returns false if it couldn't convert
 
     std::unique_ptr<Object> pop();
 

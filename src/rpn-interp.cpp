@@ -81,6 +81,18 @@ public:
 
   void clear() { _wordlist.clear(); };
 
+  void print() {
+    std::string str = (std::string)(*this);
+    printf("Progn %s\n", str.c_str());
+    printf("  type: %d\n", _type);
+    printf("  ident: %s\n", _ident.c_str());
+    printf("  locals:");
+    for(const auto &lv : *_locals) {
+      printf(" %s,", lv.first.c_str());
+    }
+    printf("\n");
+  }
+    
   rpn::Interp::Privates &_p;
   std::vector<std::string> _wordlist;
   std::shared_ptr<var_dict_t> _locals;
@@ -163,10 +175,14 @@ Progn::eval_lambda(rpn::Interp &rpn) {
       auto *pn = dynamic_cast<Progn*>(&(*lv->second));
       if (pn != nullptr) {
 	rpn.stack.print("recursive progn");
+	pn->print();
 	pn->eval(rpn);
 
       } else {
+	std::string sv = (*lv->second);
+	printf("push local: %s => %s\n", lv->first.c_str(), sv.c_str());
 	rpn.stack.push(*lv->second);
+
       }
 
     } else {
@@ -235,7 +251,10 @@ NATIVE_WORD_DECL(private, ct_SEMICOLON) {
   rpn::WordDefinition::Result rv = p->end_compile(progp, ct_worddef);
   if (rv == rpn::WordDefinition::Result::ok) {
 
-    printf("adding '%s' to the dictionary\n", progp->_ident.c_str());
+    if (p->_tracing) {
+      printf("adding '%s' to the dictionary\n", progp->_ident.c_str());
+    }
+
     p->_rtDictionary.emplace(progp->_ident, rpn::WordDefinition {
 	rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, COMPILED_EVAL), progp });
 
@@ -243,6 +262,29 @@ NATIVE_WORD_DECL(private, ct_SEMICOLON) {
 
     rv = rpn::WordDefinition::Result::compile_error;
   }
+  return rv;
+}
+
+NATIVE_WORD_DECL(private, TRACE) {
+  // (rpn::Interp &rpn, rpn::WordContext *ctx, std::string &rest)
+  rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
+  rpn::Interp::Privates *p = dynamic_cast<rpn::Interp::Privates*>(ctx);
+  bool pred = rpn.stack.pop_as_boolean();
+  p->_tracing = pred;
+  return rv;
+}
+
+NATIVE_WORD_DECL(private, BOOL_TRUE) {
+  // (rpn::Interp &rpn, rpn::WordContext *ctx, std::string &rest)
+  rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
+  rpn.stack.push_boolean(true);
+  return rv;
+}
+
+NATIVE_WORD_DECL(private, BOOL_FALSE) {
+  // (rpn::Interp &rpn, rpn::WordContext *ctx, std::string &rest)
+  rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
+  rpn.stack.push_boolean(false);
   return rv;
 }
 
@@ -381,6 +423,10 @@ rpn::Interp::Privates::add_private_words(rpn::Interp &rpn) {
   rpn.addDefinition("(", { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, OPAREN), this });
   rpn.addDefinition(".\"", { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, DQUOTE), this });
   rpn.addDefinition("FOR", { rpn::StrictTypeValidator::d2_integer_integer, NATIVE_WORD_FN(private, FOR), this });
+  rpn.addDefinition("TRACE", { rpn::StrictTypeValidator::d1_boolean, NATIVE_WORD_FN(private, TRACE), this });
+
+  rpn.addDefinition("<true>", { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, BOOL_TRUE), this });
+  rpn.addDefinition("<false>", { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, BOOL_FALSE), this });
 
   _ctDictionary.emplace(";", rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, ct_SEMICOLON), this });
   _ctDictionary.emplace("(", rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, OPAREN), this });
@@ -400,7 +446,8 @@ rpn::Interp::Privates::eval(rpn::Interp &rpn, const std::string &word, std::stri
   }
 
   rpn::WordDefinition::Result rv=rpn::WordDefinition::Result::eval_error;
-  _status = word + ": ";
+  std::string wstatus  = word + ": ";
+
   std::string msg;
   if (_ctVprogn.size() != 0) {
     try {
@@ -473,7 +520,8 @@ rpn::Interp::Privates::eval(rpn::Interp &rpn, const std::string &word, std::stri
       break;
     }
   }
-  _status += msg;
+
+  _status = wstatus + msg;
 
   if (rv != rpn::WordDefinition::Result::ok) {
     printf("%s: %s\n", __func__, _status.c_str());
@@ -525,7 +573,7 @@ rpn::Interp::Privates::is_local_variable(const std::string &word) {
 bool
 rpn::Interp::Privates::find_local_variable(var_dict_t::const_iterator &var, const std::string &word) {
   bool rv = false;
-  for(auto  pn =_vlocals.cbegin(); rv==false && pn != _vlocals.cend(); pn++) {
+  for(auto  pn =_vlocals.crbegin(); rv==false && pn != _vlocals.crend(); pn++) {
     var = (*pn)->find(word);
     rv = (var != (*pn)->end());
   }

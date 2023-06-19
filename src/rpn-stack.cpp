@@ -136,6 +136,34 @@ rpn::Stack::pop_as_double() {
   return val;
 }
 
+bool
+rpn::Stack::pop_as_boolean() {
+  auto tos = pop();
+  auto raw = tos.get();
+  bool val=false;
+
+  auto *bp = dynamic_cast<StBoolean*>(raw);
+  auto *sp = dynamic_cast<StString*>(raw);
+  auto *dp = dynamic_cast<StDouble*>(raw);
+  auto *ip = dynamic_cast<StInteger*>(raw);
+
+  if (bp) {
+    val = bp->val();
+
+  } else if (ip) {
+    val = (ip->val()!=0);
+
+  } else if (dp) {
+    val = (dp->val() != 0.);
+
+  } else if (sp) {
+    val = (sp->val()!="");
+
+  }
+  
+  return val;
+}
+
 rpn::Stack::Object &
 rpn::Stack::peek(int n) {
   if(n>0 && _stack.size()>=n) {

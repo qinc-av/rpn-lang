@@ -715,12 +715,39 @@ TEST_CASE( "loop tests", "control" ) {
 
   // recursion
   {
-    line = (": sum-sq 0 SWAP 0 SWAP FOR i i i * + NEXT ; : word2 0 SWAP FOR i i 10 + sum-sq i + NEXT ; 3 word2 ");
     g_rpn.stack.clear();
-    g_rpn.parse(line);
-    g_rpn.stack.print("recursive words with conflicting locals");
+    line = (": sum-sq 0 SWAP 0 SWAP FOR i i i * + NEXT ;");
+    auto st = g_rpn.parse(line);
+    REQUIRE( (st == rpn::WordDefinition::Result::ok) );
+
+    line = ("<true> TRACE 10 sum-sq <false> TRACE .S");
+    st = g_rpn.parse(line);
+    REQUIRE( (st == rpn::WordDefinition::Result::ok) );
+    REQUIRE( (1 == g_rpn.stack.depth() ) );
+    REQUIRE( (285 == g_rpn.stack.peek_double(1) ));
+
+    line = (": word2 0 SWAP FOR i i 10 + sum-sq i + NEXT ;");
+    /* 10 0 11 1 12 2 */
+    st = g_rpn.parse(line);
+    REQUIRE( (st == rpn::WordDefinition::Result::ok) );
+
+    line = ("3 word2");
+    st = g_rpn.parse(line);
+    // 10 sum-sq 0 + (285)
+    // 11 sum-sq 1 + (385)
+    // 12 sum-sq 2 + (508)
+
+    REQUIRE( (st == rpn::WordDefinition::Result::ok) );
+    REQUIRE( (4 == g_rpn.stack.depth() ) );
+    REQUIRE( (285 == g_rpn.stack.peek_double(4) ));
+    REQUIRE( (285 == g_rpn.stack.peek_double(3) ));
+    REQUIRE( (386 == g_rpn.stack.peek_double(2) ));
+    REQUIRE( (508 == g_rpn.stack.peek_double(1) ));
+
+    g_rpn.stack.print("recursive words with conflicting local names");
   }
 
+#if 0
   // indefinite loop
   {
     line = ("5 DO DUP 1 - DUP DUP 0 == UNTIL");
@@ -734,7 +761,8 @@ TEST_CASE( "loop tests", "control" ) {
     g_rpn.stack.clear();
     g_rpn.parse(line);
   }
-  
+#endif
+
 }
 
 TEST_CASE( "bolt-circle", "control" ) {
@@ -783,30 +811,15 @@ TEST_CASE( "object", "types" ) {
 
 TEST_CASE( "array", "types" ) {
 }
+
 TEST_CASE( "vec3", "types" ) {
 }
+
 TEST_CASE( "double", "types" ) {
 }
+
 TEST_CASE( "string", "types" ) {
 }
 
-
-#if 0
-int
-main(int ac, char **av) {
-
-  //  std::string file = "/Users/eric/work/github/elh/rpn-cnc/xyz-probe.4nc";
-  std::string file = "/Users/eric/work/github/elh/rpn-cnc/tests.4nc";
-
-  if (ac > 1) {
-    file = av[1];
-  }
-
-  rpn.parseFile(file);
-  
-  return 0;
-  
-}
-#endif
 
 /* end of github/elh/rpn-cnc/runtime-test.cpp */
