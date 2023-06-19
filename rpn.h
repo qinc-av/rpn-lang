@@ -325,6 +325,18 @@ public:
   void add_value(const std::string &name, const rpn::Stack::Object &val) {
     _v.emplace(name, val.deep_copy());
   }
+  bool has_member(const std::string &name) {
+    return (_v.find(name) != _v.end());
+  }
+  rpn::Stack::Object &member(const std::string &name) {
+    auto v = _v.find(name);
+    if (v != _v.end()) {
+      return *v->second;
+    } else {
+      std::string err = "XObject: no such member (";
+      throw std::runtime_error(err + name + ")");
+    }
+  }
   virtual operator std::string() const {
     std::string rv = "{";
     for(auto const &m : _v) {

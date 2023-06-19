@@ -768,35 +768,75 @@ TEST_CASE( "loop tests", "control" ) {
 TEST_CASE( "bolt-circle", "control" ) {
   std::string line;
 
-  {
-    g_rpn.stack.clear();
-    /*
+  g_rpn.stack.clear();
+  /*
     std::string file = "/Users/eric/work/github/elh/rpn-cnc/bolt-circle.rpn";
     auto st = g_rpn.parseFile(file);
-    */
-    line = R"(
-: bolt-circle ( n diam angle -- < positions > )
-0 4 PICK ( n diam angle 0 n )
-FOR i ( n diam angle )
-  360 i *  ( n diam angle angle2 )
-  4 PICK / OVER + ( n diam angle angle2 )
-  DUP COS 4 PICK 2 / *  ->VEC3x ( n diam angle angle2 x-loc )
-  SWAP SIN 4 PICK 2 / * ->VEC3y + ( n diam angle xy-loc )
-  4 ROLLDn ( xy-loc n diam angle )
+  */
+  line = R"(
+: bolt-circle ( n diam phase -- < positions > )
+0 4 PICK ( n diam phase 0 n )
+FOR i ( n diam phase )
+  360 i *  ( n diam phase angle2 )
+  4 PICK / OVER + ( n diam phase angle2 )
+  DUP COS 4 PICK 2 / *  ->VEC3x ( n diam phase angle2 x-loc )
+  SWAP SIN 4 PICK 2 / * ->VEC3y + ( n diam phase xy-loc )
+  4 ROLLDn ( xy-loc n diam phase )
 NEXT
 3 DROPn
 ;
 )";
-    auto st = g_rpn.parse(line);
+  auto st = g_rpn.parse(line);
+  REQUIRE( (st == rpn::WordDefinition::Result::ok) );
+  REQUIRE( (0 == g_rpn.stack.depth() ) );
 
-    line = ("5 5.5 0 bolt-circle");
-    st = g_rpn.parse(line);
+  line = ("5 5.5 0 bolt-circle");
+  st = g_rpn.parse(line);
+  REQUIRE( (st == rpn::WordDefinition::Result::ok) );
+  REQUIRE( (5 == g_rpn.stack.depth() ) );
+  {
+    const std::vector<std::pair<double,double>> positions = {
+      { 0.849797, -2.615405 },
+      { -2.224797, -1.616409 },
+      { -2.224797, 1.616409 },
+      { 0.849797, 2.615405 },
+      { 2.750000, 0.000000 },
+    };
 
-    line = ("5 139.7 0 bolt-circle");
-    st = g_rpn.parse(line);
+    int i=0;
+    for(const auto &p : positions) {
+      auto &so = g_rpn.stack.peek(i+1);
+      StVec3 &v3 = dynamic_cast<StVec3&>(so);
+      REQUIRE_THAT(v3._x, Catch::Matchers::WithinAbs(p.first, 0.000001));
+      REQUIRE_THAT(v3._y, Catch::Matchers::WithinAbs(p.second, 0.000001));
+      i++;
+    }
+  }
 
-    g_rpn.stack.print("bolt-circle.rpn");
-    REQUIRE( (st == rpn::WordDefinition::Result::ok) );
+  line = ("8 139.7 5 bolt-circle .S");
+  st = g_rpn.parse(line);
+  REQUIRE( (st == rpn::WordDefinition::Result::ok) );
+  REQUIRE( ((5 + 8) == g_rpn.stack.depth() ) );
+
+  {
+    const std::vector<std::pair<double,double>> positions = {
+      { 53.508204, -44.898715 },
+      { 6.087829, -69.584200 },
+      { -44.898715, -53.508204 },
+      { -69.584200, -6.087829 },
+      { -53.508204, 44.898715 },
+      { -6.087829, 69.584200 },
+      { 44.898715, 53.508204 },
+      { 69.584200, 6.087829 },
+    };
+    int i=0;
+    for(const auto &p : positions) {
+      auto &so = g_rpn.stack.peek(i+1);
+      StVec3 &v3 = dynamic_cast<StVec3&>(so);
+      REQUIRE_THAT(v3._x, Catch::Matchers::WithinAbs(p.first, 0.000001));
+      REQUIRE_THAT(v3._y, Catch::Matchers::WithinAbs(p.second, 0.000001));
+      i++;
+    }
   }
 }
 
@@ -807,6 +847,16 @@ TEST_CASE( "object", "types" ) {
     g_rpn.stack.clear();
     g_rpn.parse(line);
   }
+  
+  {
+    line = ("3.6");
+    g_rpn.stack.clear();
+    auto st = g_rpn.parse(line);
+    auto &so = g_rpn.stack.peek(1);
+    REQUIRE_THROWS_AS( dynamic_cast<StObject&>(so),
+		       std::bad_cast);
+  }
+
 }
 
 TEST_CASE( "array", "types" ) {
