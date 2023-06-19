@@ -678,7 +678,7 @@ TEST_CASE( "loop tests", "control" ) {
   // be properly set up (on the stack), but once the inner loop bounds have been popped
   // for the first run, there's no way to get them back for the subsequent iterations
   //
-  // we will need progn local vars to make the syntax easier
+  // we will need progn local vars for some syntactic sugar
   {
     line = (": abc-2 FOR i DUP2 FOR j i 10 * j + 3 ROLLDn NEXT  NEXT DROP2 ;  0 5 0 4 abc-2");
     g_rpn.stack.clear();
@@ -711,6 +711,14 @@ TEST_CASE( "loop tests", "control" ) {
     REQUIRE( (33. == g_rpn.stack.peek_double(2)) );
     REQUIRE( (34. == g_rpn.stack.peek_double(1)) );
 
+  }
+
+  // recursion
+  {
+    line = (": sum-sq 0 SWAP 0 SWAP FOR i i i * + NEXT ; : word2 0 SWAP FOR i i 10 + sum-sq i + NEXT ; 3 word2 ");
+    g_rpn.stack.clear();
+    g_rpn.parse(line);
+    g_rpn.stack.print("recursive words with conflicting locals");
   }
 
   // indefinite loop

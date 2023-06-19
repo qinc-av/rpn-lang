@@ -42,10 +42,11 @@ enum CompileType {
 
 struct Progn : public rpn::WordContext, public rpn::Stack::Object {
 public:
-  Progn(rpn::Interp::Privates &p, CompileType t) : _p(p), _type(t) {};
+  Progn(rpn::Interp::Privates &p, CompileType t) : _p(p), _type(t) { _locals = std::make_shared<var_dict_t>(); };
   Progn(const Progn &other) : _p(other._p), _wordlist(other._wordlist), _type(other._type), _ident(other._ident) {
-    for(auto const &v : other._locals) {
-      _locals.emplace(v.first, v.second->deep_copy());
+    _locals = std::make_shared<var_dict_t>();
+    for(auto const &v : *other._locals) {
+      _locals->emplace(v.first, v.second->deep_copy());
     }
   }
 
@@ -82,7 +83,7 @@ public:
 
   rpn::Interp::Privates &_p;
   std::vector<std::string> _wordlist;
-  var_dict_t _locals;
+  std::shared_ptr<var_dict_t> _locals;
   CompileType _type;
   std::string _ident; // value and usage depends on type
 };
@@ -102,14 +103,12 @@ struct rpn::Interp::Privates : public rpn::WordContext {
   std::multimap<std::string,WordDefinition>::iterator validate_word(const std::string &word, rpn::Stack &stack);
   bool word_exists(const std::string &word);
 
-  bool is_local_variable(const std::string &word);
 
   rpn::WordDefinition::Result start_compile(CompileType t, bool needIdent);
   rpn::WordDefinition::Result end_compile(Progn *&progp, CompileType t);
-  void print_locals(const std::string &label);
-  void add_locals(const var_dict_t &other);
-  void remove_locals(const var_dict_t &other);
-  void remove_local(const std::string &var);
+
+  bool is_local_variable(const std::string &word);
+  bool find_local_variable(var_dict_t::const_iterator &var, const std::string &word);
 
   /*
    */
@@ -118,10 +117,12 @@ struct rpn::Interp::Privates : public rpn::WordContext {
 
   std::string _status;
 
-  std::vector<Progn> _vprogn;
+  std::vector<Progn> _ctVprogn;
+  std::vector<std::shared_ptr<var_dict_t>> _vlocals;
+
   bool _needIdent;
   bool _tracing;
-  var_dict_t _locals;
+
 };
 
 rpn::WordDefinition::Result
@@ -129,11 +130,12 @@ Progn::eval_forloop(rpn::Interp &rpn) {
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
   double end = rpn.stack.pop_as_double();
   double start = rpn.stack.pop_as_double();
+  _p._vlocals.push_back(_locals);
   for(; rv==rpn::WordDefinition::Result::ok && start<end; start += 1) {
-    _p._locals[_ident] = std::make_unique<StDouble>(StDouble(start));
+    (*_locals)[_ident] = std::make_unique<StDouble>(StDouble(start));
     rv = eval_lambda(rpn);
   }
-  _p.remove_local(_ident);
+  _p._vlocals.pop_back();
   return rv;
 }
 
@@ -147,13 +149,17 @@ rpn::WordDefinition::Result
 Progn::eval_lambda(rpn::Interp &rpn) {
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
   std::string rest;
-  // copy our locals to the evaluator;
-  _p.add_locals(_locals);
+
+  _p._vlocals.push_back(_locals);
 
   for(auto wi= _wordlist.cbegin(); rv==rpn::WordDefinition::Result::ok && wi != _wordlist.cend(); wi++) {
-    auto const &lv = _p._locals.find(*wi);
+    var_dict_t::const_iterator lv = _locals->find(*wi);
+    bool lvp = (lv != _locals->end());
+    if (!lvp) {
+      lvp = _p.find_local_variable(lv, *wi);
+    }
 
-    if (lv != _p._locals.end()) {
+    if (lvp) {
       auto *pn = dynamic_cast<Progn*>(&(*lv->second));
       if (pn != nullptr) {
 	rpn.stack.print("recursive progn");
@@ -169,7 +175,7 @@ Progn::eval_lambda(rpn::Interp &rpn) {
     }
   }
 
-  _p.remove_locals(_locals);
+  _p._vlocals.pop_back();
 
   return rv;
 }
@@ -275,8 +281,8 @@ NATIVE_WORD_DECL(private, ct_DQUOTE) {
   std::string literal;
   auto pos = nextWord(literal, rest, "\"");
   if (pos != std::string::npos) {
-    p->_vprogn.back().addWord(".\"");
-    p->_vprogn.back().addWord(literal);
+    p->_ctVprogn.back().addWord(".\"");
+    p->_ctVprogn.back().addWord(literal);
   } else {
     rv = rpn::WordDefinition::Result::parse_error;
     rest = literal; // reset buffer for error messages and diagnostics
@@ -292,8 +298,8 @@ NATIVE_WORD_DECL(private, FOR) {
 NATIVE_WORD_DECL(private, ct_FOR) {
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
   rpn::Interp::Privates *p = dynamic_cast<rpn::Interp::Privates*>(ctx);
-  //  if (p->_vprogn.back()._type == ct_worddef) {
-  //    p->_vprogn.back().addWord("FOR");
+  //  if (p->_ctVprogn.back()._type == ct_worddef) {
+  //    p->_ctVprogn.back().addWord("FOR");
   //  } else {
     rv = p->start_compile(ct_forloop, true);
     //  }
@@ -304,19 +310,19 @@ rpn::WordDefinition::Result
 rpn::Interp::Privates::start_compile(CompileType t, bool needIdent) {
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
   _needIdent = needIdent;
-  _vprogn.push_back(Progn(*this, t));
+  _ctVprogn.push_back(Progn(*this, t));
   return rv;
 }
 
 rpn::WordDefinition::Result
 rpn::Interp::Privates::end_compile(Progn *&progp, CompileType t) {
-  rpn::WordDefinition::Result rv = ((_vprogn.size()>0) && _vprogn.back()._type == t)?
+  rpn::WordDefinition::Result rv = ((_ctVprogn.size()>0) && _ctVprogn.back()._type == t)?
     rpn::WordDefinition::Result::ok : rpn::WordDefinition::Result::compile_error;
 
   progp=nullptr;
   if (rv == rpn::WordDefinition::Result::ok) {
-    progp = new Progn(_vprogn.back());
-    _vprogn.pop_back();
+    progp = new Progn(_ctVprogn.back());
+    _ctVprogn.pop_back();
   }
 
   return rv;
@@ -326,8 +332,8 @@ NATIVE_WORD_DECL(private, ct_NEXT) {
   rpn::Interp::Privates *p = dynamic_cast<rpn::Interp::Privates*>(ctx);
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
 
-  /*  if (p->_vprogn.back()._type == ct_worddef) {
-    p->_vprogn.back().addWord("NEXT");
+  /*  if (p->_ctVprogn.back()._type == ct_worddef) {
+    p->_ctVprogn.back().addWord("NEXT");
 
     } else */ {
     Progn *progp=nullptr;
@@ -336,21 +342,21 @@ NATIVE_WORD_DECL(private, ct_NEXT) {
 
     if (rv == rpn::WordDefinition::Result::ok) {
 
-      if (p->_vprogn.size() == 0) {
+      if (p->_ctVprogn.size() == 0) {
 	// back to top level, evaluate here
 	rv = progp->eval(rpn);
 
 	delete progp;
-	p->_locals.clear();
+	//	p->_locals.clear();
 
       } else {
 
 	// in a definition or nested loops
 
 	std::string word = std::to_string((uint64_t)progp);
-	p->_locals.emplace(word, progp);
-	p->_vprogn.back().addWord(word);
-
+	p->_ctVprogn.back()._locals->emplace(word, progp);
+	//	delete progp; who owns progp???
+	p->_ctVprogn.back().addWord(word);
       }
 
     } else {
@@ -396,7 +402,7 @@ rpn::Interp::Privates::eval(rpn::Interp &rpn, const std::string &word, std::stri
   rpn::WordDefinition::Result rv=rpn::WordDefinition::Result::eval_error;
   _status = word + ": ";
   std::string msg;
-  if (_vprogn.size() != 0) {
+  if (_ctVprogn.size() != 0) {
     try {
       rv = compiletime_eval(rpn,word,rest);
 
@@ -404,13 +410,13 @@ rpn::Interp::Privates::eval(rpn::Interp &rpn, const std::string &word, std::stri
       msg = "type error compiling";
       if (rest.size()>0) msg += (std::string(" '") + rest + "'");
       rv = rpn::WordDefinition::Result::param_error;
-      _vprogn.clear();
+      _ctVprogn.clear();
 
     } catch (const std::runtime_error &rte) {
       rv = rpn::WordDefinition::Result::eval_error;
       msg = "eval error compiling";
       if (rest.size()>0) msg += (std::string(" '") + rest + "'");
-      _vprogn.clear();
+      _ctVprogn.clear();
     }
 
   } else {
@@ -507,19 +513,21 @@ rpn::Interp::Privates::runtime_eval(rpn::Interp &rpn, const std::string &word, s
   return rv;
 }
 
-void
-rpn::Interp::Privates::print_locals(const std::string &label) {
-  printf("--- %s ---\n", label.c_str());
-  for(auto const &lv : _locals) {
-    printf("  %s: %s\n", lv.first.c_str(), lv.second->to_string().c_str());
+bool
+rpn::Interp::Privates::is_local_variable(const std::string &word) {
+  bool rv = false;
+  for(auto  pn =_ctVprogn.cbegin(); rv==false && pn != _ctVprogn.cend(); pn++) {
+    rv = (rv || (word == pn->_ident) || (pn->_locals->find(word)!=pn->_locals->end()));
   }
+  return rv;
 }
 
 bool
-rpn::Interp::Privates::is_local_variable(const std::string &word) {
-  bool rv = (_locals.find(word) != _locals.end());
-  for(auto  pn =_vprogn.cbegin(); rv==false && pn != _vprogn.cend(); pn++) {
-    rv = (rv || (word == pn->_ident));
+rpn::Interp::Privates::find_local_variable(var_dict_t::const_iterator &var, const std::string &word) {
+  bool rv = false;
+  for(auto  pn =_vlocals.cbegin(); rv==false && pn != _vlocals.cend(); pn++) {
+    var = (*pn)->find(word);
+    rv = (var != (*pn)->end());
   }
   return rv;
 }
@@ -527,7 +535,7 @@ rpn::Interp::Privates::is_local_variable(const std::string &word) {
 rpn::WordDefinition::Result
 rpn::Interp::Privates::compiletime_eval(rpn::Interp &rpn, const std::string &word, std::string &rest) {
   rpn::WordDefinition::Result rv=rpn::WordDefinition::Result::dict_error;
-  auto &progn = _vprogn.back();
+  auto &progn = _ctVprogn.back();
   
   if (_needIdent && (progn._ident=="")) {
     progn._ident = word;
@@ -617,25 +625,6 @@ rpn::Interp::Privates::word_exists(const std::string &word) {
   auto beg = _rtDictionary.lower_bound(word);
   const auto &end = _rtDictionary.upper_bound(word);
   return (beg != end);
-}
-
-void
-rpn::Interp::Privates::add_locals(const var_dict_t &other) {
-  for(auto const &def : other) {
-    _locals.emplace(def.first,def.second->deep_copy());
-  }
-}
-
-void
-rpn::Interp::Privates::remove_local(const std::string &var) {
-  _locals.erase(var);
-}
-
-void
-rpn::Interp::Privates::remove_locals(const var_dict_t &other) {
-  for(auto const &def : other) {
-    _locals.erase(def.first);
-  }
 }
 
 bool
