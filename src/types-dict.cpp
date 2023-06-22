@@ -1,5 +1,5 @@
 /***************************************************
- * file: github/elh/rpn-cnc/src/types-dict.cpp
+ * file: qinc/rpn-lang/src/types-dict.cpp
  *
  * @file    types-dict.cpp
  * @author  Eric L. Hernes
@@ -330,4 +330,4 @@ rpn::Interp::addTypeWords() {
 
 }
 
-/* end of github/elh/rpn-cnc/src/types-dict.cpp */
+/* end of qinc/rpn-lang/src/types-dict.cpp */

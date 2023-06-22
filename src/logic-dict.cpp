@@ -1,5 +1,5 @@
 /***************************************************
- * file: github/elh/rpn-cnc/src/logic-dict.cpp
+ * file: qinc/rpn-lang/src/logic-dict.cpp
  *
  * @file    logic-dict.cpp
  * @author  Eric L. Hernes
@@ -130,4 +130,4 @@ rpn::Interp::addLogicWords() {
 }
 
 
-/* end of github/elh/rpn-cnc/src/logic-dict.cpp */
+/* end of qinc/rpn-lang/src/logic-dict.cpp */

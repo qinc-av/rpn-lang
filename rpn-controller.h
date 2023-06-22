@@ -1,7 +1,7 @@
 /***************************************************
- * file: github/elh/rpn-cnc/rpn-cnc.h
+ * file: qinc/rpn-lang/rpn-controller.h
  *
- * @file    rpn-cnc.h
+ * @file    rpn-controller.h
  * @author  Eric L. Hernes
  * @born_on   Thursday, May 18, 2023
  * @copyright (C) Copyright Eric L. Hernes 2023
@@ -149,4 +149,4 @@ const std::string to_string(const stacktype_t &e);
 const std::string to_string(const std::pair<std::string,word_t> &wp);
 const std::string to_string(const Vec3 &v);
 
-/* end of github/elh/rpn-cnc/rpn-cnc.h */
+/* end of qinc/rpn-lang/rpn-controller.h */

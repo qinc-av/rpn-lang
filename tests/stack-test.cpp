@@ -1,5 +1,5 @@
 /***************************************************
- * file: github/elh/rpn-cnc/test-stack.cpp
+ * file: qinc/rpn-lang/tests/test-stack.cpp
  *
  * @file    test-stack.cpp
  * @author  Eric L. Hernes
@@ -522,4 +522,4 @@ rpn_main(int ac, char **av) {
   
 }
 
-/* end of github/elh/rpn-cnc/test-stack.cpp */
+/* end of qinc/rpn-lang/tests/test-stack.cpp */

@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.24)
 project(rpn-test-ui)
-include(${CMAKE_CURRENT_SOURCE_DIR}/../rpn.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/../rpn-lang.cmake)
 
 # set(CMAKE_VERBOSE_MAKEFILE ON)
 
@@ -19,7 +19,7 @@ add_compile_definitions(QT_NO_DEBUG)
 find_package(Qt5 COMPONENTS Core Widgets)
 
 if (${Qt5_FOUND})
-include_directories(${RPN_DIR})
+include_directories(${RPN_LANG_DIR})
 
 #if(APPLE)
 #    # If we switch to automatic PList generation
@@ -34,7 +34,7 @@ include_directories(${RPN_DIR})
 #else()
 #endif()
 
-add_executable(rpn-test-ui ${RPN_SRCS}
+add_executable(rpn-test-ui ${RPN_LANG_SRCS}
   rpnkeypad.cpp main.cpp
   rpnkeypad.ui
   rpnkeypad.h

@@ -1,5 +1,5 @@
 /***************************************************
- * file: github/elh/rpn-cnc/src/math-dict.cpp
+ * file: qinc/rpn-lang/src/math-dict.cpp
  *
  * @file    math-dict.cpp
  * @author  Eric L. Hernes
@@ -219,4 +219,4 @@ rpn::Interp::addMathWords() {
 
 }
 
-/* end of github/elh/rpn-cnc/src/math-dict.cpp */
+/* end of qinc/rpn-lang/src/math-dict.cpp */

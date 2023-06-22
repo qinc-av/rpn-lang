@@ -1,7 +1,7 @@
 /***************************************************
- * file: github/elh/rpn-cnc/Rpn.h
+ * file: qinc/rpn-lang/rpn.h
  *
- * @file    Rpn.h
+ * @file    rpn.h
  * @author  Eric L. Hernes
  * @born_on   Thursday, May 25, 2023
  * @copyright (C) Copyright Eric L. Hernes 2023
@@ -499,4 +499,4 @@ public:
   r.addDefinition(symbol, NATIVE_WORD_WDEF(mangler, rpn::StrictTypeValidator::d1_integer, integer_func, ptr))
 
 
-/* end of github/elh/rpn-cnc/Rpn.h */
+/* end of qinc/rpn-lang/rpn.h */

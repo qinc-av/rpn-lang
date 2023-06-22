@@ -1,5 +1,5 @@
 /***************************************************
- * file: github/elh/rpn-cnc/cnc-dictionary.h
+ * file: qinc/rpn-lang/cnc-dictionary.h
  *
  * @file    cnc-dictionary.h
  * @author  Eric L. Hernes
@@ -24,4 +24,4 @@ private:
   Privates *m_p;
 };
 
-/* end of github/elh/rpn-cnc/cnc-dictionary.h */
+/* end of qinc/rpn-lang/cnc-dictionary.h */

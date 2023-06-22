@@ -1,5 +1,5 @@
 /***************************************************
- * file: github/elh/rpn-cnc/rpn-stack.cpp
+ * file: qinc/rpn-lang/src/rpn-stack.cpp
  *
  * @file    rpn-stack.cpp
  * @author  Eric L. Hernes
@@ -385,4 +385,4 @@ rpn::Stack::print(const std::string &msg) {
   printf("+%*.*s+\n", 78,78,padding);
 }
 
-/* end of github/elh/rpn-cnc/rpn-stack.cpp */
+/* end of qinc/rpn-lang/src/rpn-stack.cpp */

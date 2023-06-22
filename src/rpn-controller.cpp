@@ -1,5 +1,5 @@
 /***************************************************
- * file: github/elh/rpn-cnc/rpn-cnc.cpp
+ * file: qinc/rpn-lang/src/rpn-controller.cpp
  *
  * @file    rpn-cnc.cpp
  * @author  Eric L. Hernes
@@ -1285,4 +1285,4 @@ RpnController::Privates::Privates() : _newWord(""), _isCompiling(false), _newDef
 }
 
 
-/* end of github/elh/rpn-cnc/rpn-cnc.cpp */
+/* end of qinc/rpn-lang/src/rpn-controller.cpp */

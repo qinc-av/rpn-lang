@@ -1,5 +1,5 @@
 /***************************************************
- * file: github/elh/rpn-cnc/src/stack-dict.cpp
+ * file: qinc/rpn-lang/src/stack-dict.cpp
  *
  * @file    stack-dict.cpp
  * @author  Eric L. Hernes
@@ -94,4 +94,4 @@ rpn::Interp::addStackWords() {
 
 }
 
-/* end of github/elh/rpn-cnc/src/stack-dict.cpp */
+/* end of qinc/rpn-lang/src/stack-dict.cpp */

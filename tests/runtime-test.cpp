@@ -1,5 +1,5 @@
 /***************************************************
- * file: github/elh/rpn-cnc/runtime-test.cpp
+ * file: qinc/rpn-lang/tests/runtime-test.cpp
  *
  * @file    runtime-test.cpp
  * @author  Eric L. Hernes
@@ -461,7 +461,7 @@ TEST_CASE( "file tests.4nc", "parsing" ) {
 
   {
     g_rpn.stack.clear();
-    std::string file = "/Users/eric/work/github/elh/rpn-cnc/tests.4nc";
+    std::string file = "/Users/eric/work/qinc/rpn-lang/tests/tests.rpn";
     auto st = g_rpn.parseFile(file);
     g_rpn.stack.print("tests.4nc");
 
@@ -770,7 +770,7 @@ TEST_CASE( "bolt-circle", "control" ) {
 
   g_rpn.stack.clear();
   /*
-    std::string file = "/Users/eric/work/github/elh/rpn-cnc/bolt-circle.rpn";
+    std::string file = "/Users/eric/work/qinc/rpn-lang/tests/bolt-circle.rpn";
     auto st = g_rpn.parseFile(file);
   */
   line = R"(
@@ -872,4 +872,4 @@ TEST_CASE( "string", "types" ) {
 }
 
 
-/* end of github/elh/rpn-cnc/runtime-test.cpp */
+/* end of qinc/rpn-lang/tests/runtime-test.cpp */

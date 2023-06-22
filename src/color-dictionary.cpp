@@ -1,5 +1,5 @@
 /***************************************************
- * file: github/elh/rpn-cnc/color-dictionary.cpp
+ * file: qinc/rpn-lang/src/color-dictionary.cpp
  *
  * @file    color-dictionary.cpp
  * @author  Eric L. Hernes
@@ -42,4 +42,4 @@ class ReferenceRgb {
 Words:
 
 
-/* end of github/elh/rpn-cnc/color-dictionary.cpp */
+/* end of qinc/rpn-lang/src/color-dictionary.cpp */

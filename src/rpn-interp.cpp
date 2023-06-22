@@ -1,5 +1,5 @@
 /***************************************************
- * file: github/elh/rpn-cnc/rpn-interp.cpp
+ * file: qinc/rpn-lang/src/rpn-interp.cpp
  *
  * @file    rpn-interp.cpp
  * @author  Eric L. Hernes
@@ -796,4 +796,4 @@ const rpn::StackSizeValidator rpn::StackSizeValidator::two(2);
 const rpn::StackSizeValidator rpn::StackSizeValidator::three(3);
 const rpn::StackSizeValidator rpn::StackSizeValidator::ntos(-1); // n top of stack
 
-/* end of github/elh/rpn-cnc/rpn-interp.cpp */
+/* end of qinc/rpn-lang/src/rpn-interp.cpp */

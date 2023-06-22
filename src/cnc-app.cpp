@@ -1,5 +1,5 @@
 /***************************************************
- * file: github/elh/rpn-cnc/cnc-dictionary.cpp
+ * file: qinc/rpn-lang/src/cnc-dictionary.cpp
  *
  * @file    cnc-dictionary.cpp
  * @author  Eric L. Hernes
@@ -227,4 +227,4 @@ MachineInterface::Privates::Privates(RpnController &rpn) {
     });
 }
 
-/* end of github/elh/rpn-cnc/cnc-dictionary.cpp */
+/* end of qinc/rpn-lang/src/cnc-dictionary.cpp */
