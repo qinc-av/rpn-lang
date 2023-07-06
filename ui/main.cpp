@@ -22,7 +22,7 @@ main(int ac, char **av) {
   QApplication app(ac, av);
 
   rpn::Interp rpn;
-  RpnKeypadController keypad(rpn);
+  rpn::KeypadController keypad(rpn);
   keypad.assignButton(10,4, "DROP", "DROP");
   keypad.show();
   return app.exec();

@@ -86,11 +86,10 @@ rpn::Interp::addStackWords() {
   ADD_STACK_OP(rpn, "REVERSE", zero, reverse);
   ADD_STACK_OP(rpn, "REVERSEn", ntos, reversen);
 
-  std::string line = R"(
+  auto st = rpn.eval(R"(
 : DUP2 2 DUPn ;
 : DROP2 DROP DROP ;
-)";
-  auto st = rpn.parse(line);
+)");
 
 }
 

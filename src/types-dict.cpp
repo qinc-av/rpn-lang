@@ -12,7 +12,7 @@
  *
  */
 
-#include "rpn.h"
+#include "../rpn.h"
 
 #include <cmath>
 
@@ -65,7 +65,7 @@ NATIVE_WORD_DECL(t_object, add_string_any_object) {
   std::string ident = rpn.stack.pop_string();
   auto val = rpn.stack.pop();
   auto &sob = rpn.stack.peek(1);
-  StObject &obj = OBJECT_CAST(StObject)(sob);
+  StObject &obj = PEEK_CAST(StObject,sob);
   obj.inner().add_value(ident,*val.get());
   return rv;
 }
@@ -79,27 +79,22 @@ NATIVE_WORD_DECL(t_object, add_object_string_any) {
  * Array
  */
 NATIVE_WORD_DECL(t_array, to_array) {
-  rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
+  rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::implementation_error;
   return rv;
 }
 
 NATIVE_WORD_DECL(t_array, array_to) {
-  rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
-  return rv;
-}
-
-NATIVE_WORD_DECL(t_array, add_array) {
-  rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
+  rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::implementation_error;
   return rv;
 }
 
 NATIVE_WORD_DECL(t_array, add_array_any) {
-  rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
+  rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::implementation_error;
   return rv;
 }
 
 NATIVE_WORD_DECL(t_array, add_any_array) {
-  rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
+  rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::implementation_error;
   return rv;
 }
 
@@ -182,8 +177,8 @@ NATIVE_WORD_DECL(vec3, add_vec3) {
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
   auto o1 = rpn.stack.pop();
   auto o2 = rpn.stack.pop();
-  const auto &v1 = OBJECT_CAST(StVec3)(*o1.get());
-  const auto &v2 = OBJECT_CAST(StVec3)(*o2.get());
+  const auto &v1 = POP_CAST(StVec3,o1);
+  const auto &v2 = POP_CAST(StVec3,o2);
   rpn.stack.push(StVec3(nan_add_0(v1._x, v2._x), nan_add_0(v1._y, v2._y), nan_add_0(v1._z, v2._z)));
   return rv;
 }
@@ -193,7 +188,7 @@ NATIVE_WORD_DECL(vec3, add_num_vec3) {
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
   double n1 = rpn.stack.pop_as_double();
   auto o2 = rpn.stack.pop();
-  const auto &v2 = OBJECT_CAST(StVec3)(*o2.get());
+  const auto &v2 = POP_CAST(StVec3,o2);
   rpn.stack.push(StVec3(nan_add(n1, v2._x), nan_add(n1, v2._y), nan_add(n1, v2._z)));
   return rv;
 }
@@ -203,7 +198,7 @@ NATIVE_WORD_DECL(vec3, add_vec3_num) {
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
   auto o1 = rpn.stack.pop();
   double n2 = rpn.stack.pop_as_double();
-  const auto &v1 = OBJECT_CAST(StVec3)(*o1.get());
+  const auto &v1 = POP_CAST(StVec3,o1);
   rpn.stack.push(StVec3(nan_add(v1._x, n2), nan_add(v1._y, n2), nan_add(v1._z, n2)));
   return rv;
 }
@@ -212,8 +207,8 @@ NATIVE_WORD_DECL(vec3, sub_vec3) {
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
   auto o2 = rpn.stack.pop();
   auto o1 = rpn.stack.pop();
-  const auto &v1 = OBJECT_CAST(StVec3)(*o1.get());
-  const auto &v2 = OBJECT_CAST(StVec3)(*o2.get());
+  const auto &v1 = POP_CAST(StVec3,o1);
+  const auto &v2 = POP_CAST(StVec3,o2);
   rpn.stack.push(StVec3(nan_sub_0(v1._x, v2._x), nan_sub_0(v1._y, v2._y), nan_sub_0(v1._z, v2._z)));
   return rv;
 }
@@ -223,7 +218,7 @@ NATIVE_WORD_DECL(vec3, sub_num_vec3) {
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
   double n1 = rpn.stack.pop_as_double();
   auto o2 = rpn.stack.pop();
-  const auto &v2 = OBJECT_CAST(StVec3)(*o2.get());
+  const auto &v2 = POP_CAST(StVec3,o2);
   rpn.stack.push(StVec3(nan_sub(n1, v2._x), nan_sub(n1, v2._y), nan_sub(n1, v2._z)));
   return rv;
 }
@@ -233,7 +228,7 @@ NATIVE_WORD_DECL(vec3, sub_vec3_num) {
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
   auto o1 = rpn.stack.pop();
   double n2 = rpn.stack.pop_as_double();
-  const auto &v1 = OBJECT_CAST(StVec3)(*o1.get());
+  const auto &v1 = POP_CAST(StVec3,o1);
   rpn.stack.push(StVec3(nan_sub(v1._x, n2), nan_sub(v1._y, n2), nan_sub(v1._z, n2)));
   return rv;
 }
@@ -252,7 +247,7 @@ NATIVE_WORD_DECL(vec3, to_vec3) {
 NATIVE_WORD_DECL(vec3, vec3_to) {
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
   auto o1 = rpn.stack.pop();
-  const auto &v1 = OBJECT_CAST(StVec3)(*o1.get());
+  const auto &v1 = POP_CAST(StVec3,o1);
   rpn.stack.push_double(v1._x);
   rpn.stack.push_double(v1._y);
   rpn.stack.push_double(v1._z);
@@ -321,13 +316,21 @@ rpn::Interp::addTypeWords() {
   addDefinition("->VEC3", NATIVE_WORD_WDEF(vec3, rpn::StrictTypeValidator::d3_integer_integer_double, to_vec3, nullptr));
 
   addDefinition("->VEC3x", NATIVE_WORD_WDEF(vec3, rpn::StrictTypeValidator::d1_double, to_vec3x, nullptr));
-  addDefinition("->VEC3x", NATIVE_WORD_WDEF(vec3, rpn::StrictTypeValidator::d1_integer, to_vec3x, nullptr));
+  addDefinition("->{x}", NATIVE_WORD_WDEF(vec3, rpn::StrictTypeValidator::d1_integer, to_vec3x, nullptr));
   addDefinition("->VEC3y", NATIVE_WORD_WDEF(vec3, rpn::StrictTypeValidator::d1_double, to_vec3y, nullptr));
-  addDefinition("->VEC3y", NATIVE_WORD_WDEF(vec3, rpn::StrictTypeValidator::d1_integer, to_vec3y, nullptr));
+  addDefinition("->{y}", NATIVE_WORD_WDEF(vec3, rpn::StrictTypeValidator::d1_integer, to_vec3y, nullptr));
   addDefinition("->VEC3z", NATIVE_WORD_WDEF(vec3, rpn::StrictTypeValidator::d1_double, to_vec3z, nullptr));
-  addDefinition("->VEC3z", NATIVE_WORD_WDEF(vec3, rpn::StrictTypeValidator::d1_integer, to_vec3z, nullptr));
+  addDefinition("->{z}", NATIVE_WORD_WDEF(vec3, rpn::StrictTypeValidator::d1_integer, to_vec3z, nullptr));
   addDefinition("VEC3->", NATIVE_WORD_WDEF(vec3, rpn::StrictTypeValidator::d1_vec3, vec3_to, nullptr));
 
+  //  std:: string line = ": VEC3->{xy} ( <v3> <v3'> ) VEC3-> DROP ->{y} SWAP ->{x} + ;";
+  //  line = ": VEC3->{xy} ( <v3> -- <v3'> ) VEC3-> DROP ->{y} SWAP ->{x} + ;";
+  //  auto st = parse(line);
+  //  line = ": ->{xy} ( x y --  <v3'> ) ->{x} SWAP ->{y} + ;";
+  //   st = parse(line);
+
+  auto st = eval(": VEC3->{xy} ( <v3> <v3'> ) VEC3-> DROP ->{y} SWAP ->{x} + ;");
+  st = eval(": ->{xy} ( x y --  <v3'> ) ->{x} SWAP ->{y} + ;");
 }
 
 /* end of qinc/rpn-lang/src/types-dict.cpp */
