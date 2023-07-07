@@ -30,8 +30,12 @@ namespace rpn {
     public:
       virtual ~Object() {};
       virtual bool operator==(const Object &rhs) const =0;
-      virtual bool operator>(const Object &/*rhs*/) const { throw std::runtime_error("operator> invalid for type"); };
-      virtual bool operator<(const Object &/*rhs*/) const { throw std::runtime_error("operator> invalid for type"); };
+      virtual bool operator>(const Object &/*rhs*/) const {
+        throw std::runtime_error("operator> invalid for type");
+      };
+      virtual bool operator<(const Object &/*rhs*/) const {
+        throw std::runtime_error("operator> invalid for type");
+      };
       virtual operator std::string() const =0;
       virtual std::unique_ptr<Object> deep_copy() const =0;
       std::string to_string() const { return static_cast<std::string>(*this); }
@@ -230,6 +234,8 @@ namespace rpn {
     void addTypeWords();
     Privates *m_p;
   };
+
+  class KeypadController;
 }
 
 #define PEEK_CAST(obtype,ob)  dynamic_cast<obtype&>(ob)
@@ -243,20 +249,20 @@ class TStackObject : public rpn::Stack::Object {
   TStackObject(const T &v) : _v(v) {}
   virtual bool operator==(const Object &orhs) const override {
     auto *rhs = OBJECTP_CAST(const TStackObject<T>)(&orhs);
-    return (rhs !=nullptr && _v.val() == rhs->_v.val());
+    return (rhs !=nullptr && _v == rhs->_v);
   }
   virtual bool operator>(const Object &orhs) const override {
     auto &rhs = PEEK_CAST(const TStackObject<T>,orhs);
-    return (_v.val() > rhs._v.val());
+    return (_v > rhs._v);
   }
   virtual bool operator<(const Object &orhs) const override {
     auto &rhs = PEEK_CAST(const TStackObject<T>,orhs);
-    return (_v.val() < rhs._v.val());
+    return (_v < rhs._v);
   }
   virtual ~TStackObject() {}
   virtual std::unique_ptr<rpn::Stack::Object> deep_copy() const override { return std::make_unique<TStackObject<T>>(*this); };
   virtual operator std::string() const override { return (std::string)_v; };
-  auto val() const { return _v.val(); };
+  auto val() const { return _v; };
   auto &inner() { return _v; };
  private:
   T _v;
@@ -266,7 +272,7 @@ class XDouble {
  public:
  XDouble(const double &v) : _v(v) {}
   virtual operator std::string() const { return std::to_string(_v); };
-  auto val() const { return _v; }
+  operator double() const { return _v; };
   bool operator==(const XDouble &rhs) const {
     return _v == rhs._v;
   }
@@ -278,7 +284,7 @@ class XInteger {
  public:
  XInteger(const int64_t &v) : _v(v) {}
   virtual operator std::string() const { return std::to_string(_v); };
-  auto val() const { return _v; }
+  operator uint64_t() const { return _v; };
   bool operator==(const XInteger &rhs) const {
     return _v == rhs._v;
   }
@@ -290,7 +296,7 @@ class XBoolean {
  public:
  XBoolean(const bool &v) : _v(v) {}
   virtual operator std::string() const { return _v ? "<true>" : "<false>"; };
-  auto val() const { return _v; }
+  operator bool() const { return _v; };
   bool operator==(const XBoolean &rhs) const {
     return _v == rhs._v;
   }
@@ -303,9 +309,14 @@ class XString {
   XString(const XString &x): _v(x._v) {}
   XString(const std::string &v) : _v(v) {}
   virtual operator std::string() const { return _v; };
-  auto val() const { return _v; }
   bool operator==(const XString &rhs) const {
     return _v == rhs._v;
+  }
+  bool operator>(const XString &rhs) const {
+    return _v > rhs._v;
+  }
+  bool operator<(const XString &rhs) const {
+    return _v < rhs._v;
   }
  private:
   std::string _v;
@@ -326,6 +337,14 @@ public:
       rv &= (i->first == j->first) && (*(i->second) == *(j->second));
     }
     return rv;
+  }
+  bool operator>(const XObject &rhs) const {
+    // XXX-ELH: todo
+    return false;
+  }
+  bool operator<(const XObject &rhs) const {
+    // XXX-ELH: todo
+    return false;
   }
   void add_value(const std::string &name, const rpn::Stack::Object &val) {
     _v.emplace(name, val.deep_copy());
@@ -373,6 +392,14 @@ public:
     }
     return rv;
   }
+  bool operator>(const XArray &rhs) const {
+    // XXX-ELH: todo
+    return false;
+  }
+  bool operator<(const XArray &rhs) const {
+    // XXX-ELH: todo
+    return false;
+  }
   void add_value(const rpn::Stack::Object &val) {
     _v.push_back(val.deep_copy());
   }
@@ -409,9 +436,6 @@ public:
 	    ((_y == rhs._y) || (std::isnan(_y) && std::isnan(rhs._y))) &&
 	    ((_z == rhs._z) || (std::isnan(_z) && std::isnan(rhs._z))));
   };
-
-  //  virtual bool operator>(const Object &rhs) const { throw std::runtime_error("operator> invalid for type"); };
-  //  virtual bool operator<(const Object &rhs) const { throw std::runtime_error("operator> invalid for type"); };
 
   virtual operator std::string() const override {
     std::string rv = "<";

@@ -461,7 +461,8 @@ TEST_CASE( "file tests.4nc", "parsing" ) {
 
   {
     g_rpn.stack.clear();
-    std::string file = "/Users/eric/work/qinc/rpn-lang/tests/tests.rpn";
+    //    std::string file = "/Users/eric/work/qinc/rpn-lang/tests/tests.rpn";
+    std::string file = "/Volumes/CSData/work/QInc/color-calc/src/libs/rpn-lang/tests/tests.rpn";
     auto st = g_rpn.parseFile(file);
     g_rpn.stack.print("tests.4nc");
 

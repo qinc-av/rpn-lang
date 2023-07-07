@@ -12,7 +12,7 @@
  *
  */
 
-#include "rpn.h"
+#include "../rpn.h"
 
 #include <cmath>
 #include <typeinfo>
@@ -157,7 +157,7 @@ rpn::Stack::pop_as_boolean() {
     val = (dp->val() != 0.);
 
   } else if (sp) {
-    val = (sp->val()!="");
+    val = (std::string(sp->val())!="");
 
   }
   

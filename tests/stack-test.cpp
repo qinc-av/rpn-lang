@@ -24,7 +24,7 @@ public:
     }
   }
   virtual bool operator==(const rpn::Stack::Object &orhs) const override {
-    auto &rhs = OBJECT_CAST(const CustomArray)(orhs);
+    auto &rhs = PEEK_CAST(const CustomArray,orhs);
     bool rv = _v.size() == rhs._v.size();
     for(auto i=_v.cbegin(), j=rhs._v.cbegin(); rv && i!= _v.cend(); i++,j++) {
       rv &= (**i == **j);
@@ -56,6 +56,12 @@ class CustomObject {
   auto val() const { return _v; }
   bool operator==(const CustomObject &rhs) const {
     return _v == rhs._v;
+  }
+  bool operator>(const CustomObject &rhs) const {
+    return _v > rhs._v;
+  }
+  bool operator<(const CustomObject &rhs) const {
+    return _v < rhs._v;
   }
 private:
   std::string _v;
@@ -96,8 +102,7 @@ TEST_CASE("peek and types" "stack") {
   CHECK_THROWS(stack.peek_string(2) == "1023"); // cast fails
 
   {
-    auto &tsr = OBJECT_CAST(StDouble)(stack.peek(5));
-    REQUIRE( tsr.val() ==  3.14159265359);
+    REQUIRE( stack.peek_double(5) ==  3.14159265359);
   }
 
   {
@@ -369,7 +374,7 @@ TEST_CASE("stack operations" "stack") {
     ar1.add_value(StString(std::string("yyz")));
     stack.push(ar1); stackCount++;
     REQUIRE (stack.depth() == stackCount);
-    auto &ar2 = OBJECT_CAST(CustomArray)(stack.peek(1));
+    auto &ar2 = PEEK_CAST(CustomArray,stack.peek(1));
     printf("ar1: %s\n", std::string(ar1).c_str());
     printf("ar2: %s\n", std::string(ar2).c_str());
     REQUIRE(ar1 == ar2);
@@ -425,8 +430,7 @@ rpn_main(int ac, char **av) {
 }
 
   {
-    const StString &tsr(dynamic_cast<const StString&>(stack.peek(1)));
-    printf("peeked [%s]\n", tsr.val().c_str());
+    printf("peeked [%s]\n", stack.peek_string(1).c_str());
     stack.print();
   }
 

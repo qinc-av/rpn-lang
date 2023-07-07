@@ -16,9 +16,9 @@ endif()
 add_compile_definitions(APP_VERSION="1.1.9")
 add_compile_definitions(QT_NO_DEBUG)
 
-find_package(Qt5 COMPONENTS Core Widgets)
+find_package(Qt6 COMPONENTS Core Widgets)
 
-if (${Qt5_FOUND})
+if (${Qt6_FOUND})
 include_directories(${RPN_LANG_DIR})
 
 #if(APPLE)
@@ -46,9 +46,9 @@ set_target_properties(rpn-test-ui PROPERTIES
           )
 
 target_link_libraries(rpn-test-ui
-    Qt5::Core
-    Qt5::Widgets
-    Qt5::Gui
+    Qt6::Core
+    Qt6::Widgets
+    Qt6::Gui
     )
 
 endif()
