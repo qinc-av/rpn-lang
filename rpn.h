@@ -24,6 +24,8 @@
 #include <functional>
 
 namespace rpn {
+  std::string to_string(const double &dv);
+
   class Stack {
   public:
     class Object {
@@ -271,7 +273,7 @@ class TStackObject : public rpn::Stack::Object {
 class XDouble {
  public:
  XDouble(const double &v) : _v(v) {}
-  virtual operator std::string() const { return std::to_string(_v); };
+  virtual operator std::string() const { return rpn::to_string(_v); };
   operator double() const { return _v; };
   bool operator==(const XDouble &rhs) const {
     return _v == rhs._v;
@@ -441,15 +443,15 @@ public:
     std::string rv = "<";
     if (!std::isnan(_x)) {
       rv += " x:";
-      rv += std::to_string(_x);
+      rv += rpn::to_string(_x);
     }
     if (!std::isnan(_y)) {
       rv += " y:";
-      rv += std::to_string(_y);
+      rv += rpn::to_string(_y);
     }
     if (!std::isnan(_z)) {
       rv += " z:";
-      rv += std::to_string(_z);
+      rv += rpn::to_string(_z);
     }
     rv += " >";
     return rv;

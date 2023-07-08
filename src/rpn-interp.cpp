@@ -16,6 +16,13 @@
 
 #include "../rpn.h"
 
+std::string
+rpn::to_string(const double &dv) {
+  char tmp[32];
+  snprintf(tmp, sizeof(tmp), "%0.4f", dv);
+  return tmp;
+}
+
 static std::string::size_type
 nextWord(std::string &word, std::string &buffer, const std::string &delim=" \n") {
   word = "";

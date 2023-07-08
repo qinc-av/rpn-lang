@@ -15,6 +15,8 @@ struct rpn::KeypadController::Privates : public rpn::WordContext {
 
     _ui->setupUi(_rpnd);
     QMenuBar *menubar = new QMenuBar(_rpnd);
+    menubar->setNativeMenuBar(false);
+    _ui->verticalLayout->setMenuBar(menubar);
 
     _mFile = menubar->addMenu("&File");
     QAction *action = new QAction("Open", _rpnd);
@@ -30,9 +32,6 @@ struct rpn::KeypadController::Privates : public rpn::WordContext {
     connect(action, &QAction::triggered, _rpnd, &rpn::KeypadController::on_file_restore_stack);
 
     _mKeys = menubar->addMenu("&Keys");
-
-    _ui->verticalLayout->insertWidget(0, menubar);
-    menubar->setNativeMenuBar(false);
 
     _ui->textEdit->setReadOnly(true);
     _ui->textEdit->setAlignment(Qt::AlignRight);
