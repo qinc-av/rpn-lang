@@ -162,6 +162,9 @@ namespace rpn {
     static const StrictTypeValidator d3_object_string_any;
     static const StrictTypeValidator d3_string_any_object;
 
+    static const StrictTypeValidator d4_double_double_double_integer;
+    static const StrictTypeValidator d4_integer_double_double_double;
+
     static const size_t v_anytype;
     //    static const size_t v_numbertype;  // is harder than it sounds...
 
