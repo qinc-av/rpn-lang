@@ -673,7 +673,7 @@ rpn::Interp::removeDefinition(const std::string &word) {
 
 std::multimap<std::string,rpn::WordDefinition>::iterator
 rpn::Interp::Privates::validate_word(const std::string &word, rpn::Stack &stack) {
-  auto beg = _rtDictionary.lower_bound(word);
+  const auto &beg = _rtDictionary.lower_bound(word);
   const auto &end = _rtDictionary.upper_bound(word);
   if (beg != end) {
     auto stack_types = stack.types();
