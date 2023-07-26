@@ -240,7 +240,13 @@ namespace rpn {
     Privates *m_p;
   };
 
-  class KeypadController;
+
+  class KeypadController {
+  public:
+    virtual void assignButton(unsigned column, unsigned row, const std::string &rpnword, const std::string &label="") =0;
+    virtual void assignMenu(const std::string &menu, const std::string &rpnword, const std::string &label="") =0;
+    virtual void clearAssignedKeys() =0;
+  };
 }
 
 #define PEEK_CAST(obtype,ob)  dynamic_cast<obtype&>(ob)
