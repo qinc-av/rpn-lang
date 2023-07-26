@@ -24,7 +24,7 @@ public:
 
     virtual void assignButton(unsigned column, unsigned row, const std::string &rpnword, const std::string &label="") override;
     virtual void assignMenu(const std::string &menu, const std::string &rpnword, const std::string &label="") override;
-    virtual void clearAssignedKeys() override;
+    virtual void clearAssignedButtons() override;
 
     private slots:
     void on_button_0_clicked();

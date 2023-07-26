@@ -241,11 +241,16 @@ namespace rpn {
   };
 
 
-  class KeypadController {
+  class KeypadController : public WordContext {
   public:
+    KeypadController();
     virtual void assignButton(unsigned column, unsigned row, const std::string &rpnword, const std::string &label="") =0;
     virtual void assignMenu(const std::string &menu, const std::string &rpnword, const std::string &label="") =0;
-    virtual void clearAssignedKeys() =0;
+    virtual void clearAssignedButtons() =0;
+
+  protected:
+    void add_words(rpn::Interp &rpn);
+    void remove_words(rpn::Interp &rpn);
   };
 }
 
