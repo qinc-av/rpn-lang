@@ -298,7 +298,7 @@ NATIVE_WORD_DECL(private, BOOL_FALSE) {
 NATIVE_WORD_DECL(private, OPAREN) {
   // (rpn::Interp &rpn, rpn::WordContext *ctx, std::string &rest)
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
-  rpn::Interp::Privates *p = dynamic_cast<rpn::Interp::Privates*>(ctx);
+  //rpn::Interp::Privates *p = dynamic_cast<rpn::Interp::Privates*>(ctx);
   std::string comment;
   auto cp = nextWord(comment, rest, ")");
   if (cp == std::string::npos) {
@@ -311,7 +311,7 @@ NATIVE_WORD_DECL(private, OPAREN) {
 NATIVE_WORD_DECL(private, DQUOTE) {
   // (rpn::Interp &rpn, rpn::WordContext *ctx, std::string &rest)
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
-  rpn::Interp::Privates *p = dynamic_cast<rpn::Interp::Privates*>(ctx);
+  //rpn::Interp::Privates *p = dynamic_cast<rpn::Interp::Privates*>(ctx);
   std::string literal;
   auto pos = nextWord(literal, rest, "\"");
   if (pos != std::string::npos) {
@@ -381,46 +381,40 @@ NATIVE_WORD_DECL(private, ct_NEXT) {
   rpn::Interp::Privates *p = dynamic_cast<rpn::Interp::Privates*>(ctx);
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
 
-  /*  if (p->_ctVprogn.back()._type == ct_worddef) {
-    p->_ctVprogn.back().addWord("NEXT");
+  Progn *progp=nullptr;
 
-    } else */ {
-    Progn *progp=nullptr;
+  rv = p->end_compile(progp, ct_forloop);
 
-    rv = p->end_compile(progp, ct_forloop);
+  if (rv == rpn::WordDefinition::Result::ok) {
 
-    if (rv == rpn::WordDefinition::Result::ok) {
+    if (p->_ctVprogn.size() == 0) {
+      // back to top level, evaluate here
+      rv = progp->eval(rpn);
 
-      if (p->_ctVprogn.size() == 0) {
-	// back to top level, evaluate here
-	rv = progp->eval(rpn);
-
-	delete progp;
-	//	p->_locals.clear();
-
-      } else {
-
-	// in a definition or nested loops
-
-	std::string word = std::to_string((uint64_t)progp);
-	p->_ctVprogn.back()._locals->emplace(word, progp);
-	//	delete progp; who owns progp???
-	p->_ctVprogn.back().addWord(word);
-      }
+      delete progp;
 
     } else {
 
-      rv = rpn::WordDefinition::Result::compile_error;
+      // in a definition or nested loops
+
+      std::string word = std::to_string((uint64_t)progp);
+      p->_ctVprogn.back()._locals->emplace(word, progp);
+      //	delete progp; who owns progp???
+      p->_ctVprogn.back().addWord(word);
     }
+
+  } else {
+
+    rv = rpn::WordDefinition::Result::compile_error;
   }
 
   return rv;
 }
 
 NATIVE_WORD_DECL(private, ct_STEP) {
-  rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
-  rpn::Interp::Privates *p = dynamic_cast<rpn::Interp::Privates*>(ctx);
-  auto step = rpn.stack.pop_integer();
+  rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::implementation_error;
+  //rpn::Interp::Privates *p = dynamic_cast<rpn::Interp::Privates*>(ctx);
+  //auto step = rpn.stack.pop_integer();
   return rv;
 }
 
@@ -708,7 +702,7 @@ rpn::Interp::parse(std::string &line) {
   rpn::WordDefinition::Result rv=rpn::WordDefinition::Result::ok;
   for(; rv==rpn::WordDefinition::Result::ok && line.size()>0;) {
     std::string word;
-    auto p1 = nextWord(word,line);
+    /*auto p1 =*/ nextWord(word,line);
     rv = m_p->eval(*this, word, line);
   }
   return rv;
