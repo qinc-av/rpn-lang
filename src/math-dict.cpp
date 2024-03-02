@@ -12,9 +12,21 @@
  *
  */
 
+#define _USE_MATH_DEFINES // for MSVC
+#define _CRT_RAND_S
+
 #include "../rpn.h"
 
 #include <cmath>
+
+#if defined (_MSC_VER)
+#include <stdlib.h>
+double drand48() {
+  unsigned int rv=0;
+  rand_s(&rv);
+  return double(rv)/double(UINT_MAX);
+}
+#endif
 
 /****************************************
  * math words
@@ -170,7 +182,7 @@ double drand48() {
 }
 #endif
 
-MATH_GENERATE(rand48, drand48());
+MATH_GENERATE(drand, drand48());
 
 static double change_sign(double x) {
   return -1. * x;
@@ -219,7 +231,7 @@ rpn::Interp::addMathWords() {
   addDefinition("k_PI", MATH_CONSTANT_WDEF(pi));
   addDefinition("k_E", MATH_CONSTANT_WDEF(e));
   addDefinition("RAND", MATH_CONSTANT_WDEF(rand));
-  addDefinition("RAND48", MATH_CONSTANT_WDEF(rand48));
+  addDefinition("DRAND", MATH_CONSTANT_WDEF(drand));
 
   //  rpn.addDefinition("LSHIFT", MATH_BINARY_DEF(lshift)); // integer
   //  rpn.addDefinition("RSHIFT", MATH_BINARY_DEF(rshift)); // integer

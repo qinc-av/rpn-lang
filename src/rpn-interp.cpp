@@ -26,7 +26,7 @@ rpn::to_string(const double &dv) {
 }
 
 static std::string::size_type
-nextWord(std::string &word, std::string &buffer, const std::string &delim=" \n") {
+nextWord(std::string &word, std::string &buffer, const std::string &delim=" \n\t") {
   word = "";
   auto p1 = buffer.find_first_of(delim, 0);
   if (p1 == std::string::npos) { // not found

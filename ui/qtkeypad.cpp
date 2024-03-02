@@ -45,10 +45,17 @@ struct QtKeypadController::Privates {
       connect(b, SIGNAL(clicked()), _rpnd, SLOT(on_programmable_button_clicked()));
     }
 
+#if 1
+    QFont font("Monospace");
+    font.setStyleHint(QFont::TypeWriter);
+    _ui->textEdit->setFont(font);
+    //    _ui->textEdit->setFontPointSize(18);
+#else
     auto v = QFontDatabase::addApplicationFont(":/etc/led-counter-7/led_counter-7.ttf");
     QString family = QFontDatabase::applicationFontFamilies(v).at(0);
     _ui->textEdit->setFontFamily(family);
     _ui->textEdit->setFontPointSize(18);
+#endif
     redraw_display();
 
   }
