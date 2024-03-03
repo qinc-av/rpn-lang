@@ -106,7 +106,7 @@ NATIVE_WORD_DECL(t_array, add_any_array) {
 // nan behaves like 0 when added to non-nan
 static double nan_add_0(double a, double b) {
   double rv = std::nan("");
-  switch((std::isnan(a)<<1)|(std::isnan(b))) {
+  switch(((std::isnan(a)&1)<<1)|(std::isnan(b)&1)) {
   case 0:
     rv = a + b;
     break;
@@ -125,7 +125,7 @@ static double nan_add_0(double a, double b) {
 
 static double nan_add(double a, double b) {
   double rv = std::nan("");
-  switch((std::isnan(a)<<1)|(std::isnan(b))) {
+  switch(((std::isnan(a)&1)<<1)|(std::isnan(b)&1)) {
   case 0:
     rv = a + b;
     break;
@@ -140,7 +140,7 @@ static double nan_add(double a, double b) {
 
 static double nan_sub_0(double a, double b) {
   double rv = std::nan("");
-  switch((std::isnan(a)<<1)|(std::isnan(b))) {
+  switch(((std::isnan(a)&1)<<1)|(std::isnan(b)&1)) {
   case 0:
     rv = a - b;
     break;
@@ -159,7 +159,7 @@ static double nan_sub_0(double a, double b) {
 
 static double nan_sub(double a, double b) {
   double rv = std::nan("");
-  switch((std::isnan(a)<<1)|(std::isnan(b))) {
+  switch(((std::isnan(a)&1)<<1)|(std::isnan(b)&1)) {
   case 0:
     rv = a - b;
     break;

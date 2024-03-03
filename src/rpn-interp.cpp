@@ -15,6 +15,7 @@
 #include <fstream>
 #include <queue>
 #include <future>
+#include <mutex>
 
 #include "../rpn.h"
 
@@ -546,13 +547,13 @@ rpn::Interp::Privates::eval(const std::string &word, std::string &rest) {
     try {
       rv = compiletime_eval(word,rest);
 
-    } catch (const std::bad_cast &bce) {
+    } catch (const std::bad_cast &/*bce*/) {
       msg = "type error compiling";
       if (rest.size()>0) msg += (std::string(" '") + rest + "'");
       rv = rpn::WordDefinition::Result::param_error;
       _ctVprogn.clear();
 
-    } catch (const std::runtime_error &rte) {
+    } catch (const std::runtime_error &/*rte*/) {
       rv = rpn::WordDefinition::Result::eval_error;
       msg = "eval error compiling";
       if (rest.size()>0) msg += (std::string(" '") + rest + "'");
@@ -563,12 +564,12 @@ rpn::Interp::Privates::eval(const std::string &word, std::string &rest) {
     try {
       rv = runtime_eval(word,rest);
 
-    } catch (const std::bad_cast &bce) {
+    } catch (const std::bad_cast &/*bce*/) {
       rv = rpn::WordDefinition::Result::param_error;
       msg = "type error";
       if (rest.size()>0) msg += (std::string(" '") + rest + "'");
 
-    } catch (const std::runtime_error &rte) {
+    } catch (const std::runtime_error &/*rte*/) {
       rv = rpn::WordDefinition::Result::param_error;
       msg = "eval error";
       if (rest.size()>0) msg += (std::string(" '") + rest + "'");

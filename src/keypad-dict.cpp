@@ -27,7 +27,7 @@ NATIVE_WORD_DECL(keypad, ASSIGN_KEY) {
   auto row = rpn.stack.pop_integer();
 
   if(rpn.wordExists(word)) {
-    kc->assignButton(column, row, word, label);
+    kc->assignButton(unsigned(column), unsigned(row), word, label);
   } else {
     rv = rpn::WordDefinition::Result::eval_error;
   }
