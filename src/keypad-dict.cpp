@@ -68,7 +68,7 @@ NATIVE_WORD_DECL(keypad, MATH_KEYS) {
   kc->assignButton(3,8, "k_PI");
   kc->assignButton(3,9, "k_E");
   kc->assignButton(3,10, "RAND");
-  kc->assignButton(3,11, "RAND48");
+  kc->assignButton(3,11, "DRAND");
   return rv;
 }
 

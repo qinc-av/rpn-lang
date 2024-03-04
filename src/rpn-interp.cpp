@@ -16,6 +16,7 @@
 #include <queue>
 #include <future>
 #include <mutex>
+#include <set>
 
 #include "../rpn.h"
 
@@ -368,6 +369,22 @@ NATIVE_WORD_DECL(private, TRACE) {
   return rv;
 }
 
+NATIVE_WORD_DECL(private, WORDLIST) {
+  // (rpn::Interp &rpn, rpn::WordContext *ctx, std::string &rest)
+  rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
+  rpn::Interp::Privates *p = dynamic_cast<rpn::Interp::Privates*>(ctx);
+  std::set<std::string> keys;
+  for(const auto &dw : p->_rtDictionary) {
+    keys.insert(dw.first);
+  }
+  StArray res;
+  for(const auto &k : keys) {
+    res.inner().add_value(StString(k));
+  }
+  rpn.stack.push(res);
+  return rv;
+}
+
 NATIVE_WORD_DECL(private, BOOL_TRUE) {
   // (rpn::Interp &rpn, rpn::WordContext *ctx, std::string &rest)
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
@@ -518,6 +535,7 @@ rpn::Interp::Privates::add_private_words() {
   _rtDictionary.emplace(".\"", rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, DQUOTE), this });
   _rtDictionary.emplace("FOR", rpn::WordDefinition { rpn::StrictTypeValidator::d2_integer_integer, NATIVE_WORD_FN(private, FOR), this });
   _rtDictionary.emplace("TRACE", rpn::WordDefinition { rpn::StrictTypeValidator::d1_boolean, NATIVE_WORD_FN(private, TRACE), this });
+  _rtDictionary.emplace("WORDLIST", rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, WORDLIST), this });
 
   //  rpn.addDefinition("<true>", { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, BOOL_TRUE), this });
   //  rpn.addDefinition("<false>", { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, BOOL_FALSE), this });
