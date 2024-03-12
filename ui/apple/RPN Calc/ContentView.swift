@@ -56,7 +56,10 @@ struct RpnCalcContentView: View {
     ]
     let sbRows = [sbGI, sbGI, sbGI, sbGI, sbGI, sbGI, sbGI, sbGI, sbGI, sbGI, sbGI]
     
-    func addToCommand(val:String) {
+  let stackFont = Font
+    .system(size: 12)
+    .monospacedDigit()
+  func addToCommand(val:String) {
       self.commandText += val;
     }
     
@@ -96,6 +99,7 @@ struct RpnCalcContentView: View {
         HStack(alignment: .bottom) {
           VStack {
             Text("\(_ui.stackDisplay)")
+              .font(stackFont)
               .multilineTextAlignment(.trailing)
               .frame(width:400, height: 130, alignment: .bottomTrailing)
               .padding()
