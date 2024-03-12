@@ -1,3 +1,7 @@
 /n/
 /x/
 **/build-*
+/ui/win/.vs/
+/ui/win/x64/
+/ui/apple/RPN Calc.xcodeproj/xcuserdata/
+/ui/apple/RPN Calc.xcodeproj/project.xcworkspace/

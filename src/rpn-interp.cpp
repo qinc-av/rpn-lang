@@ -153,7 +153,7 @@ struct rpn::Interp::Privates : public rpn::WordContext {
     rpn::WordDefinition::Result rv=rpn::WordDefinition::Result::ok;
     for(; rv==rpn::WordDefinition::Result::ok && line.size()>0;) {
       std::string word;
-      auto p1 = nextWord(word,line);
+      /*auto p1 = */ nextWord(word,line);
       rv = eval(word, line);
     }
     return rv;
@@ -402,7 +402,7 @@ NATIVE_WORD_DECL(private, BOOL_FALSE) {
 NATIVE_WORD_DECL(private, OPAREN) {
   // (rpn::Interp &rpn, rpn::WordContext *ctx, std::string &rest)
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
-  rpn::Interp::Privates *p = dynamic_cast<rpn::Interp::Privates*>(ctx);
+  // rpn::Interp::Privates *p = dynamic_cast<rpn::Interp::Privates*>(ctx);
   std::string comment;
   auto cp = nextWord(comment, rest, ")");
   if (cp == std::string::npos) {
@@ -415,7 +415,7 @@ NATIVE_WORD_DECL(private, OPAREN) {
 NATIVE_WORD_DECL(private, DQUOTE) {
   // (rpn::Interp &rpn, rpn::WordContext *ctx, std::string &rest)
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
-  rpn::Interp::Privates *p = dynamic_cast<rpn::Interp::Privates*>(ctx);
+  // rpn::Interp::Privates *p = dynamic_cast<rpn::Interp::Privates*>(ctx);
   std::string literal;
   auto pos = nextWord(literal, rest, "\"");
   if (pos != std::string::npos) {
@@ -523,7 +523,7 @@ NATIVE_WORD_DECL(private, ct_NEXT) {
 
 NATIVE_WORD_DECL(private, ct_STEP) {
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
-  rpn::Interp::Privates *p = dynamic_cast<rpn::Interp::Privates*>(ctx);
+  // rpn::Interp::Privates *p = dynamic_cast<rpn::Interp::Privates*>(ctx);
   auto step = rpn.stack.pop_integer();
   return rv;
 }
