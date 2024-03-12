@@ -18,17 +18,19 @@ let sbGI = GridItem(.fixed(25), spacing:3, alignment:.leading)
   @Published var status: String = ""
 
   var _cv : RpnCalcContentView!;
-  var _rpn : RpnCalcController!;
+  var _rpn : RpnCalcController?;
   
-  override init() {
+  init(withRpn:Bool = true) {
     super.init()
-    _rpn = RpnCalcController(ui:self)
+    if (withRpn) {
+      _rpn = RpnCalcController(ui:self)
+    }
     _cv = nil
   }
   
   @objc func commandFinished(result:Int) -> Void {
-    self.stackDisplay = _rpn.stackAsString()
-    self.status = _rpn.status()
+    self.stackDisplay = _rpn?.stackAsString() ?? "no rpn"
+    self.status = _rpn?.status() ?? "no rpn"
     }
 }
 
@@ -45,12 +47,12 @@ struct RpnCalcContentView: View {
     }
     
     let hbCols = [
-      GridItem(.fixed(hbgf), spacing:hbgs),
-      GridItem(.fixed(hbgf), spacing:hbgs),
-      GridItem(.fixed(hbgf), spacing:hbgs),
-      GridItem(.fixed(hbgf), spacing:hbgs),
-      GridItem(.fixed(hbgf * 1.5), spacing:hbgs),
-      GridItem(.fixed(hbgf * 1.5), spacing:hbgs)
+      GridItem(.fixed(hbgf), spacing:hbgs, alignment:.leading),
+      GridItem(.fixed(hbgf), spacing:hbgs, alignment:.leading),
+      GridItem(.fixed(hbgf), spacing:hbgs, alignment:.leading),
+      GridItem(.fixed(hbgf), spacing:hbgs, alignment:.leading),
+      GridItem(.fixed(hbgf * 1.5), spacing:hbgs, alignment:.leading),
+      GridItem(.fixed(hbgf * 1.5), spacing:hbgs, alignment:.leading)
     ]
     let sbRows = [sbGI, sbGI, sbGI, sbGI, sbGI, sbGI, sbGI, sbGI, sbGI, sbGI, sbGI]
     
@@ -80,14 +82,22 @@ struct RpnCalcContentView: View {
         .buttonStyle(.bordered)
       return b;
     }
-        
+
+    func sendCommandAndEval(_ cmd:String) {
+      if (commandText != "") {
+        _ui._rpn?.eval(commandText)
+          commandText = ""
+      }
+      _ui._rpn?.eval(cmd)
+    }
+
     public var body: some View {
       VStack(alignment: .center) {
         HStack(alignment: .bottom) {
           VStack {
             Text("\(_ui.stackDisplay)")
               .multilineTextAlignment(.trailing)
-              .frame(width:400, height: 200, alignment: .bottomTrailing)
+              .frame(width:400, height: 130, alignment: .bottomTrailing)
               .padding()
               .overlay(
                 Rectangle()
@@ -95,49 +105,78 @@ struct RpnCalcContentView: View {
               )
             
             LazyVGrid(columns: hbCols) {
+
               TextField("command entry", text: $commandText)
-                .frame(width:250, height:nil)
+                .frame(width: 310, alignment:.leading)
                 .multilineTextAlignment(.trailing)
-              
+
               Color.clear
               Color.clear
               Color.clear
               Color.clear
               
               self.makeHardButton("⌫", {
-                commandText = String(commandText.dropLast())
+                if (commandText == "") {
+                  _ui._rpn?.eval("DROP")
+                } else {
+                  commandText = String(commandText.dropLast())
+                }
               }, xw:1.5)
               self.makeHardButton("7")
               self.makeHardButton("8")
               self.makeHardButton("9")
               self.makeHardButton("/", {
-                
+                sendCommandAndEval("/")
               })
-              self.makeHardButton("Clear", {}, xw:1.5)
-              self.makeHardButton("MATH", {}, xw:1.5)
+              self.makeHardButton("Clear", {
+                sendCommandAndEval("CLEAR")
+              }, xw:1.5)
+              self.makeHardButton("MATH", {
+                _ui._rpn?.eval("math-keys")
+              }, xw:1.5)
               
               self.makeHardButton("4")
               self.makeHardButton("5")
               self.makeHardButton("6")
-              self.makeHardButton("*", {})
-              self.makeHardButton("OVER", {}, xw:1.5)
-              self.makeHardButton("STACK", {}, xw:1.5)
+              self.makeHardButton("*", {
+                sendCommandAndEval("*")
+              })
+              self.makeHardButton("OVER", {
+                sendCommandAndEval("OVER")
+              }, xw:1.5)
+              self.makeHardButton("STACK", {
+                _ui._rpn?.eval("stack-keys")
+              }, xw:1.5)
               
               self.makeHardButton("1")
               self.makeHardButton("2")
               self.makeHardButton("3")
-              self.makeHardButton("-", {})
-              self.makeHardButton("SWAP", {}, xw:1.5)
-              self.makeHardButton("TYPES", {}, xw:1.5)
+              self.makeHardButton("-", {
+                sendCommandAndEval("-")
+              })
+              self.makeHardButton("SWAP", {
+                sendCommandAndEval("SWAP")
+              }, xw:1.5)
+              self.makeHardButton("TYPES", {
+                _ui._rpn?.eval("types-keys")
+              }, xw:1.5)
               
               self.makeHardButton(".")
               self.makeHardButton("0")
-              self.makeHardButton("±", {})
-              self.makeHardButton("+", {})
+              self.makeHardButton("±", {
+                sendCommandAndEval("NEG")
+              })
+              self.makeHardButton("+", {
+                sendCommandAndEval("-")
+              })
               self.makeHardButton("ENTER",{
-                  _ui._rpn.eval(commandText);
+                if (commandText == "") {
+                  _ui._rpn?.eval("DUP");
+                } else {
+                  _ui._rpn?.eval(commandText);
                   commandText = "";
-              }, xw:2)
+                }
+              }, xw:2.5)
             }
             .frame(width: 400.0)
           }
@@ -150,8 +189,11 @@ struct RpnCalcContentView: View {
         }
         Text("\(_ui.status)")
           .multilineTextAlignment(.leading)
-          .frame(width:800, alignment:.leading)
+          .frame(width:500, height:25, alignment:.leading)
+          .fixedSize(horizontal:false,vertical:true)
       }
+      .padding(-16.0)
+      
     }
     
     
@@ -209,7 +251,8 @@ struct RpnCalcContentView: View {
   }
   
   #Preview {
-    RpnCalcContentView(ui:nil)
+    var rpn = RpnCalcUi(withRpn:false)
+    return RpnCalcContentView(ui:rpn)
       .modelContainer(for: Item.self, inMemory: true)
   }
 
