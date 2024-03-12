@@ -26,8 +26,10 @@ struct RPN_CalcApp: App {
 
     var body: some Scene {
         WindowGroup {
-          RpnCalcContentView(ui:_rpnui)
+            RpnCalcContentView(ui:_rpnui)
+              .padding()
         }
+        .windowResizability(.contentSize)
         .modelContainer(sharedModelContainer)
     }
   
