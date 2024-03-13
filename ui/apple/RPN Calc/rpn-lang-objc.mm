@@ -18,7 +18,7 @@
 
 class RCCKeypadController : public rpn::KeypadController {
 public:
-  RCCKeypadController(RpnCalcController *rcc) : _rcc(rcc) {
+  RCCKeypadController(RpnCalcController *rcc, RpnCalcUi *ui) : _rcc(rcc), _ui(ui) {
     add_words(_rpn);
     assignMenu("Keys", "stack-keys", "Stack");
     assignMenu("Keys", "math-keys", "Math");
@@ -33,26 +33,19 @@ public:
 
   virtual void assignButton(unsigned column, unsigned row, const std::string &rpnword, const std::string &label="") override {
     dispatch_async(dispatch_get_main_queue(), ^{
-	/*
-	RpnWordButton *wb = [_vc wordButtonAtColumn:column-1+5 andRow:row-1];
-	if (wb != nil) {
-	  NSString *w = [NSString stringWithUTF8String:rpnword.c_str()];
-	  NSString *l = (label!="") ? [NSString stringWithUTF8String:label.c_str()] : w;
-	  wb.title = l;
-	  wb.rpnWord = w;
-	}
-	*/
+	NSString *w = [NSString stringWithUTF8String:rpnword.c_str()];
+	NSString *l = (label!="") ? [NSString stringWithUTF8String:label.c_str()] : w;
+	[_ui assignButtonWithCol:column row:row rpnword:w label:l];
       });
   }
+
   virtual void assignMenu(const std::string &menu, const std::string &rpnword, const std::string &label="") override {
   }
 
   virtual void clearAssignedButtons() override {
-    /*
     dispatch_async(dispatch_get_main_queue(), ^{
-	[_vc clearSoftButtons];
+	[_ui clearAssignedButtons];
       });
-    */
   }
 
   virtual void enable(bool pred) override {
@@ -60,6 +53,7 @@ public:
   }
 
   RpnCalcController *_rcc;
+  RpnCalcUi *_ui;
   rpn::Interp _rpn;
 };
 
@@ -71,7 +65,7 @@ public:
 - (id) initWithUi:(RpnCalcUi*)ui {
   self = [super init];
   _ui = ui;
-  _rkc = new RCCKeypadController(self);
+  _rkc = new RCCKeypadController(self, _ui);
   return self;
 }
 

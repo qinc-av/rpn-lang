@@ -32,6 +32,41 @@ let sbGI = GridItem(.fixed(25), spacing:3, alignment:.leading)
     self.stackDisplay = _rpn?.stackAsString() ?? "no rpn"
     self.status = _rpn?.status() ?? "no rpn"
   }
+  @objc func assignButton(col:Int, row:Int, rpnword:String, label:String) {
+    let k = String(format: "%d.%d", col,row)
+    _cv.changeSoftkey(k: k, l:label, w:rpnword)
+  }
+
+  @objc func clearAssignedButtons() {
+    _cv.softKeys.keys.forEach({ k in
+      _cv.changeSoftkey(k: k, l: "", w:"")
+    })
+  }
+}
+
+class RpnWordLabel : ObservableObject, CustomStringConvertible {
+  init(label:String="", word:String="") {
+    self.label = label
+    self.word = word
+  }
+  var label:String
+  var word:String
+  var description : String {
+    return "(l \(label))(w \(word))"
+  }
+}
+
+struct RpnWordButton: View {
+    var body: some View {
+        Button(action: {
+          rccv.sendCommandAndEval(rpnword.word)
+        }) {
+          Text(rpnword.label)
+            .frame(minWidth:60, maxWidth: .infinity)
+        }
+    }
+    @ObservedObject var rpnword: RpnWordLabel
+    let rccv:RpnCalcContentView
 }
 
 struct RpnCalcContentView: View {
@@ -41,26 +76,79 @@ struct RpnCalcContentView: View {
   @Query private var items: [Item]
   @State private var commandText: String = ""
   
-  private var softKeys : [String:String]
+  var softKeys : [String:RpnWordLabel] = [
+    "1.1" : RpnWordLabel(label:"1.1", word:"0"),
+    "1.2" : RpnWordLabel(label:"1.2", word:"1"),
+    "1.3" : RpnWordLabel(label:"1.3", word:"2"),
+    "1.4" : RpnWordLabel(label:"1.4", word:"3"),
+    "1.5" : RpnWordLabel(label:"1.5", word:"4"),
+    "1.6" : RpnWordLabel(label:"1.6", word:"5"),
+    "1.7" : RpnWordLabel(label:"1.7", word:"6"),
+    "1.8" : RpnWordLabel(label:"1.8", word:"7"),
+    "1.9" : RpnWordLabel(label:"1.9", word:"8"),
+    "1.10" : RpnWordLabel(label:"1.10", word:"9"),
+    "1.11" : RpnWordLabel(label:"1.11", word:"10"),
+    "2.1" : RpnWordLabel(label:"2.1", word:"11"),
+    "2.2" : RpnWordLabel(label:"2.2", word:"12"),
+    "2.3" : RpnWordLabel(label:"2.3", word:"13"),
+    "2.4" : RpnWordLabel(label:"2.4", word:"14"),
+    "2.5" : RpnWordLabel(label:"2.5", word:"15"),
+    "2.6" : RpnWordLabel(label:"2.6", word:"16"),
+    "2.7" : RpnWordLabel(label:"2.7", word:"17"),
+    "2.8" : RpnWordLabel(label:"2.8", word:"18"),
+    "2.9" : RpnWordLabel(label:"2.9", word:"19"),
+    "2.10" : RpnWordLabel(label:"2.10", word:"20"),
+    "2.11" : RpnWordLabel(label:"2.11", word:"21"),
+    "3.1" : RpnWordLabel(label:"3.1", word:"22"),
+    "3.2" : RpnWordLabel(label:"3.2", word:"23"),
+    "3.3" : RpnWordLabel(label:"3.3", word:"24"),
+    "3.4" : RpnWordLabel(label:"3.4", word:"25"),
+    "3.5" : RpnWordLabel(label:"3.5", word:"26"),
+    "3.6" : RpnWordLabel(label:"3.6", word:"27"),
+    "3.7" : RpnWordLabel(label:"3.7", word:"28"),
+    "3.8" : RpnWordLabel(label:"3.8", word:"29"),
+    "3.9" : RpnWordLabel(label:"3.9", word:"30"),
+    "3.10" : RpnWordLabel(label:"3.10", word:"31"),
+    "3.11" : RpnWordLabel(label:"3.11", word:"32"),
+    "4.1" : RpnWordLabel(label:"4.1", word:"33"),
+    "4.2" : RpnWordLabel(label:"4.2", word:"34"),
+    "4.3" : RpnWordLabel(label:"4.3", word:"35"),
+    "4.4" : RpnWordLabel(label:"4.4", word:"36"),
+    "4.5" : RpnWordLabel(label:"4.5", word:"37"),
+    "4.6" : RpnWordLabel(label:"4.6", word:"38"),
+    "4.7" : RpnWordLabel(label:"4.7", word:"39"),
+    "4.8" : RpnWordLabel(label:"4.8", word:"40"),
+    "4.9" : RpnWordLabel(label:"4.9", word:"41"),
+    "4.10" : RpnWordLabel(label:"4.10", word:"42"),
+    "4.11" : RpnWordLabel(label:"4.11", word:"43"),
+    ]
 
   init(ui:RpnCalcUi!) {
     _ui = ui
-    softKeys = [:]
-    for ix in (0..<44) {
-      let col = (ix/11)+1
-      let row = (ix%11)+1
-      let k = String(format: "%d.%d", col,row)
-      softKeys[k] = "SK:" + k
+
+    if (true) {
+      for ix in (0..<44) {
+        let col = (ix/11)+1
+        let row = (ix%11)+1
+        let k = String(format: "%d.%d", col,row)
+//        softButtons[k]  = //
+//        print("\"\(k)\" : RpnWordLabel(name:\"\(k)\", word:\"\(ix)\"),")
+      }
     }
     _ui._cv = self;
   }
-/*
-  private func skBinding(for key: String) -> Binding<String> {
+
+  mutating func changeSoftkey(k:String, l:String, w:String) {
+    softKeys[k]?.word = w
+    softKeys[k]?.label = l
+  }
+  /*
+  private func skBinding(for key: String) -> Binding<RpnWordLabel> {
     return .init(
-      get: { self.softKeys[key, default: ""] },
+      get: { self.softKeys[key, default: RpnWordLabel()] },
       set: { self.softKeys[key] = $0 })
   }
-  */
+   */
   let hbCols = [
     GridItem(.fixed(hbgf), spacing:hbgs, alignment:.leading),
     GridItem(.fixed(hbgf), spacing:hbgs, alignment:.leading),
@@ -89,14 +177,8 @@ struct RpnCalcContentView: View {
     return b
   }
   
-  func makeSoftButton(ix:Int) -> some View {
-    let col = (ix/11)+1
-    let row = (ix%11)+1
-    let k = String(format: "%d.%d", col,row)
-    let b = Button(action:{}) {
-      Text(k)
-        .frame(minWidth:60, maxWidth: .infinity)
-    }
+  func makeSoftButton(key:String) -> some View {
+    let b = RpnWordButton(rpnword:softKeys[key] ?? RpnWordLabel(), rccv:self)
       .frame(minWidth:60)
       .buttonStyle(.bordered)
     return b;
@@ -216,8 +298,11 @@ struct RpnCalcContentView: View {
         }
         
         LazyHGrid(rows: sbRows) {
-          ForEach(0..<44, id: \.self) { ix in
-            self.makeSoftButton(ix:ix)
+          ForEach(0..<44) { ix in
+          let col = (ix/11)+1
+          let row = (ix%11)+1
+          let k = String(format: "%d.%d", col,row)
+            self.makeSoftButton(key:k)
           }
         }
       }
