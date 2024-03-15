@@ -18,11 +18,14 @@
 #include <mutex>
 #include <set>
 
+#include <cmath>
+#include <algorithm>
+
 #include "../rpn.h"
 
 // https://stackoverflow.com/a/4247516
 static int sk_decimals=10;
-static int sk_precision=10000000000;
+static double sk_precision=10000000000;
 
 std::string
 rpn::to_string(const double &dv) {
@@ -405,6 +408,22 @@ NATIVE_WORD_DECL(private, BOOL_FALSE) {
   return rv;
 }
 
+NATIVE_WORD_DECL(private, precision_to) {
+  // (rpn::Interp &rpn, rpn::WordContext *ctx, std::string &rest)
+  rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
+  rpn.stack.push_integer(sk_decimals);
+  return rv;
+}
+
+NATIVE_WORD_DECL(private, to_precision) {
+  // (rpn::Interp &rpn, rpn::WordContext *ctx, std::string &rest)
+  rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
+  auto new_dec = rpn.stack.pop_integer();
+  sk_decimals = (int)std::clamp(new_dec, 0LL, 20LL); // there is probably a known upper bound here
+  sk_precision = std::pow(10, sk_decimals);
+  return rv;
+}
+
 NATIVE_WORD_DECL(private, OPAREN) {
   // (rpn::Interp &rpn, rpn::WordContext *ctx, std::string &rest)
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
@@ -547,6 +566,8 @@ rpn::Interp::Privates::add_private_words() {
 
   _rtDictionary.emplace("TRUE", rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, BOOL_TRUE), this });
   _rtDictionary.emplace("FALSE", rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, BOOL_FALSE), this });
+  _rtDictionary.emplace("->PRECISION", rpn::WordDefinition { rpn::StrictTypeValidator::d1_integer, NATIVE_WORD_FN(private, to_precision), this });
+  _rtDictionary.emplace("PRECISION->", rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, precision_to), this });
 
   _ctDictionary.emplace(";", rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, ct_SEMICOLON), this });
   _ctDictionary.emplace("(", rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, OPAREN), this });
