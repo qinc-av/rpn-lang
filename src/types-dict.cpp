@@ -22,6 +22,9 @@
 // to_integer
 NATIVE_WORD_DECL(types, to_int) {
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
+  double dval = rpn.stack.pop_as_double();
+  int64_t ival = std::round(dval);
+  rpn.stack.push_integer(ival);
   return rv;
 }
 
@@ -31,6 +34,8 @@ NATIVE_WORD_DECL(types, to_int) {
  */
 NATIVE_WORD_DECL(types, to_float) {
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
+  double dval = rpn.stack.pop_as_double();
+  rpn.stack.push_double(dval);
   return rv;
 }
 
@@ -39,6 +44,8 @@ NATIVE_WORD_DECL(types, to_float) {
  */
 NATIVE_WORD_DECL(types, to_string) {
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
+  auto obj = rpn.stack.pop();
+  rpn.stack.push_string((std::string)*obj);
   return rv;
 }
 

@@ -8,8 +8,21 @@
 import SwiftUI
 import SwiftData
 
+class MyAppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
+    func application(
+        _ application: NSApplication,
+        didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
+    ) {
+        // Record the device token.
+    }
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
+        return true
+    }
+}
+
 @main
 struct RPN_CalcApp: App {
+  @NSApplicationDelegateAdaptor private var appDelegate: MyAppDelegate
   var _rpnui : RpnCalcUi = RpnCalcUi()
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([

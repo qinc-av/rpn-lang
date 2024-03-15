@@ -12,6 +12,8 @@
  *
  */
 
+#include <AppKit/AppKit.h> // needed because the bridging header has the AppDelegate
+
 #include "../../../rpn.h"
 #include "rpn-lang-objc.h"
 #include "RPN_Calc-Swift.h"
@@ -32,9 +34,9 @@ public:
   }
 
   virtual void assignButton(unsigned column, unsigned row, const std::string &rpnword, const std::string &label="") override {
+    __block NSString *w = [NSString stringWithUTF8String:rpnword.c_str()];
+    __block NSString *l = (label!="") ? [NSString stringWithUTF8String:label.c_str()] : w;
     dispatch_async(dispatch_get_main_queue(), ^{
-	NSString *w = [NSString stringWithUTF8String:rpnword.c_str()];
-	NSString *l = (label!="") ? [NSString stringWithUTF8String:label.c_str()] : w;
 	[_ui assignButtonWithCol:column row:row rpnword:w label:l];
       });
   }
@@ -108,8 +110,8 @@ public:
   std::string stackDisplay;
   for(size_t i=_rkc->_rpn.stack.depth(); i!=0; i--) {
     char level[32];
-    snprintf(level, sizeof(level), " : %02d%s", i, i>1?"\n":"");
-    auto so = _rkc->_rpn.stack.peek_as_string(i);
+    snprintf(level, sizeof(level), " : %02zu%s", i, i>1?"\n":"");
+    auto so = _rkc->_rpn.stack.peek_as_string((int)i);
     stackDisplay += so;
     stackDisplay += level;
   }

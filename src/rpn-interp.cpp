@@ -521,12 +521,14 @@ NATIVE_WORD_DECL(private, ct_NEXT) {
   return rv;
 }
 
+#ifdef notyet
 NATIVE_WORD_DECL(private, ct_STEP) {
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
   // rpn::Interp::Privates *p = dynamic_cast<rpn::Interp::Privates*>(ctx);
   auto step = rpn.stack.pop_integer();
   return rv;
 }
+#endif
 
 void
 rpn::Interp::Privates::add_private_words() {
@@ -537,15 +539,17 @@ rpn::Interp::Privates::add_private_words() {
   _rtDictionary.emplace("TRACE", rpn::WordDefinition { rpn::StrictTypeValidator::d1_boolean, NATIVE_WORD_FN(private, TRACE), this });
   _rtDictionary.emplace("WORDLIST", rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, WORDLIST), this });
 
-  //  rpn.addDefinition("<true>", { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, BOOL_TRUE), this });
-  //  rpn.addDefinition("<false>", { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, BOOL_FALSE), this });
+  _rtDictionary.emplace("TRUE", rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, BOOL_TRUE), this });
+  _rtDictionary.emplace("FALSE", rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, BOOL_FALSE), this });
 
   _ctDictionary.emplace(";", rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, ct_SEMICOLON), this });
   _ctDictionary.emplace("(", rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, OPAREN), this });
   _ctDictionary.emplace(".\"", rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, ct_DQUOTE), this });
   _ctDictionary.emplace("FOR", rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, ct_FOR), this });
   _ctDictionary.emplace("NEXT", rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, ct_NEXT), this });
+#ifdef notyet
   _ctDictionary.emplace("STEP", rpn::WordDefinition { rpn::StrictTypeValidator::d1_double, NATIVE_WORD_FN(private, ct_STEP), this });
+#endif
 }
 
 rpn::WordDefinition::Result
@@ -753,6 +757,7 @@ rpn::Interp::Interp() {
   addLogicWords();
   addMathWords();
   addTypeWords();
+  addFractionWords();
 }
 
 rpn::Interp::~Interp() {

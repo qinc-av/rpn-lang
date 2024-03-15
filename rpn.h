@@ -14,6 +14,8 @@
 
 #pragma once
 
+#define _RPN_LANG_RPN_H_
+
 #include <memory>
 #include <vector>
 #include <string>
@@ -239,6 +241,8 @@ namespace rpn {
     void addMathWords();
     void addLogicWords();
     void addTypeWords();
+    void addFractionWords();
+    void addTimecodeWords();
     Privates *m_p;
   };
 

@@ -19,6 +19,9 @@
 		071A0E312B9F2E1800AFFA71 /* types-dict.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 071A0E2A2B9F2E1800AFFA71 /* types-dict.cpp */; };
 		071A0E322B9F2E1800AFFA71 /* rpn-interp.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 071A0E2B2B9F2E1800AFFA71 /* rpn-interp.cpp */; };
 		071A0E332B9F2E1800AFFA71 /* math-dict.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 071A0E2C2B9F2E1800AFFA71 /* math-dict.cpp */; };
+		079DA1EE2BA1E2340091B06A /* fraction-dict.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 079DA1ED2BA1E2340091B06A /* fraction-dict.cpp */; };
+		079DA1F12BA3C7110091B06A /* timecode-dict.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 079DA1EF2BA3C7110091B06A /* timecode-dict.cpp */; };
+		079DA1F22BA3C7110091B06A /* fraction.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 079DA1F02BA3C7110091B06A /* fraction.cpp */; };
 		07DC69012B9F407A00C8FA8E /* rpn-lang-objc.mm in Sources */ = {isa = PBXBuildFile; fileRef = 07DC69002B9F407A00C8FA8E /* rpn-lang-objc.mm */; };
 /* End PBXBuildFile section */
 
@@ -40,6 +43,9 @@
 		071A0E2B2B9F2E1800AFFA71 /* rpn-interp.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = "rpn-interp.cpp"; path = "../../../src/rpn-interp.cpp"; sourceTree = "<group>"; };
 		071A0E2C2B9F2E1800AFFA71 /* math-dict.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = "math-dict.cpp"; path = "../../../src/math-dict.cpp"; sourceTree = "<group>"; };
 		079DA1EB2BA0098F0091B06A /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS17.4.sdk/System/Library/Frameworks/UIKit.framework; sourceTree = DEVELOPER_DIR; };
+		079DA1ED2BA1E2340091B06A /* fraction-dict.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = "fraction-dict.cpp"; path = "../../../src/fraction-dict.cpp"; sourceTree = "<group>"; };
+		079DA1EF2BA3C7110091B06A /* timecode-dict.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = "timecode-dict.cpp"; path = "../../../src/timecode-dict.cpp"; sourceTree = "<group>"; };
+		079DA1F02BA3C7110091B06A /* fraction.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = fraction.cpp; path = ../../../src/fraction.cpp; sourceTree = "<group>"; };
 		07DC69002B9F407A00C8FA8E /* rpn-lang-objc.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = "rpn-lang-objc.mm"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -97,6 +103,9 @@
 		071A0E242B9F2DC400AFFA71 /* rpn-lang */ = {
 			isa = PBXGroup;
 			children = (
+				079DA1F02BA3C7110091B06A /* fraction.cpp */,
+				079DA1EF2BA3C7110091B06A /* timecode-dict.cpp */,
+				079DA1ED2BA1E2340091B06A /* fraction-dict.cpp */,
 				07DC69002B9F407A00C8FA8E /* rpn-lang-objc.mm */,
 				071A0E282B9F2E1800AFFA71 /* keypad-dict.cpp */,
 				071A0E262B9F2E1800AFFA71 /* logic-dict.cpp */,
@@ -146,7 +155,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1520;
-				LastUpgradeCheck = 1520;
+				LastUpgradeCheck = 1530;
 				TargetAttributes = {
 					071A0E0E2B9F2D8E00AFFA71 = {
 						CreatedOnToolsVersion = 15.2;
@@ -190,6 +199,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				071A0E322B9F2E1800AFFA71 /* rpn-interp.cpp in Sources */,
+				079DA1F22BA3C7110091B06A /* fraction.cpp in Sources */,
 				07DC69012B9F407A00C8FA8E /* rpn-lang-objc.mm in Sources */,
 				071A0E152B9F2D8E00AFFA71 /* ContentView.swift in Sources */,
 				071A0E302B9F2E1800AFFA71 /* stack-dict.cpp in Sources */,
@@ -197,7 +207,9 @@
 				071A0E2F2B9F2E1800AFFA71 /* keypad-dict.cpp in Sources */,
 				071A0E2E2B9F2E1800AFFA71 /* rpn-stack.cpp in Sources */,
 				071A0E172B9F2D8E00AFFA71 /* Item.swift in Sources */,
+				079DA1F12BA3C7110091B06A /* timecode-dict.cpp in Sources */,
 				071A0E312B9F2E1800AFFA71 /* types-dict.cpp in Sources */,
+				079DA1EE2BA1E2340091B06A /* fraction-dict.cpp in Sources */,
 				071A0E2D2B9F2E1800AFFA71 /* logic-dict.cpp in Sources */,
 				071A0E132B9F2D8E00AFFA71 /* RPN_CalcApp.swift in Sources */,
 			);
@@ -240,6 +252,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
@@ -301,6 +314,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -330,6 +344,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "\"RPN Calc/Preview Content\"";
 				DEVELOPMENT_TEAM = E4RV9Z67RE;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -374,6 +389,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "\"RPN Calc/Preview Content\"";
 				DEVELOPMENT_TEAM = E4RV9Z67RE;
 				ENABLE_HARDENED_RUNTIME = YES;
