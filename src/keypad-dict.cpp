@@ -65,8 +65,8 @@ NATIVE_WORD_DECL(keypad, MATH_KEYS) {
   kc->assignButton(3,5,"ROUND");
   kc->assignButton(3,6,"CEIL");
   kc->assignButton(3,7, "FLOOR");
-  kc->assignButton(3,8, "k_PI");
-  kc->assignButton(3,9, "k_E");
+  kc->assignButton(3,5, "k_PI", "π");
+  kc->assignButton(3,6, "k_E", "e");
   kc->assignButton(3,10, "RAND");
   kc->assignButton(3,11, "DRAND");
   return rv;
@@ -153,8 +153,8 @@ NATIVE_WORD_DECL(keypad, TYPE_KEYS) {
   kc->assignButton(3,2,"ROUND");
   kc->assignButton(3,3,"CEIL");
   kc->assignButton(3,4, "FLOOR");
-  kc->assignButton(3,5, "k_PI");
-  kc->assignButton(3,6, "k_E");
+  kc->assignButton(3,5, "k_PI", "π");
+  kc->assignButton(3,6, "k_E", "e");
   kc->assignButton(3,7, "RAND");
   kc->assignButton(3,8, "RAND48");
   */

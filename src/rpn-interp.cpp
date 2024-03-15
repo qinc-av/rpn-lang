@@ -20,11 +20,17 @@
 
 #include "../rpn.h"
 
+// https://stackoverflow.com/a/4247516
+static int sk_decimals=10;
+static int sk_precision=10000000000;
+
 std::string
 rpn::to_string(const double &dv) {
-  char tmp[32];
-  snprintf(tmp, sizeof(tmp), "%0.4f", dv);
-  return tmp;
+  char s1[100];
+  snprintf(s1, sizeof(s1),"%.*g", sk_decimals, std::round(sk_precision*(fabs(dv) - abs((int)dv)))/sk_precision);
+  char s2[100];
+  snprintf(s2, sizeof(s2), "%d%s", (int)dv, s1+1); // skip the leading 0
+  return s2;
 }
 
 static std::string::size_type
@@ -758,6 +764,7 @@ rpn::Interp::Interp() {
   addMathWords();
   addTypeWords();
   addFractionWords();
+  addTimecodeWords();
 }
 
 rpn::Interp::~Interp() {
