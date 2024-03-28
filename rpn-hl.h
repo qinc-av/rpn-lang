@@ -42,7 +42,7 @@ typedef NS_ENUM(NSInteger, RpnResult) {
 - (BOOL) validateWord:(NSString *)word;
 - (BOOL) wordExists:(NSString *)word;
 - (NSString*) status;
-- (NSArray<NSString*>*) stackItems;
+- (NSArray<NSString*>*) displayStack;
 @end
 
 /* C++ version */

@@ -55,10 +55,10 @@
   return @(ss.c_str());
 }
 
-- (NSArray<NSString*>*) stackItems {
+- (NSArray<NSString*>*) displayStack {
   NSMutableArray<NSString*> *si = [[NSMutableArray<NSString*> alloc] init];
-  for(size_t i=_rpn->stack.depth(); i!=0; i--) {
-    auto so = _rpn->stack.peek_as_string((int)i);
+  for(size_t i=0; i<_rpn->stack.depth(); i++) {
+    auto so = _rpn->stack.peek_as_string((int)(i+1));
     [si addObject:@(so.c_str())];
   }
   return si;
