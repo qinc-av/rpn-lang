@@ -176,6 +176,19 @@ MATH_GENERATE(pi, M_PI);
 MATH_GENERATE(e, M_E);
 MATH_GENERATE(rand, rand());
 
+NATIVE_WORD_DECL(math,quadratic) {
+  double c = rpn.stack.pop_as_double();
+  double b = rpn.stack.pop_as_double();
+  double a = rpn.stack.pop_as_double();
+
+  double x1 = (-b + sqrt(b*b - 4*a*c))/(2*a);
+  double x2 = (-b - sqrt(b*b - 4*a*c))/(2*a);
+
+  rpn.stack.push_double(x1);
+  rpn.stack.push_double(x2);
+  return rpn::WordDefinition::Result::ok;
+}
+
 #ifdef WIN32
 double drand48() {
   return (double)rand()/32767.;
@@ -227,6 +240,16 @@ rpn::Interp::addMathWords() {
   addDefinition("ROUND", MATH_WORD_WDEF(rpn::StrictTypeValidator::d1_double, round));
   addDefinition("CEIL", MATH_WORD_WDEF(rpn::StrictTypeValidator::d1_double, ceil));
   addDefinition("FLOOR", MATH_WORD_WDEF(rpn::StrictTypeValidator::d1_double, floor));
+
+  addDefinition("QUAD", MATH_WORD_WDEF(rpn::StrictTypeValidator::d3_double_double_double, quadratic));
+  addDefinition("QUAD", MATH_WORD_WDEF(rpn::StrictTypeValidator::d3_integer_double_double, quadratic));
+  addDefinition("QUAD", MATH_WORD_WDEF(rpn::StrictTypeValidator::d3_double_integer_double, quadratic));
+  addDefinition("QUAD", MATH_WORD_WDEF(rpn::StrictTypeValidator::d3_double_double_integer, quadratic));
+
+  addDefinition("QUAD", MATH_WORD_WDEF(rpn::StrictTypeValidator::d3_integer_integer_integer, quadratic));
+  addDefinition("QUAD", MATH_WORD_WDEF(rpn::StrictTypeValidator::d3_double_integer_integer, quadratic));
+  addDefinition("QUAD", MATH_WORD_WDEF(rpn::StrictTypeValidator::d3_integer_double_integer, quadratic));
+  addDefinition("QUAD", MATH_WORD_WDEF(rpn::StrictTypeValidator::d3_integer_integer_double, quadratic));
 
   addDefinition("k_PI", MATH_CONSTANT_WDEF(pi));
   addDefinition("k_E", MATH_CONSTANT_WDEF(e));
