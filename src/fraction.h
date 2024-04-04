@@ -69,7 +69,13 @@ class Fraction {
   }
 
   operator double() const {
-    return double(_numerator)/double(_denominator);
+    double rv = std::nan("");
+    if (_denominator == 0) {
+      rv = (_numerator < 0) ? -INFINITY : INFINITY;
+    } else {
+      rv = double(_numerator)/double(_denominator);
+    }
+    return rv;
   }
 
   virtual bool operator==(const Fraction &rhs) const {

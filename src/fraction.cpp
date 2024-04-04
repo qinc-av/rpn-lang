@@ -47,6 +47,8 @@ double q::Fraction::s_precision = 0.00000000001;
 // http://mathforum.org/library/drmath/view/51886.html
 //
 q::Fraction::Fraction(double val) {    // find nearest fraction
+  int sign = (val < 0.) ? -1 : 1;
+  val = fabs(val);
   int intPart = (int)val;
   val -= (double)intPart;
   Fraction low(0, 1);           // "A" = 0/1
@@ -86,7 +88,7 @@ q::Fraction::Fraction(double val) {    // find nearest fraction
       high._denominator = denom;
     }
   }
-  _numerator = intPart * high._denominator + high._numerator;
+  _numerator = (intPart * high._denominator + high._numerator) * sign;
   _denominator = high._denominator;
 
   //  Fraction r(intPart, 1) + high;

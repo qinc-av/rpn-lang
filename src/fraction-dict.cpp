@@ -42,7 +42,7 @@ NATIVE_WORD_DECL(fraction, obj_to) {
   return rv;
 }
 
-NATIVE_WORD_DECL(fraction, frac_to) {
+NATIVE_WORD_DECL(fraction, to_float) {
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
   auto ofrac = rpn.stack.pop();
   const auto &frac = POP_CAST(StFraction,ofrac);
@@ -247,7 +247,7 @@ rpn::Interp::addFractionWords() {
   
   rpn.addDefinition("->FRAC", NATIVE_WORD_WDEF(fraction, rpn::StrictTypeValidator::d2_integer_integer, to_frac_ii, nullptr));
   rpn.addDefinition("->FRAC", NATIVE_WORD_WDEF(fraction, rpn::StrictTypeValidator::d1_double, to_frac_d, nullptr));
-  rpn.addDefinition("->FLOAT", NATIVE_WORD_WDEF(fraction, frac_validator::d1_frac, frac_to, nullptr));
+  rpn.addDefinition("->FLOAT", NATIVE_WORD_WDEF(fraction, frac_validator::d1_frac, to_float, nullptr));
   rpn.addDefinition("OBJ->", NATIVE_WORD_WDEF(fraction, frac_validator::d1_frac, obj_to, nullptr));
   rpn.addDefinition("INV", NATIVE_WORD_WDEF(fraction, frac_validator::d1_frac, inv_f, nullptr));
   rpn.addDefinition("NEG", NATIVE_WORD_WDEF(fraction, frac_validator::d1_frac, neg_f, nullptr));
