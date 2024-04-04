@@ -131,7 +131,7 @@ rpn::Stack::pop_as_double() {
   if (dp) {
     val = dp->val();
   } else if (ip) {
-    val = double (ip->val());
+    val = double (ip->inner());
   }
   return val;
 }
@@ -151,10 +151,10 @@ rpn::Stack::pop_as_boolean() {
     val = bp->val();
 
   } else if (ip) {
-    val = (((int)ip->val())!=0);
+    val = (int64_t(ip->inner())!=0);
 
   } else if (dp) {
-    val = (((double)dp->val()) != 0.);
+    val = ((double(dp->val())) != 0.);
 
   } else if (sp) {
     val = (std::string(sp->val())!="");

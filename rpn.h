@@ -307,9 +307,17 @@ class XInteger {
  public:
  XInteger(const int64_t &v) : _v(v) {}
   virtual operator std::string() const { return std::to_string(_v); };
+  operator int64_t() const { return _v; };
   operator uint64_t() const { return _v; };
+  operator double() const { return double(_v); };
   bool operator==(const XInteger &rhs) const {
     return _v == rhs._v;
+  }
+  bool operator>(const XInteger &rhs) const {
+    return _v > rhs._v;
+  }
+  bool operator<(const XInteger &rhs) const {
+    return _v < rhs._v;
   }
  private:
   int64_t _v;

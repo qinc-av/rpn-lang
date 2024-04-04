@@ -876,8 +876,8 @@ bool
 rpn::StackSizeValidator::operator()(const std::vector<size_t> &types, rpn::Stack &stack) const {
   bool rv = false;
   if ((_n==(size_t)-1) && types.size()>0 && types[0]==typeid(StInteger).hash_code()) { // negative means to ntos - check top of stack as integer and make sure that the stack is >=
-    auto &nn = dynamic_cast<const StInteger&>(stack.peek(1));
-    rv = (types.size()-1) >= nn.val();
+    auto nn = stack.peek_integer(1);
+    rv = (types.size()-1) >= nn;
   } else {
     rv = (types.size() >=_n);
   }
