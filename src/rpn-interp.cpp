@@ -29,11 +29,18 @@ static double sk_precision=10000000000;
 
 std::string
 rpn::to_string(const double &dv) {
-  char s1[100];
-  snprintf(s1, sizeof(s1),"%.*g", sk_decimals, std::round(sk_precision*(fabs(dv) - abs((int)dv)))/sk_precision);
-  char s2[100];
-  snprintf(s2, sizeof(s2), "%d%s", (int)dv, s1+1); // skip the leading 0
-  return s2;
+  if (isfinite(dv)) {
+    double fp = std::round(sk_precision*(fabs(dv) - abs((int)dv)))/sk_precision;
+    int ip = int(dv);
+    char frac[100];
+    const char *sign = (dv<0 && abs(ip)==0) ? "-" : "";
+    snprintf(frac, sizeof(frac),"%.*g", sk_decimals, fp);
+    char strval[100];
+    snprintf(strval, sizeof(strval), "%s%d%s", sign, ip, frac+1); // skip the leading 0
+    return strval;
+  } else {
+    return std::to_string(dv);
+  }
 }
 
 static std::string::size_type

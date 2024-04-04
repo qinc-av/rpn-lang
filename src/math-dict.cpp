@@ -18,6 +18,8 @@
 #include "../rpn.h"
 
 #include <cmath>
+#include <limits>
+#include <complex>
 
 #if defined (_MSC_VER)
 #include <stdlib.h>
@@ -27,6 +29,35 @@ double drand48() {
   return double(rv)/double(UINT_MAX);
 }
 #endif
+
+/****************************************
+ * math types
+ */
+namespace stack {
+  class Complex : public rpn::Stack::Object, public std::complex<double>  {
+  public:
+    Complex() = delete;
+    Complex(double re, double im) : std::complex<double>(re,im) {}
+    Complex(const Complex &cx) : std::complex<double>(cx) {}
+    Complex(const std::complex<double> &cx) : std::complex<double>(cx) {}
+    virtual bool operator==(const rpn::Stack::Object &orhs) const override {
+      auto &rhs = PEEK_CAST(const Complex, orhs);
+      return ((const std::complex<double> &)*this) == ((const std::complex<double> &)rhs);
+    }
+    virtual std::unique_ptr<rpn::Stack::Object> deep_copy() const override { return std::make_unique<Complex>(*this); };
+    virtual operator std::string() const override {
+      std:: string rv = "(";
+      rv += rpn::to_string(this->real());
+      rv += ",";
+      rv += rpn::to_string(this->imag());
+      rv += ")";
+      return rv;
+    }
+  private:
+};
+
+} // namespace stack
+
 
 /****************************************
  * math words
@@ -84,16 +115,35 @@ MATH_BINARY_FUNC(subtract);
 MATH_BINARY_INTEGER_FUNC(isubtract);
 
 static double divide(double a, double b) {
-  return a/b;
+  double rv = std::nan("");
+  if (b==0) {
+    rv = (a>0) ? INFINITY : -INFINITY;
+  } else {
+    rv = a/b;
+  }
+  return rv;
 }
+
 static int64_t idivide(int64_t a, int64_t b) {
-  return a/b;
+  int64_t rv = 0;
+  if (b!=0) {
+    rv = a/b;
+  } else {
+    rv = (a>0) ? std::numeric_limits<int64_t>::max() : -std::numeric_limits<int64_t>::max();
+  }
+  return rv;
 }
 MATH_BINARY_FUNC(divide);
 MATH_BINARY_INTEGER_FUNC(idivide);
 
 static double inverse(double a) {
-  return 1./a;
+  double rv=std::nan("");
+  if (a==0) {
+    rv = (a>0) ? INFINITY : -INFINITY;
+  } else {
+    rv = 1./a;
+  }
+  return rv;
 }
 MATH_UNARY_FUNC(inverse);
 
@@ -106,7 +156,6 @@ static int64_t isquare(int64_t a) {
 MATH_UNARY_FUNC(square);
 MATH_UNARY_INTEGER_FUNC(isquare);
 
-MATH_UNARY_FUNC(sqrt);
 MATH_BINARY_FUNC(pow);
 static int64_t ipow(int64_t a, int64_t b) {
   return (int64_t)pow(a,b);
@@ -181,11 +230,30 @@ NATIVE_WORD_DECL(math,quadratic) {
   double b = rpn.stack.pop_as_double();
   double a = rpn.stack.pop_as_double();
 
-  double x1 = (-b + sqrt(b*b - 4*a*c))/(2*a);
-  double x2 = (-b - sqrt(b*b - 4*a*c))/(2*a);
+  double sq = b*b - 4*a*c;
+  if (sq<0) {
+    std::complex<double> csq(sq, 0.);
+    auto x1 = (-b + sqrt(csq))/(2*a);
+    auto x2 = (-b - sqrt(csq))/(2*a);
+    rpn.stack.push(stack::Complex(x1));
+    rpn.stack.push(stack::Complex(x2));
+  } else {
+    double x1 = (-b + sqrt(sq))/(2*a);
+    double x2 = (-b - sqrt(sq))/(2*a);
+    rpn.stack.push_double(x1);
+    rpn.stack.push_double(x2);
+  }
+  return rpn::WordDefinition::Result::ok;
+}
 
-  rpn.stack.push_double(x1);
-  rpn.stack.push_double(x2);
+NATIVE_WORD_DECL(math,sqrt) {
+  double x = rpn.stack.pop_as_double();
+  if (x<0) {
+    std::complex<double> cx(x, 0.);
+    rpn.stack.push(stack::Complex(sqrt(cx)));
+  } else {
+    rpn.stack.push_double(sqrt(x));
+  }
   return rpn::WordDefinition::Result::ok;
 }
 
