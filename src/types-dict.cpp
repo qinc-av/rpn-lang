@@ -292,7 +292,6 @@ rpn::Interp::addTypeWords() {
   addDefinition("->STRING", NATIVE_WORD_WDEF(types, rpn::StackSizeValidator::one, to_string, nullptr));
 
   addDefinition("->OBJECT", NATIVE_WORD_WDEF(t_object, rpn::StrictTypeValidator::d2_string_any, to_object, nullptr));
-  addDefinition("OBJECT->", NATIVE_WORD_WDEF(t_object, rpn::StrictTypeValidator::d1_object, object_to, nullptr));
   addDefinition("OBJ->", NATIVE_WORD_WDEF(t_object, rpn::StrictTypeValidator::d1_object, object_to, nullptr));
   addDefinition("->ARRAY", NATIVE_WORD_WDEF(t_array, rpn::StackSizeValidator::ntos, to_array, nullptr));
   addDefinition("ARRAY->", NATIVE_WORD_WDEF(t_array, rpn::StrictTypeValidator::d1_array, array_to, nullptr));
@@ -325,11 +324,14 @@ rpn::Interp::addTypeWords() {
   addDefinition("->VEC3", NATIVE_WORD_WDEF(vec3, rpn::StrictTypeValidator::d3_integer_integer_double, to_vec3, nullptr));
 
   addDefinition("->VEC3x", NATIVE_WORD_WDEF(vec3, rpn::StrictTypeValidator::d1_double, to_vec3x, nullptr));
-  addDefinition("->{x}", NATIVE_WORD_WDEF(vec3, rpn::StrictTypeValidator::d1_integer, to_vec3x, nullptr));
+  addDefinition("->VEC3x", NATIVE_WORD_WDEF(vec3, rpn::StrictTypeValidator::d1_integer, to_vec3x, nullptr));
+
   addDefinition("->VEC3y", NATIVE_WORD_WDEF(vec3, rpn::StrictTypeValidator::d1_double, to_vec3y, nullptr));
-  addDefinition("->{y}", NATIVE_WORD_WDEF(vec3, rpn::StrictTypeValidator::d1_integer, to_vec3y, nullptr));
+  addDefinition("->VEC3y", NATIVE_WORD_WDEF(vec3, rpn::StrictTypeValidator::d1_integer, to_vec3y, nullptr));
+
   addDefinition("->VEC3z", NATIVE_WORD_WDEF(vec3, rpn::StrictTypeValidator::d1_double, to_vec3z, nullptr));
-  addDefinition("->{z}", NATIVE_WORD_WDEF(vec3, rpn::StrictTypeValidator::d1_integer, to_vec3z, nullptr));
+  addDefinition("->VEC3z", NATIVE_WORD_WDEF(vec3, rpn::StrictTypeValidator::d1_integer, to_vec3z, nullptr));
+
   addDefinition("VEC3->", NATIVE_WORD_WDEF(vec3, rpn::StrictTypeValidator::d1_vec3, vec3_to, nullptr));
   addDefinition("OBJ->", NATIVE_WORD_WDEF(vec3, rpn::StrictTypeValidator::d1_vec3, vec3_to, nullptr));
 
@@ -339,8 +341,8 @@ rpn::Interp::addTypeWords() {
   //  line = ": ->{xy} ( x y --  <v3'> ) ->{x} SWAP ->{y} + ;";
   //   st = parse(line);
 
-  auto st = sync_eval(": VEC3->{xy} ( <v3> <v3'> ) VEC3-> DROP ->{y} SWAP ->{x} + ;");
-  st = sync_eval(": ->{xy} ( x y --  <v3'> ) ->{x} SWAP ->{y} + ;");
+  auto st = sync_eval(": VEC3->{xy} ( <v3> <v3'> ) VEC3-> DROP ->VEC3y SWAP ->VEC3x + ;");
+  st = sync_eval(": ->VEC3xy ( x y --  <v3'> ) ->VEC3x SWAP ->VEC3y + ;");
 }
 
 /* end of qinc/rpn-lang/src/types-dict.cpp */
