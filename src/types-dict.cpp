@@ -287,8 +287,8 @@ NATIVE_WORD_DECL(vec3, to_vec3z) {
 
 void
 rpn::Interp::addTypeWords() {
-  addDefinition("->INT", NATIVE_WORD_WDEF(types, rpn::StackSizeValidator::one, to_int, nullptr));
-  addDefinition("->FLOAT", NATIVE_WORD_WDEF(types, rpn::StackSizeValidator::one, to_float, nullptr));
+  addDefinition("->INT", NATIVE_WORD_WDEF(types, rpn::StrictTypeValidator::d1_double, to_int, nullptr));
+  addDefinition("->FLOAT", NATIVE_WORD_WDEF(types, rpn::StrictTypeValidator::d1_integer, to_float, nullptr));
   addDefinition("->STRING", NATIVE_WORD_WDEF(types, rpn::StackSizeValidator::one, to_string, nullptr));
 
   addDefinition("->OBJECT", NATIVE_WORD_WDEF(t_object, rpn::StrictTypeValidator::d2_string_any, to_object, nullptr));
