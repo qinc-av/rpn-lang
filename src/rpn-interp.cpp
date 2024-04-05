@@ -119,6 +119,10 @@ public:
     }
     printf("\n");
   }
+
+  virtual std::string deparse() const override {
+    return "not-yet";
+  }
     
   rpn::Interp::Privates &_p;
   std::vector<std::string> _wordlist;

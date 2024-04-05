@@ -44,7 +44,7 @@ namespace rpn {
       virtual std::unique_ptr<Object> deep_copy() const =0;
       virtual operator double() const { return std::nan(""); };
       //      virtual operator int64_t() const =0;
-      //      virtual std::string deparse() const =0;
+      virtual std::string deparse() const =0;
       //      virtual std::unique_ptr<Object> deep_copy() const =0;
       std::string to_string() const { return static_cast<std::string>(*this); }
     };
@@ -294,6 +294,9 @@ class TStackObject : public rpn::Stack::Object {
   virtual operator std::string() const override { return (std::string)_v; };
   auto val() const { return _v; };
   auto &inner() { return _v; };
+  virtual std::string deparse() const override {
+    return "not-yet";
+  }
  private:
   T _v;
 };
@@ -316,6 +319,9 @@ class Double : public rpn::Stack::Object {
   virtual bool operator<(const Object &orhs) const override {
     auto &rhs = PEEK_CAST(const Double,orhs);
     return (_v < rhs._v);
+  }
+  virtual std::string deparse() const override {
+    return std::to_string(_v);
   }
  private:
   double _v;
@@ -340,6 +346,9 @@ Integer(const int64_t &v) : _v(v) {}
   virtual bool operator<(const Object &orhs) const override {
     auto &rhs = PEEK_CAST(const Integer,orhs);
     return (_v < rhs._v);
+  }
+  virtual std::string deparse() const override {
+    return std::to_string(_v);
   }
  private:
   int64_t _v;
@@ -510,6 +519,13 @@ public:
     return rv;
   }
   virtual std::unique_ptr<Object> deep_copy() const override { return std::make_unique<StVec3>(*this); }
+  virtual std::string deparse() const override {
+    std::string rv;
+    rv += std::to_string(_x) + " ";
+    rv += std::to_string(_y) + " ";
+    rv += std::to_string(_z) + " ->VEC3";
+    return rv;
+  }
 
 public:
   // should these be public or private?
@@ -582,5 +598,14 @@ public:
   r.addDefinition(symbol, NATIVE_WORD_WDEF(mangler, rpn::StrictTypeValidator::d1_double, double_func, ptr)); \
   r.addDefinition(symbol, NATIVE_WORD_WDEF(mangler, rpn::StrictTypeValidator::d1_integer, integer_func, ptr))
 
+#define ADD_NATIVE_3_NUMBER_WDEF(mangler, r, symbol, double_func, integer_func, ptr) \
+  r.addDefinition(symbol, NATIVE_WORD_WDEF(mangler, rpn::StrictTypeValidator::d3_double_double_double, double_func, ptr)); \
+  r.addDefinition(symbol, NATIVE_WORD_WDEF(mangler, rpn::StrictTypeValidator::d3_double_double_integer, double_func, ptr)); \
+  r.addDefinition(symbol, NATIVE_WORD_WDEF(mangler, rpn::StrictTypeValidator::d3_double_integer_double, double_func, ptr)); \
+  r.addDefinition(symbol, NATIVE_WORD_WDEF(mangler, rpn::StrictTypeValidator::d3_double_integer_integer, integer_func, ptr)); \
+  r.addDefinition(symbol, NATIVE_WORD_WDEF(mangler, rpn::StrictTypeValidator::d3_integer_double_double, double_func, ptr)); \
+  r.addDefinition(symbol, NATIVE_WORD_WDEF(mangler, rpn::StrictTypeValidator::d3_integer_double_integer, double_func, ptr)); \
+  r.addDefinition(symbol, NATIVE_WORD_WDEF(mangler, rpn::StrictTypeValidator::d3_integer_integer_double, double_func, ptr)); \
+  r.addDefinition(symbol, NATIVE_WORD_WDEF(mangler, rpn::StrictTypeValidator::d3_integer_integer_integer, integer_func, ptr))
 
 /* end of qinc/rpn-lang/rpn.h */

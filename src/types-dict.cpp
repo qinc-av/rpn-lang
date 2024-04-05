@@ -314,6 +314,9 @@ rpn::Interp::addTypeWords() {
   addDefinition("-", NATIVE_WORD_WDEF(vec3, rpn::StrictTypeValidator::d2_double_vec3, sub_num_vec3, nullptr));
   addDefinition("-", NATIVE_WORD_WDEF(vec3, rpn::StrictTypeValidator::d2_integer_vec3, sub_num_vec3, nullptr));
 
+  
+  ADD_NATIVE_3_NUMBER_WDEF(vec3, (*this), "->VEC3", to_vec3, to_vec3, nullptr);
+  /*
   addDefinition("->VEC3", NATIVE_WORD_WDEF(vec3, rpn::StrictTypeValidator::d3_double_double_double, to_vec3, nullptr));
   addDefinition("->VEC3", NATIVE_WORD_WDEF(vec3, rpn::StrictTypeValidator::d3_integer_integer_integer, to_vec3, nullptr));
   addDefinition("->VEC3", NATIVE_WORD_WDEF(vec3, rpn::StrictTypeValidator::d3_integer_double_double, to_vec3, nullptr));
@@ -322,7 +325,7 @@ rpn::Interp::addTypeWords() {
   addDefinition("->VEC3", NATIVE_WORD_WDEF(vec3, rpn::StrictTypeValidator::d3_double_integer_integer, to_vec3, nullptr));
   addDefinition("->VEC3", NATIVE_WORD_WDEF(vec3, rpn::StrictTypeValidator::d3_integer_double_integer, to_vec3, nullptr));
   addDefinition("->VEC3", NATIVE_WORD_WDEF(vec3, rpn::StrictTypeValidator::d3_integer_integer_double, to_vec3, nullptr));
-
+  */
   addDefinition("->VEC3x", NATIVE_WORD_WDEF(vec3, rpn::StrictTypeValidator::d1_double, to_vec3x, nullptr));
   addDefinition("->VEC3x", NATIVE_WORD_WDEF(vec3, rpn::StrictTypeValidator::d1_integer, to_vec3x, nullptr));
 

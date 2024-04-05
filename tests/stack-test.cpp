@@ -45,6 +45,9 @@ public:
     return rv;
   };
   auto const &val() const { return _v; };
+  virtual std::string deparse() const override {
+    return "not-yet";
+  }
 private:
   std::vector<std::unique_ptr<rpn::Stack::Object>> _v;
 };

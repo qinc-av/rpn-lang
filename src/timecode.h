@@ -61,6 +61,13 @@ public:
     virtual operator std::string() const override {
       return q::Timecode::to_string();
     }
+    virtual std::string deparse() const override {
+      std::string rv;
+      rv += std::to_string(to_frames()) + " ";
+      rv += std::to_string(_frameRate._numerator) + " ";
+      rv += std::to_string(_frameRate._denominator) + " ->FRAC ->TC";
+      return rv;
+    }
   };
 } // namespace stack
 

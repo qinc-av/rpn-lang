@@ -46,13 +46,20 @@ namespace stack {
     }
     virtual std::unique_ptr<rpn::Stack::Object> deep_copy() const override { return std::make_unique<Complex>(*this); };
     virtual operator std::string() const override {
-      std:: string rv = "(";
-      rv += rpn::to_string(this->real());
-      rv += ",";
+      std:: string rv = rpn::to_string(this->real());
+      if (this->imag()>0) {
+	rv += "+";
+      }
       rv += rpn::to_string(this->imag());
-      rv += ")";
+      rv += "i";
       return rv;
     }
+  virtual std::string deparse() const override {
+    std::string rv;
+    rv += std::to_string(this->real()) + " ";
+    rv += std::to_string(this->imag()) + " ->COMPLEX";
+    return rv;
+  }
   private:
 };
 
@@ -309,15 +316,7 @@ rpn::Interp::addMathWords() {
   addDefinition("CEIL", MATH_WORD_WDEF(rpn::StrictTypeValidator::d1_double, ceil));
   addDefinition("FLOOR", MATH_WORD_WDEF(rpn::StrictTypeValidator::d1_double, floor));
 
-  addDefinition("QUAD", MATH_WORD_WDEF(rpn::StrictTypeValidator::d3_double_double_double, quadratic));
-  addDefinition("QUAD", MATH_WORD_WDEF(rpn::StrictTypeValidator::d3_integer_double_double, quadratic));
-  addDefinition("QUAD", MATH_WORD_WDEF(rpn::StrictTypeValidator::d3_double_integer_double, quadratic));
-  addDefinition("QUAD", MATH_WORD_WDEF(rpn::StrictTypeValidator::d3_double_double_integer, quadratic));
-
-  addDefinition("QUAD", MATH_WORD_WDEF(rpn::StrictTypeValidator::d3_integer_integer_integer, quadratic));
-  addDefinition("QUAD", MATH_WORD_WDEF(rpn::StrictTypeValidator::d3_double_integer_integer, quadratic));
-  addDefinition("QUAD", MATH_WORD_WDEF(rpn::StrictTypeValidator::d3_integer_double_integer, quadratic));
-  addDefinition("QUAD", MATH_WORD_WDEF(rpn::StrictTypeValidator::d3_integer_integer_double, quadratic));
+  ADD_NATIVE_3_NUMBER_WDEF(math, rpn, "QUAD", quadratic, quadratic, nullptr);
 
   addDefinition("k_PI", MATH_CONSTANT_WDEF(pi));
   addDefinition("k_E", MATH_CONSTANT_WDEF(e));
