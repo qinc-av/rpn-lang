@@ -92,7 +92,7 @@ rpn::Stack::pop_integer() {
   auto tos = pop();
   auto *typed = dynamic_cast<StInteger*>(tos.get());
   if (typed) {
-    return typed->val();
+    return *typed;
   }
   auto h1 =typeid(tos.get()).hash_code();
   auto h2 = typeid(StInteger*).hash_code();
@@ -109,7 +109,7 @@ rpn::Stack::pop_double() {
   auto tos = pop();
   auto *typed = dynamic_cast<StDouble*>(tos.get());
   if (typed) {
-    return typed->val();
+    return double(*typed);
   }
   auto h1 =typeid(tos.get()).hash_code();
   auto h2 = typeid(StDouble*).hash_code();
@@ -124,15 +124,7 @@ rpn::Stack::pop_double() {
 double
 rpn::Stack::pop_as_double() {
   auto tos = pop();
-  auto raw = tos.get();
-  double val = std::nan("");
-  auto *dp = dynamic_cast<StDouble*>(raw);
-  auto *ip = dynamic_cast<StInteger*>(raw);
-  if (dp) {
-    val = dp->val();
-  } else if (ip) {
-    val = double (ip->inner());
-  }
+  double val = *tos;
   return val;
 }
 
@@ -151,10 +143,10 @@ rpn::Stack::pop_as_boolean() {
     val = bp->val();
 
   } else if (ip) {
-    val = (int64_t(ip->inner())!=0);
+    val = int64_t(*ip) != 0;
 
   } else if (dp) {
-    val = ((double(dp->val())) != 0.);
+    val = double(*dp) != 0.;
 
   } else if (sp) {
     val = (std::string(sp->val())!="");
@@ -196,26 +188,19 @@ rpn::Stack::peek_as_string(int n) {
 int64_t
 rpn::Stack::peek_integer(int n) {
   auto const &sv = dynamic_cast<const StInteger&>(peek(n));
-  return sv.val();
+  return sv;
 }
 
 double
 rpn::Stack::peek_double(int n) {
   auto const &sv = dynamic_cast<const StDouble&>(peek(n));
-  return sv.val();
+  return sv;
 }
 
 double
 rpn::Stack::peek_as_double(int n) {
   auto &raw = peek(n);
-  double val = std::nan("");
-  auto dp = dynamic_cast<const StDouble*>(&raw);
-  auto ip = dynamic_cast<const StInteger*>(&raw);
-  if (dp) {
-    val = dp->val();
-  } else if (ip) {
-    val = double (ip->val());
-  }
+  double val = raw;
   return val;
 }
 

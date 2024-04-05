@@ -860,6 +860,11 @@ rpn::Interp::sync_eval(std::string line) {
   return m_p->parse(line);
 }
 
+rpn::WordDefinition::Result
+rpn::Interp::sync_parseFile(const std::string &path) {
+  return m_p->sync_parse_file(path);
+}
+
 void
 rpn::Interp::parseFile(const std::string &path, std::function<void(rpn::WordDefinition::Result)>completionHandler) {
   //  rpn::WordDefinition::Result rv = m_p->sync_parse_file(path);

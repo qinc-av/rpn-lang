@@ -42,6 +42,10 @@ namespace rpn {
       };
       virtual operator std::string() const =0;
       virtual std::unique_ptr<Object> deep_copy() const =0;
+      virtual operator double() const { return std::nan(""); };
+      //      virtual operator int64_t() const =0;
+      //      virtual std::string deparse() const =0;
+      //      virtual std::unique_ptr<Object> deep_copy() const =0;
       std::string to_string() const { return static_cast<std::string>(*this); }
     };
 
@@ -212,7 +216,10 @@ namespace rpn {
     ~Interp();
     static void nullCompletionHandler(rpn::WordDefinition::Result) {};
 
+    // mainly for test cases
     rpn::WordDefinition::Result sync_eval(std::string line);
+    rpn::WordDefinition::Result sync_parseFile(const std::string &file);
+
     void eval(std::string line, std::function<void(rpn::WordDefinition::Result)>completionHandler=nullCompletionHandler);
     void parseFile(const std::string &path, std::function<void(rpn::WordDefinition::Result)>completionHandler=nullCompletionHandler);
 
@@ -291,37 +298,54 @@ class TStackObject : public rpn::Stack::Object {
   T _v;
 };
 
-class XDouble {
+namespace stack {
+class Double : public rpn::Stack::Object {
  public:
- XDouble(const double &v) : _v(v) {}
-  virtual operator std::string() const { return rpn::to_string(_v); };
-  operator double() const { return _v; };
-  bool operator==(const XDouble &rhs) const {
-    return _v == rhs._v;
+ Double(const double &v) : _v(v) {}
+  virtual std::unique_ptr<rpn::Stack::Object> deep_copy() const override { return std::make_unique<Double>(*this); };
+  virtual operator std::string() const override { return rpn::to_string(_v); };
+  operator double() const override { return _v; };
+  virtual bool operator==(const Object &orhs) const override {
+    auto *rhs = OBJECTP_CAST(const Double)(&orhs);
+    return (rhs !=nullptr && _v == rhs->_v);
+  }
+  virtual bool operator>(const Object &orhs) const override {
+    auto &rhs = PEEK_CAST(const Double,orhs);
+    return (_v > rhs._v);
+  }
+  virtual bool operator<(const Object &orhs) const override {
+    auto &rhs = PEEK_CAST(const Double,orhs);
+    return (_v < rhs._v);
   }
  private:
   double _v;
 };
 
-class XInteger {
- public:
- XInteger(const int64_t &v) : _v(v) {}
-  virtual operator std::string() const { return std::to_string(_v); };
+class Integer : public rpn::Stack::Object {
+public:
+Integer(const int64_t &v) : _v(v) {}
+  virtual std::unique_ptr<rpn::Stack::Object> deep_copy() const override { return std::make_unique<Integer>(*this); };
+  virtual operator std::string() const override { return std::to_string(_v); };
+  virtual operator double() const override { return double(_v); };
+  virtual bool operator==(const Object &orhs) const override {
+    auto *rhs = OBJECTP_CAST(const Integer)(&orhs);
+    return (rhs !=nullptr && _v == rhs->_v);
+  }
   operator int64_t() const { return _v; };
   operator uint64_t() const { return _v; };
-  operator double() const { return double(_v); };
-  bool operator==(const XInteger &rhs) const {
-    return _v == rhs._v;
+  virtual bool operator>(const Object &orhs) const override {
+    auto &rhs = PEEK_CAST(const Integer,orhs);
+    return (_v > rhs._v);
   }
-  bool operator>(const XInteger &rhs) const {
-    return _v > rhs._v;
-  }
-  bool operator<(const XInteger &rhs) const {
-    return _v < rhs._v;
+  virtual bool operator<(const Object &orhs) const override {
+    auto &rhs = PEEK_CAST(const Integer,orhs);
+    return (_v < rhs._v);
   }
  private:
   int64_t _v;
 };
+
+}
 
 class XBoolean {
  public:
@@ -448,8 +472,8 @@ public:
   std::vector<std::unique_ptr<rpn::Stack::Object>> _v;
 };
 
-using StDouble = TStackObject<XDouble>;
-using StInteger = TStackObject<XInteger>;
+using StDouble = stack::Double;
+using StInteger = stack::Integer;
 using StBoolean = TStackObject<XBoolean>;
 using StString = TStackObject<XString>;
 using StObject = TStackObject<XObject>;

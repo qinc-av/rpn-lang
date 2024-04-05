@@ -112,6 +112,11 @@ namespace stack {
     virtual operator std::string() const override {
       return q::Fraction::to_string();
     }
+    virtual operator double() const override {
+      return q::Fraction::operator double();
+      // xxx-elh: there has to be a better way to force the q::Fraction::operator double() to be called...
+      //      return double(*(q::Fraction*)this);
+    }
   private:
 };
 

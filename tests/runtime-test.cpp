@@ -32,7 +32,9 @@ TEST_CASE( "parse", "Stack Words" ) {
 
   std::string line;
   line = ("CLEAR 12.32 3 OVER DROP 1 2 3 4 5 6 2 DROPn");
-  g_rpn.parse(line);
+  auto st = g_rpn.sync_eval(line);
+  REQUIRE( (st == rpn::WordDefinition::Result::ok) );
+
   g_rpn.stack.print("test parse");
   // should be 12.32 3 1 2 3 4 "
   REQUIRE( ((4 == g_rpn.stack.peek_integer(1)) &&
@@ -48,7 +50,8 @@ TEST_CASE( "parse", "Stack Words" ) {
     "SWAP"
   */
   line = ("DEPTH SWAP");
-  g_rpn.parse(line);
+  st = g_rpn.sync_eval(line);
+  REQUIRE( (st == rpn::WordDefinition::Result::ok) );
   REQUIRE( 7 == g_rpn.stack.depth() );
   REQUIRE( ((4 == g_rpn.stack.peek_integer(1)) &&
 	    (6 == g_rpn.stack.peek_integer(2))) );
@@ -57,7 +60,8 @@ TEST_CASE( "parse", "Stack Words" ) {
      "DUP"
   */
   line = ("9988 DUP DUP .S");
-  g_rpn.parse(line);
+  st = g_rpn.sync_eval(line);
+  REQUIRE( (st == rpn::WordDefinition::Result::ok) );
   REQUIRE( 10 == g_rpn.stack.depth() );
   REQUIRE( ((9988 == g_rpn.stack.peek_integer(1)) &&
 	    (9988 == g_rpn.stack.peek_integer(2)) &&
@@ -65,7 +69,8 @@ TEST_CASE( "parse", "Stack Words" ) {
 	    (4 == g_rpn.stack.peek_integer(4))));
 
   line = ("3 DROPn");
-  g_rpn.parse(line);
+  st = g_rpn.sync_eval(line);
+  REQUIRE( (st == rpn::WordDefinition::Result::ok) );
   REQUIRE( 7 == g_rpn.stack.depth() );
   REQUIRE( ((4 == g_rpn.stack.peek_integer(1)) &&
 	    (6 == g_rpn.stack.peek_integer(2))) );
@@ -73,7 +78,8 @@ TEST_CASE( "parse", "Stack Words" ) {
     "DUPn"
   */
   line = ("3 DUPn");
-  g_rpn.parse(line);
+  st = g_rpn.sync_eval(line);
+  REQUIRE( (st == rpn::WordDefinition::Result::ok) );
   REQUIRE( 10 == g_rpn.stack.depth() );
   REQUIRE( ((4 == g_rpn.stack.peek_integer(1)) &&
 	    (6 == g_rpn.stack.peek_integer(2)) &&
@@ -85,7 +91,8 @@ TEST_CASE( "parse", "Stack Words" ) {
     "ROLLU"
   */
   line = ("CLEAR 10 9 8 7 6 5 4 3 2 1 ROLLU ROLLU");
-  g_rpn.parse(line);
+  st = g_rpn.sync_eval(line);
+  REQUIRE( (st == rpn::WordDefinition::Result::ok) );
   REQUIRE( (8 == g_rpn.stack.peek_integer(10)) );
   REQUIRE( (7 == g_rpn.stack.peek_integer(9)) );
   REQUIRE( (6 == g_rpn.stack.peek_integer(8)) );
@@ -101,7 +108,8 @@ TEST_CASE( "parse", "Stack Words" ) {
     "ROLLD"
   */
   line = ("CLEAR 10 9 8 7 6 5 4 3 2 1 ROLLD ROLLD");
-  g_rpn.parse(line);
+  st = g_rpn.sync_eval(line);
+  REQUIRE( (st == rpn::WordDefinition::Result::ok) );
   REQUIRE( (2 == g_rpn.stack.peek_integer(10)) );
   REQUIRE( (1 == g_rpn.stack.peek_integer(9)) );
   REQUIRE( (10 == g_rpn.stack.peek_integer(8)) );
@@ -117,7 +125,7 @@ TEST_CASE( "parse", "Stack Words" ) {
     "ROTU"
   */
   line = ("CLEAR 10 9 8 7 6 5 4 3 2 1 ROTU");
-  g_rpn.parse(line);
+  g_rpn.sync_eval(line);
   REQUIRE( (10 == g_rpn.stack.peek_integer(10)) );
   REQUIRE( (9 == g_rpn.stack.peek_integer(9)) );
   REQUIRE( (8 == g_rpn.stack.peek_integer(8)) );
@@ -133,7 +141,8 @@ TEST_CASE( "parse", "Stack Words" ) {
     "ROTD"
   */
   line = ("CLEAR 10 9 8 7 6 5 4 3 2 1 ROTD");
-  g_rpn.parse(line);
+  st = g_rpn.sync_eval(line);
+  REQUIRE( (st == rpn::WordDefinition::Result::ok) );
   REQUIRE( (10 == g_rpn.stack.peek_integer(10)) );
   REQUIRE( (9 == g_rpn.stack.peek_integer(9)) );
   REQUIRE( (8 == g_rpn.stack.peek_integer(8)) );
@@ -149,7 +158,8 @@ TEST_CASE( "parse", "Stack Words" ) {
     "NIPn"
   */
   line = ("CLEAR 10 9 8 7 6 5 4 3 2 1 5 NIPn");
-  g_rpn.parse(line);
+  st = g_rpn.sync_eval(line);
+  REQUIRE( (st == rpn::WordDefinition::Result::ok) );
   REQUIRE( 9 == g_rpn.stack.depth() );
   REQUIRE( (10 == g_rpn.stack.peek_integer(9)) );
   REQUIRE( (9 == g_rpn.stack.peek_integer(8)) );
@@ -165,7 +175,8 @@ TEST_CASE( "parse", "Stack Words" ) {
     "PICK"
   */
   line = ("CLEAR 10 9 8 7 6 5 4 3 2 1 7 PICK");
-  g_rpn.parse(line);
+  st = g_rpn.sync_eval(line);
+  REQUIRE( (st == rpn::WordDefinition::Result::ok) );
   REQUIRE( 11 == g_rpn.stack.depth() );
   REQUIRE( (10 == g_rpn.stack.peek_integer(11)) );
   REQUIRE( (9 == g_rpn.stack.peek_integer(10)) );
@@ -183,7 +194,8 @@ TEST_CASE( "parse", "Stack Words" ) {
     "ROLLDn"
   */
   line = ("CLEAR 10 9 8 7 6 5 4 3 2 1 7 ROLLDn");
-  g_rpn.parse(line);
+  st = g_rpn.sync_eval(line);
+  REQUIRE( (st == rpn::WordDefinition::Result::ok) );
   REQUIRE( 10 == g_rpn.stack.depth() );
   REQUIRE( (10 == g_rpn.stack.peek_integer(10)) );
   REQUIRE( (9 == g_rpn.stack.peek_integer(9)) );
@@ -200,7 +212,8 @@ TEST_CASE( "parse", "Stack Words" ) {
     "ROLLUn"
   */
   line = ("CLEAR 10 9 8 7 6 5 4 3 2 1 5 ROLLUn");
-  g_rpn.parse(line);
+  st = g_rpn.sync_eval(line);
+  REQUIRE( (st == rpn::WordDefinition::Result::ok) );
   REQUIRE( 10 == g_rpn.stack.depth() );
   REQUIRE( (10 == g_rpn.stack.peek_integer(10)) );
   REQUIRE( (9 == g_rpn.stack.peek_integer(9)) );
@@ -217,7 +230,8 @@ TEST_CASE( "parse", "Stack Words" ) {
     "TUCKn"
   */
   line = ("CLEAR 10 9 8 7 6 5 4 3 2 1 5 TUCKn");
-  g_rpn.parse(line);
+  st = g_rpn.sync_eval(line);
+  REQUIRE( (st == rpn::WordDefinition::Result::ok) );
   REQUIRE( 11 == g_rpn.stack.depth() );
   REQUIRE( (10 == g_rpn.stack.peek_integer(11)) );
   REQUIRE( (9 == g_rpn.stack.peek_integer(10)) );
@@ -236,7 +250,8 @@ TEST_CASE( "parse", "Stack Words" ) {
   */
   {
     line = ("CLEAR .\" abcdefg\"");
-    g_rpn.parse(line);
+    st = g_rpn.sync_eval(line);
+    REQUIRE( (st == rpn::WordDefinition::Result::ok) );
     REQUIRE( 1 == g_rpn.stack.depth() );
     REQUIRE( ("abcdefg" == g_rpn.stack.peek_string(1)) );
     auto s2 = g_rpn.stack.pop_string();
@@ -246,7 +261,8 @@ TEST_CASE( "parse", "Stack Words" ) {
   /* REVERSE */
   {
     line = ("CLEAR 1 2 3 4 5 6 7 8 9 10 REVERSE");
-    g_rpn.parse(line);
+    st = g_rpn.sync_eval(line);
+    REQUIRE( (st == rpn::WordDefinition::Result::ok) );
     REQUIRE( 10 == g_rpn.stack.depth() );
     REQUIRE( (10 == g_rpn.stack.peek_integer(10)) );
     REQUIRE( (9 == g_rpn.stack.peek_integer(9)) );
@@ -263,7 +279,8 @@ TEST_CASE( "parse", "Stack Words" ) {
   /* REVERSEn */
   {
     line = ("CLEAR 1 2 3 4 5 6 7 8 9 10 7 REVERSEn .S");
-    g_rpn.parse(line);
+    st = g_rpn.sync_eval(line);
+    REQUIRE( (st == rpn::WordDefinition::Result::ok) );
     REQUIRE( 10 == g_rpn.stack.depth() );
     REQUIRE( (1 == g_rpn.stack.peek_integer(10)) );
     REQUIRE( (2 == g_rpn.stack.peek_integer(9)) );
@@ -281,35 +298,43 @@ TEST_CASE( "parse", "Stack Words" ) {
 
 TEST_CASE( "== !=", " runtime logic" ) {
   std::string line("CLEAR 123 456 ==");
-  g_rpn.parse(line);
+  auto st = g_rpn.sync_eval(line);
+  REQUIRE( (st == rpn::WordDefinition::Result::ok) );
   REQUIRE( (false == g_rpn.stack.peek_boolean(1) ) ); // integers equal fail
 
   line = ("CLEAR 123 456 !=");
-  g_rpn.parse(line);
+  st = g_rpn.sync_eval(line);
+  REQUIRE( (st == rpn::WordDefinition::Result::ok) );
   REQUIRE( (true == g_rpn.stack.peek_boolean(1) ) ); // integers not equal
 
   line = ("CLEAR 1.0 1 ==");
-  g_rpn.parse(line);
+  st = g_rpn.sync_eval(line);
+  REQUIRE( (st == rpn::WordDefinition::Result::ok) );
   REQUIRE( (false == g_rpn.stack.peek_boolean(1) ) ); // types don't match
 
   line = ("CLEAR .\" abc\" .\" xyz\" !=");
-  g_rpn.parse(line);
+  st = g_rpn.sync_eval(line);
+  REQUIRE( (st == rpn::WordDefinition::Result::ok) );
   REQUIRE( (true == g_rpn.stack.peek_boolean(1) ) );  // strings not equal
 
   line = ("CLEAR .\" abc\" .\" abc\" =="); // strings equal
-  g_rpn.parse(line);
+  st = g_rpn.sync_eval(line);
+  REQUIRE( (st == rpn::WordDefinition::Result::ok) );
   REQUIRE( (true == g_rpn.stack.peek_boolean(1) ) );
 
   line = ("CLEAR 3.14159 3.14159 =="); // doubles equal
-  g_rpn.parse(line);
+  st = g_rpn.sync_eval(line);
+  REQUIRE( (st == rpn::WordDefinition::Result::ok) );
   REQUIRE( (true == g_rpn.stack.peek_boolean(1) ) );
 
   line = ("CLEAR 3.14159 3.14159 == DUP NOT =="); // boolean equal fail
-  g_rpn.parse(line);
+  st = g_rpn.sync_eval(line);
+  REQUIRE( (st == rpn::WordDefinition::Result::ok) );
   REQUIRE( (false == g_rpn.stack.peek_boolean(1) ) );
 
   line = ("CLEAR 3.14159 3.14159 == DUP NOT !="); // boolean not-equal 
-  g_rpn.parse(line);
+  st = g_rpn.sync_eval(line);
+  REQUIRE( (st == rpn::WordDefinition::Result::ok) );
   REQUIRE( (true == g_rpn.stack.peek_boolean(1) ) );
 
 }
@@ -319,81 +344,99 @@ TEST_CASE( "inequalities - < > <= >=", " runtime logic" ) {
 
   // doubles 
   line = ("CLEAR 3.14159 3.14159 >");
-  g_rpn.parse(line);
+  auto st = g_rpn.sync_eval(line);
+  REQUIRE( (st == rpn::WordDefinition::Result::ok) );
   REQUIRE( (false == g_rpn.stack.peek_boolean(1) ) );
 
   line = ("CLEAR 3.14159 3.14159 >=");
-  g_rpn.parse(line);
+  st = g_rpn.sync_eval(line);
+  REQUIRE( (st == rpn::WordDefinition::Result::ok) );
   REQUIRE( (true == g_rpn.stack.peek_boolean(1) ) );
 
   line = ("CLEAR 3.14159 2.14159 >=");
-  g_rpn.parse(line);
+  st = g_rpn.sync_eval(line);
+  REQUIRE( (st == rpn::WordDefinition::Result::ok) );
   REQUIRE( (true == g_rpn.stack.peek_boolean(1) ) );
 
   line = ("CLEAR 3.14159 2.14159 .S > .S");
-  g_rpn.parse(line);
+  st = g_rpn.sync_eval(line);
+  REQUIRE( (st == rpn::WordDefinition::Result::ok) );
   REQUIRE( (true == g_rpn.stack.peek_boolean(1) ) );
 
   line = ("CLEAR 3.14159 3.14159 <");
-  g_rpn.parse(line);
+  st = g_rpn.sync_eval(line);
+  REQUIRE( (st == rpn::WordDefinition::Result::ok) );
   REQUIRE( (false == g_rpn.stack.peek_boolean(1) ) );
 
   line = ("CLEAR 3.14159 3.14159 <=");
-  g_rpn.parse(line);
+  st = g_rpn.sync_eval(line);
+  REQUIRE( (st == rpn::WordDefinition::Result::ok) );
   REQUIRE( (true == g_rpn.stack.peek_boolean(1) ) );
 
   line = ("CLEAR 2.14159 3.14159 <=");
-  g_rpn.parse(line);
+  st = g_rpn.sync_eval(line);
+  REQUIRE( (st == rpn::WordDefinition::Result::ok) );
   REQUIRE( (true == g_rpn.stack.peek_boolean(1) ) );
 
   line = ("CLEAR 2.13159 2.14159 <");
-  g_rpn.parse(line);
+  st = g_rpn.sync_eval(line);
+  REQUIRE( (st == rpn::WordDefinition::Result::ok) );
   REQUIRE( (true == g_rpn.stack.peek_boolean(1) ) );
 
   // integers
   line = ("CLEAR 5 7 >");
-  g_rpn.parse(line);
+  st = g_rpn.sync_eval(line);
+  REQUIRE( (st == rpn::WordDefinition::Result::ok) );
   REQUIRE( (false == g_rpn.stack.peek_boolean(1) ) );
 
   line = ("CLEAR 7 5 >=");
-  g_rpn.parse(line);
+  st = g_rpn.sync_eval(line);
+  REQUIRE( (st == rpn::WordDefinition::Result::ok) );
   REQUIRE( (true == g_rpn.stack.peek_boolean(1) ) );
 
   line = ("CLEAR 7 7 >=");
-  g_rpn.parse(line);
+  st = g_rpn.sync_eval(line);
+  REQUIRE( (st == rpn::WordDefinition::Result::ok) );
   REQUIRE( (true == g_rpn.stack.peek_boolean(1) ) );
 
   line = ("CLEAR 3 2 >=");
-  g_rpn.parse(line);
+  st = g_rpn.sync_eval(line);
+  REQUIRE( (st == rpn::WordDefinition::Result::ok) );
   REQUIRE( (true == g_rpn.stack.peek_boolean(1) ) );
 
   line = ("CLEAR 3 2 >");
-  g_rpn.parse(line);
+  st = g_rpn.sync_eval(line);
+  REQUIRE( (st == rpn::WordDefinition::Result::ok) );
   REQUIRE( (true == g_rpn.stack.peek_boolean(1) ) );
 
   line = ("CLEAR 3 3 <");
-  g_rpn.parse(line);
+  st = g_rpn.sync_eval(line);
+  REQUIRE( (st == rpn::WordDefinition::Result::ok) );
   REQUIRE( (false == g_rpn.stack.peek_boolean(1) ) );
 
   line = ("CLEAR 3 3 <=");
-  g_rpn.parse(line);
+  st = g_rpn.sync_eval(line);
+  REQUIRE( (st == rpn::WordDefinition::Result::ok) );
   REQUIRE( (true == g_rpn.stack.peek_boolean(1) ) );
 
   line = ("CLEAR 2 3 <=");
-  g_rpn.parse(line);
+  st = g_rpn.sync_eval(line);
+  REQUIRE( (st == rpn::WordDefinition::Result::ok) );
   REQUIRE( (true == g_rpn.stack.peek_boolean(1) ) );
 
   line = ("CLEAR 2 2 <");
-  g_rpn.parse(line);
+  st = g_rpn.sync_eval(line);
+  REQUIRE( (st == rpn::WordDefinition::Result::ok) );
   REQUIRE( (false == g_rpn.stack.peek_boolean(1) ) );
 
   line = ("CLEAR .\" abc\" .\" bcd\" <");
-  g_rpn.parse(line);
+  st = g_rpn.sync_eval(line);
+  REQUIRE( (st == rpn::WordDefinition::Result::ok) );
   REQUIRE( (true == g_rpn.stack.peek_boolean(1) ) );
 
   line = ("CLEAR .\" abc\" 123 <");
   {
-    auto st = g_rpn.parse(line);
+    st = g_rpn.sync_eval(line);
     REQUIRE( (0 == g_rpn.stack.depth() ) );
     REQUIRE( (g_rpn.status() == "<: type error") );
     REQUIRE( (st == rpn::WordDefinition::Result::param_error) );
@@ -405,15 +448,18 @@ TEST_CASE( "AND OR NOT" " boolean logic" ) {
   std::string line;
 
   line = ("CLEAR 1 1 == .S NOT .S");
-  g_rpn.parse(line);
+  auto st = g_rpn.sync_eval(line);
+  REQUIRE( (st == rpn::WordDefinition::Result::ok) );
   REQUIRE( (false == g_rpn.stack.peek_boolean(1) ) );
 
   line = ("1 1 == OR");
-  g_rpn.parse(line);
+  st = g_rpn.sync_eval(line);
+  REQUIRE( (st == rpn::WordDefinition::Result::ok) );
   REQUIRE( (true == g_rpn.stack.peek_boolean(1) ) );
 
   line = ("1 0 == AND");
-  g_rpn.parse(line);
+  st = g_rpn.sync_eval(line);
+  REQUIRE( (st == rpn::WordDefinition::Result::ok) );
   REQUIRE( (false == g_rpn.stack.peek_boolean(1) ) );
 
 }
@@ -422,49 +468,53 @@ TEST_CASE( "AND OR NOT XOR" " binary logic" ) {
   std::string line;
 
   line = ("CLEAR 0x1234 0x4321 AND .S");
-  g_rpn.parse(line);
+  auto st = g_rpn.sync_eval(line);
+  REQUIRE( (st == rpn::WordDefinition::Result::ok) );
   REQUIRE( ((0x1234&0x4321) == g_rpn.stack.peek_integer(1) ) );
 
   line = ("0x9281 0xabcd OR .S");
-  g_rpn.parse(line);
+  st = g_rpn.sync_eval(line);
+  REQUIRE( (st == rpn::WordDefinition::Result::ok) );
   REQUIRE( ((0x9281 | 0xabcd) == g_rpn.stack.peek_integer(1) ) );
 
   line = ("0x55a8 0xaaaa XOR .S");
-  g_rpn.parse(line);
+  st = g_rpn.sync_eval(line);
+  REQUIRE( (st == rpn::WordDefinition::Result::ok) );
   REQUIRE( ((0x55a8 ^ 0xaaaa) == g_rpn.stack.peek_integer(1) ) );
 
   line = ("DUP NEG .S");
-  g_rpn.parse(line);
+  st = g_rpn.sync_eval(line);
+  REQUIRE( (st == rpn::WordDefinition::Result::ok) );
   REQUIRE( ((~(0x55a8 ^ 0xaaaa)) == g_rpn.stack.peek_integer(1) ) );
 
 }
 
-TEST_CASE( "file tests.4nc", "parsing" ) {
+TEST_CASE( "file tests.rpn", "parsing" ) {
   std::string line;
   {
     line = ("( test bad comment");
-    auto st = g_rpn.parse(line);
+    auto st = g_rpn.sync_eval(line);
     REQUIRE( (st == rpn::WordDefinition::Result::parse_error) );
   }
 
   {
     line = (".\" test bad string");
-    auto st = g_rpn.parse(line);
+    auto st = g_rpn.sync_eval(line);
     REQUIRE( (st == rpn::WordDefinition::Result::parse_error) );
   }
 
   {
     line = (".\" inverabcdefg\" INV");
-    auto st = g_rpn.parse(line);
+    auto st = g_rpn.sync_eval(line);
     REQUIRE( (st == rpn::WordDefinition::Result::param_error) );
   }
 
   {
     g_rpn.stack.clear();
     //    std::string file = "/Users/eric/work/qinc/rpn-lang/tests/tests.rpn";
-    std::string file = "/Volumes/CSData/work/QInc/color-calc/src/libs/rpn-lang/tests/tests.rpn";
-    auto st = g_rpn.parseFile(file);
-    g_rpn.stack.print("tests.4nc");
+    std::string file = "tests.rpn";
+    auto st = g_rpn.sync_parseFile(file);
+    g_rpn.stack.print("tests.rpn");
 
     REQUIRE( (st == rpn::WordDefinition::Result::ok) );
     REQUIRE( (18 == g_rpn.stack.depth() ) );
@@ -495,7 +545,7 @@ TEST_CASE( "other tests", "math" ) {
   {
     g_rpn.stack.clear();
     line = ("k_PI FLOOR k_PI CEIL");
-    auto st = g_rpn.parse(line);
+    auto st = g_rpn.sync_eval(line);
 
     REQUIRE( (st == rpn::WordDefinition::Result::ok) );
     REQUIRE( (2 == g_rpn.stack.depth() ) );
@@ -507,7 +557,7 @@ TEST_CASE( "other tests", "math" ) {
   {
     g_rpn.stack.clear();
     line = ("k_PI k_E MIN k_PI k_E MAX");
-    auto st = g_rpn.parse(line);
+    auto st = g_rpn.sync_eval(line);
 
     REQUIRE( (st == rpn::WordDefinition::Result::ok) );
     REQUIRE( (2 == g_rpn.stack.depth() ) );
@@ -524,7 +574,7 @@ TEST_CASE( "loop tests", "control" ) {
   {
     line = ("0 5 FOR i i 10 * NEXT .S");
     g_rpn.stack.clear();
-    auto st = g_rpn.parse(line);
+    auto st = g_rpn.sync_eval(line);
 
     REQUIRE( (st == rpn::WordDefinition::Result::ok) );
     REQUIRE( (5 == g_rpn.stack.depth() ) );
@@ -540,7 +590,7 @@ TEST_CASE( "loop tests", "control" ) {
   {
     line = ("0 5 FOR i 0 5 FOR j i 10 * j + NEXT NEXT .S");
     g_rpn.stack.clear();
-    auto st = g_rpn.parse(line);
+    auto st = g_rpn.sync_eval(line);
 
     REQUIRE( (st == rpn::WordDefinition::Result::ok) );
     REQUIRE( (25 == g_rpn.stack.depth() ) );
@@ -586,7 +636,7 @@ TEST_CASE( "loop tests", "control" ) {
   {
     line = ("0 5 FOR i 0 5 FOR j  0 j FOR k i 100 * j 10 * + k + NEXT NEXT NEXT");
     g_rpn.stack.clear();
-    auto st = g_rpn.parse(line);
+    auto st = g_rpn.sync_eval(line);
     g_rpn.stack.print("nested-for i,j,k");
 
     REQUIRE( (st == rpn::WordDefinition::Result::ok) );
@@ -660,7 +710,7 @@ TEST_CASE( "loop tests", "control" ) {
   {
     line = (": abc-1 FOR i i 6 * NEXT ;  0 5 abc-1");
     g_rpn.stack.clear();
-    auto st = g_rpn.parse(line);
+    auto st = g_rpn.sync_eval(line);
     g_rpn.stack.print("loop in defined word");
 
     REQUIRE( (st == rpn::WordDefinition::Result::ok) );
@@ -683,7 +733,7 @@ TEST_CASE( "loop tests", "control" ) {
   {
     line = (": abc-2 FOR i DUP2 FOR j i 10 * j + 3 ROLLDn NEXT  NEXT DROP2 ;  0 5 0 4 abc-2");
     g_rpn.stack.clear();
-    auto st = g_rpn.parse(line);
+    auto st = g_rpn.sync_eval(line);
     g_rpn.stack.print("nested-for (i,j) in defined word");
 
     REQUIRE( (st == rpn::WordDefinition::Result::ok) );
@@ -718,22 +768,22 @@ TEST_CASE( "loop tests", "control" ) {
   {
     g_rpn.stack.clear();
     line = (": sum-sq 0 SWAP 0 SWAP FOR i i i * + NEXT ;");
-    auto st = g_rpn.parse(line);
+    auto st = g_rpn.sync_eval(line);
     REQUIRE( (st == rpn::WordDefinition::Result::ok) );
 
     line = ("<true> TRACE 10 sum-sq <false> TRACE .S");
-    st = g_rpn.parse(line);
+    st = g_rpn.sync_eval(line);
     REQUIRE( (st == rpn::WordDefinition::Result::ok) );
     REQUIRE( (1 == g_rpn.stack.depth() ) );
     REQUIRE( (285 == g_rpn.stack.peek_double(1) ));
 
     line = (": word2 0 SWAP FOR i i 10 + sum-sq i + NEXT ;");
     /* 10 0 11 1 12 2 */
-    st = g_rpn.parse(line);
+    st = g_rpn.sync_eval(line);
     REQUIRE( (st == rpn::WordDefinition::Result::ok) );
 
     line = ("3 word2");
-    st = g_rpn.parse(line);
+    st = g_rpn.sync_eval(line);
     // 10 sum-sq 0 + (285)
     // 11 sum-sq 1 + (385)
     // 12 sum-sq 2 + (508)
@@ -753,14 +803,14 @@ TEST_CASE( "loop tests", "control" ) {
   {
     line = ("5 DO DUP 1 - DUP DUP 0 == UNTIL");
     g_rpn.stack.clear();
-    g_rpn.parse(line);
+    g_rpn.sync_eval(line);
   }
 
   // indefinite loop
   {
     line = ("5 3 DO DUP 1 - DUP DUP 0 == UNTIL");
     g_rpn.stack.clear();
-    g_rpn.parse(line);
+    g_rpn.sync_eval(line);
   }
 #endif
 
@@ -787,12 +837,12 @@ NEXT
 3 DROPn
 ;
 )";
-  auto st = g_rpn.parse(line);
+  auto st = g_rpn.sync_eval(line);
   REQUIRE( (st == rpn::WordDefinition::Result::ok) );
   REQUIRE( (0 == g_rpn.stack.depth() ) );
 
   line = ("5 5.5 0 bolt-circle");
-  st = g_rpn.parse(line);
+  st = g_rpn.sync_eval(line);
   REQUIRE( (st == rpn::WordDefinition::Result::ok) );
   REQUIRE( (5 == g_rpn.stack.depth() ) );
   {
@@ -815,7 +865,7 @@ NEXT
   }
 
   line = ("8 139.7 5 bolt-circle .S");
-  st = g_rpn.parse(line);
+  st = g_rpn.sync_eval(line);
   REQUIRE( (st == rpn::WordDefinition::Result::ok) );
   REQUIRE( ((5 + 8) == g_rpn.stack.depth() ) );
 
@@ -844,15 +894,16 @@ NEXT
 TEST_CASE( "object", "types" ) {
   std::string line;
   {
-    line = ("3.6 .\" abc\" ->OBJECT 2.8 \" def\" +");
+    line = ("3.6 .\" abc\" ->OBJECT 2.8 .\" def\" +");
     g_rpn.stack.clear();
-    g_rpn.parse(line);
+    auto st = g_rpn.sync_eval(line);
+    REQUIRE( (st == rpn::WordDefinition::Result::ok) );
   }
   
   {
     line = ("3.6");
     g_rpn.stack.clear();
-    auto st = g_rpn.parse(line);
+    auto st = g_rpn.sync_eval(line);
     auto &so = g_rpn.stack.peek(1);
     REQUIRE_THROWS_AS( dynamic_cast<StObject&>(so),
 		       std::bad_cast);
@@ -872,5 +923,48 @@ TEST_CASE( "double", "types" ) {
 TEST_CASE( "string", "types" ) {
 }
 
+TEST_CASE( "Math", "operators") {
+  std::string line;
+  {
+    line = ("3.6 4.3 +"); // float + float
+    g_rpn.stack.clear();
+    auto st = g_rpn.sync_eval(line);
+    REQUIRE( (st == rpn::WordDefinition::Result::ok) );
+    double dv = g_rpn.stack.peek_double(1);
+    REQUIRE( (1 == g_rpn.stack.depth() ) );
+    REQUIRE_THAT(dv, Catch::Matchers::WithinAbs((3.6 + 4.3), 0.000001));
+  }
+  
+  {
+    line = ("3 4.3 +"); // integer + float
+    g_rpn.stack.clear();
+    auto st = g_rpn.sync_eval(line);
+    REQUIRE( (st == rpn::WordDefinition::Result::ok) );
+    double dv = g_rpn.stack.peek_double(1);
+    REQUIRE( (1 == g_rpn.stack.depth() ) );
+    REQUIRE_THAT(dv, Catch::Matchers::WithinAbs((3 + 4.3), 0.000001));
+  }
+
+  {
+    line = ("3.6 4 +"); // float + integer
+    g_rpn.stack.clear();
+    auto st = g_rpn.sync_eval(line);
+    REQUIRE( (st == rpn::WordDefinition::Result::ok) );
+    double dv = g_rpn.stack.peek_double(1);
+    REQUIRE( (1 == g_rpn.stack.depth() ) );
+    REQUIRE_THAT(dv, Catch::Matchers::WithinAbs((3.6 + 4), 0.000001));
+  }
+
+  {
+    line = ("3 4 +"); // integer + integer
+    g_rpn.stack.clear();
+    auto st = g_rpn.sync_eval(line);
+    REQUIRE( (st == rpn::WordDefinition::Result::ok) );
+    int64_t iv = g_rpn.stack.peek_integer(1);
+    REQUIRE( (1 == g_rpn.stack.depth() ) );
+    REQUIRE_THAT(iv, Catch::Matchers::WithinAbs((3 + 4), 0.000001));
+  }
+
+}
 
 /* end of qinc/rpn-lang/tests/runtime-test.cpp */

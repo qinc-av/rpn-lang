@@ -106,6 +106,16 @@ NATIVE_WORD_DECL(logic, b_neg) {
   return rpn::WordDefinition::Result::ok;
 }
 
+NATIVE_WORD_DECL(logic, push_true) {
+  rpn.stack.push_boolean(true);
+  return rpn::WordDefinition::Result::ok;
+}
+
+NATIVE_WORD_DECL(logic, push_false) {
+  rpn.stack.push_boolean(false);
+  return rpn::WordDefinition::Result::ok;
+}
+
 void
 rpn::Interp::addLogicWords() {
   //    IF
@@ -127,6 +137,10 @@ rpn::Interp::addLogicWords() {
   addDefinition("AND", NATIVE_WORD_WDEF(logic, rpn::StrictTypeValidator::d2_integer_integer, b_and, nullptr));
   addDefinition("OR", NATIVE_WORD_WDEF(logic, rpn::StrictTypeValidator::d2_integer_integer, b_or, nullptr));
   addDefinition("XOR", NATIVE_WORD_WDEF(logic, rpn::StrictTypeValidator::d2_integer_integer, b_xor, nullptr));
+
+  addDefinition("<true>", NATIVE_WORD_WDEF(logic, rpn::StackSizeValidator::zero, push_true, nullptr));
+  addDefinition("<false>", NATIVE_WORD_WDEF(logic, rpn::StackSizeValidator::zero, push_false, nullptr));
+
 }
 
 
