@@ -354,37 +354,59 @@ Integer(const int64_t &v) : _v(v) {}
   int64_t _v;
 };
 
-}
-
-class XBoolean {
+class Boolean : public rpn::Stack::Object {
  public:
- XBoolean(const bool &v) : _v(v) {}
-  virtual operator std::string() const { return _v ? "<true>" : "<false>"; };
+  Boolean(const bool &v) : _v(v) {}
+  virtual std::unique_ptr<rpn::Stack::Object> deep_copy() const override { return std::make_unique<Boolean>(_v); };
+  virtual operator std::string() const override { return _v ? "<true>" : "<false>"; };
   operator bool() const { return _v; };
-  bool operator==(const XBoolean &rhs) const {
-    return _v == rhs._v;
+  virtual operator double() const override { return double(_v); };
+  virtual bool operator==(const Object &orhs) const override {
+    auto *rhs = OBJECTP_CAST(const Boolean)(&orhs);
+    return (rhs !=nullptr && _v == rhs->_v);
+  }
+  virtual bool operator>(const Object &orhs) const override {
+    auto &rhs = PEEK_CAST(const Boolean,orhs);
+    return (_v > rhs._v);
+  }
+  virtual bool operator<(const Object &orhs) const override {
+    auto &rhs = PEEK_CAST(const Boolean,orhs);
+    return (_v < rhs._v);
+  }
+  virtual std::string deparse() const override {
+    return std::string(*this);
   }
  private:
   bool _v;
 };
 
-class XString {
+class String : public rpn::Stack::Object {
  public:
-  XString(const XString &x): _v(x._v) {}
-  XString(const std::string &v) : _v(v) {}
+  String(const std::string &v) : _v(v) {}
   virtual operator std::string() const { return _v; };
-  bool operator==(const XString &rhs) const {
-    return _v == rhs._v;
+  virtual std::unique_ptr<rpn::Stack::Object> deep_copy() const override { return std::make_unique<String>(_v); };
+  virtual bool operator==(const Object &orhs) const override {
+    auto *rhs = OBJECTP_CAST(const String)(&orhs);
+    return (rhs !=nullptr && _v == rhs->_v);
   }
-  bool operator>(const XString &rhs) const {
-    return _v > rhs._v;
+  virtual bool operator>(const Object &orhs) const override {
+    auto &rhs = PEEK_CAST(const String,orhs);
+    return (_v > rhs._v);
   }
-  bool operator<(const XString &rhs) const {
-    return _v < rhs._v;
+  virtual bool operator<(const Object &orhs) const override {
+    auto &rhs = PEEK_CAST(const String,orhs);
+    return (_v < rhs._v);
+  }
+  virtual std::string deparse() const override {
+    std::string rv = ".\"";
+    rv += _v + "\"";
+    return rv;
   }
  private:
   std::string _v;
 };
+
+} // namespace stack
 
 #include <map>
 class XObject {
@@ -483,8 +505,8 @@ public:
 
 using StDouble = stack::Double;
 using StInteger = stack::Integer;
-using StBoolean = TStackObject<XBoolean>;
-using StString = TStackObject<XString>;
+using StBoolean = stack::Boolean;
+using StString = stack::String;
 using StObject = TStackObject<XObject>;
 using StArray = TStackObject<XArray>;
 

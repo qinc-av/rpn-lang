@@ -72,7 +72,7 @@ rpn::Stack::pop_boolean() {
   auto tos = pop();
   auto *typed = dynamic_cast<StBoolean*>(tos.get());
   if (typed) {
-    return typed->val();
+    return bool(*typed);
   }
   throw std::runtime_error("top of stack not boolean");
 }
@@ -82,7 +82,7 @@ rpn::Stack::pop_string() {
   auto tos = pop();
   auto *typed = dynamic_cast<StString*>(tos.get());
   if (typed) {
-    return typed->val();
+    return std::string(*typed);
   }
   throw std::runtime_error("top of stack not string");
 }
@@ -140,7 +140,7 @@ rpn::Stack::pop_as_boolean() {
   auto *ip = dynamic_cast<StInteger*>(raw);
 
   if (bp) {
-    val = bp->val();
+    val = *bp;
 
   } else if (ip) {
     val = int64_t(*ip) != 0;
@@ -149,7 +149,7 @@ rpn::Stack::pop_as_boolean() {
     val = double(*dp) != 0.;
 
   } else if (sp) {
-    val = (std::string(sp->val())!="");
+    val = (std::string(*sp)!="");
 
   }
   
@@ -170,13 +170,13 @@ rpn::Stack::peek(int n) {
 bool
 rpn::Stack::peek_boolean(int n) {
   auto const &sv = dynamic_cast<const StBoolean&>(peek(n));
-  return sv.val();
+  return sv;
 }
 
 std::string
 rpn::Stack::peek_string(int n) {
   auto const &sv = dynamic_cast<const StString&>(peek(n));
-  return sv.val();
+  return sv;
 }
 
 std::string
