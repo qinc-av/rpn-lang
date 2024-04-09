@@ -16,7 +16,8 @@
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
 
 #include "rpn.h"
-
+#include "src/fraction.h"
+#include "src/timecode.h"
 #include <cmath>
 
 rpn::Interp g_rpn;
@@ -891,10 +892,92 @@ NEXT
   }
 }
 
+#include "validator-tests.h"
+
+static const std::map<std::size_t,std::string> sk_hashMap = {
+  { typeid(StDouble).hash_code(), "Double" },
+  { typeid(StInteger).hash_code(), "Integer" },
+  { typeid(StBoolean).hash_code(), "Boolean" },
+  { typeid(StString).hash_code(), "String" },
+  { typeid(StObject).hash_code(), "Object" },
+  { typeid(StArray).hash_code(), "Array" },
+  { typeid(stack::Fraction).hash_code(), "Fraction" },
+  { typeid(stack::Timecode).hash_code(), "Timecode" },
+};
+
+TEST_CASE("validators", "strict-type") {
+  std::map<rpn::StrictTypeValidator,std::string> generators {
+    { rpn::StrictTypeValidator::d1_double, "12.34" },
+    { rpn::StrictTypeValidator::d1_integer, "1234" },
+    { rpn::StrictTypeValidator::d1_boolean, "<true>" },
+    { rpn::StrictTypeValidator::d1_object, "<true> .\" flag\" ->OBJ" },
+    { rpn::StrictTypeValidator::d1_string, ".\" string 1\"" },
+    { rpn::StrictTypeValidator::d1_array, "1. 2 .\" string\" 3 ->ARRAY" },
+    { rpn::StrictTypeValidator::d1_vec3, "12.34 23.45 34.56 ->VEC3" },
+    { rpn::StrictTypeValidator::d2_vec3_vec3, "1.2 2.3 3.4 ->VEC3 2.3 3.4 4.5 ->VEC3" },
+    { rpn::StrictTypeValidator::d2_double_double, "3.1415 1." },
+    { rpn::StrictTypeValidator::d2_double_integer, "2 3.1415" },
+    { rpn::StrictTypeValidator::d2_integer_double, "12.345 6" },
+    { rpn::StrictTypeValidator::d2_integer_integer, "2 3" },
+    { rpn::StrictTypeValidator::d2_boolean_boolean, "<true> <false>" },
+    { rpn::StrictTypeValidator::d2_vec3_double, "4.44 9.3 4.5 7.2 ->VEC3" },
+    { rpn::StrictTypeValidator::d2_double_vec3, "9. 8. 7. ->VEC3 5.55" },
+    { rpn::StrictTypeValidator::d2_vec3_integer, "7 4. 5. 6. ->VEC3" },
+    { rpn::StrictTypeValidator::d2_integer_vec3, "8. 7. 6. ->VEC3 3" },
+    { rpn::StrictTypeValidator::d2_array_any, "<true> <true> 1 ->ARRAY" },
+    { rpn::StrictTypeValidator::d2_any_array, "1 2 3 3 ->ARRAY 4.5" },
+    { rpn::StrictTypeValidator::d2_string_any, "<true> .\" flag\"" },
+    { rpn::StrictTypeValidator::d2_any_string, ".\" abc\" <true> .\" flag\" ->OBJ" },
+    { rpn::StrictTypeValidator::d2_object_any, "<true> .\" flag\" ->OBJ DUP" },
+    { rpn::StrictTypeValidator::d2_any_object, "<true> .\" flag\" ->OBJ DUP" },
+    { rpn::StrictTypeValidator::d3_double_double_double, "2.3 2.3 4." },
+    { rpn::StrictTypeValidator::d3_integer_double_double, "3. 4. 2" },
+    { rpn::StrictTypeValidator::d3_double_integer_double, "2. 3 4." },
+    { rpn::StrictTypeValidator::d3_double_double_integer, "4 2. 3." },
+    { rpn::StrictTypeValidator::d3_integer_integer_integer, "2 3 4" },
+    { rpn::StrictTypeValidator::d3_double_integer_integer, "2 3 4." },
+    { rpn::StrictTypeValidator::d3_integer_double_integer, "2 3. 4" },
+    { rpn::StrictTypeValidator::d3_integer_integer_double, "2. 3 4" },
+    { rpn::StrictTypeValidator::d3_any_any_boolean, "<true> 1 .\" string\"" }, 
+    { rpn::StrictTypeValidator::d3_object_string_any, "99 .\" bottles\" 44 .\" xyz\" ->OBJ" },
+    { rpn::StrictTypeValidator::d3_string_any_object, ".\" football\" .\" life\" ->OBJ 42 .\" meaning\"" },
+    { rpn::StrictTypeValidator::d4_double_double_double_integer, "5 1.2 2.3 3.4" },
+    { rpn::StrictTypeValidator::d4_integer_double_double_double, "2.2 3.3 4.4 5" },
+    { timecode_validator::d1_tc, "60000 1001 ->FRAC 12345 ->TC" },
+    { timecode_validator::d2_tc_tc, "60000 1001 ->FRAC 12345 ->TC 60000 1001 ->FRAC 145 ->TC" },
+    { timecode_validator::d2_int_tc, "60000 1001 ->FRAC 4444 ->TC 17" },
+    { timecode_validator::d2_tc_int, "120 60000 1001 ->FRAC 12345 ->TC" },
+    { frac_validator::d1_frac, "2 3 ->FRAC" },
+    { frac_validator::d2_frac_frac, "1 2 ->FRAC 0.75 ->FRAC" },
+    { frac_validator::d2_frac_int, "7 1 9 ->FRAC" },
+    { frac_validator::d2_frac_double, "3.6 0.9 ->FRAC" },
+    { frac_validator::d2_int_frac, "0.1 ->FRAC 7" },
+    { frac_validator::d2_double_frac, "0.2 ->FRAC 2.4" },
+    { frac_validator::d5_int_int_int_int_frac, "60000 1001 ->FRAC 6 5 4 3" }
+  };
+
+  for(const auto &g : generators) {
+    g_rpn.stack.clear();
+    INFO("==> " << g.first.to_string() << " '" << g.second << "'");
+    g_rpn.sync_eval(g.second);
+    CHECK(g.first(g_rpn.stack.types(), g_rpn.stack) == true);
+  }
+
+  for(const auto &vt : sk_validatorTests) {
+    const auto &g = generators.find(vt.first.second);
+    REQUIRE (g != generators.end());
+    g_rpn.stack.clear();
+    g_rpn.sync_eval(g->second);
+    INFO("==>(" << vt.first.first.to_string() << " / " << vt.first.second.to_string() << ") :=> '" << g->second <<"'");
+    CHECK(vt.first.first(g_rpn.stack.types(), g_rpn.stack) == vt.second);
+  }
+  
+}
+
 TEST_CASE( "object", "types" ) {
   std::string line;
   {
-    line = ("3.6 .\" abc\" ->OBJECT 2.8 .\" def\" +");
+    line = ("3.6 .\" abc\" ->OBJ 2.8 .\" def\" +");
     g_rpn.stack.clear();
     auto st = g_rpn.sync_eval(line);
     REQUIRE( (st == rpn::WordDefinition::Result::ok) );

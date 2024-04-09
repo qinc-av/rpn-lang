@@ -57,7 +57,7 @@ NATIVE_WORD_DECL(t_object, to_object) {
   std::string ident = rpn.stack.pop_string();
   auto val = rpn.stack.pop();
   StObject obj;
-  obj.inner().add_value(ident,*val.get());
+  obj.add_value(ident,*val.get());
   rpn.stack.push(obj);
   return rv;
 }
@@ -73,7 +73,7 @@ NATIVE_WORD_DECL(t_object, add_string_any_object) {
   auto val = rpn.stack.pop();
   auto &sob = rpn.stack.peek(1);
   StObject &obj = PEEK_CAST(StObject,sob);
-  obj.inner().add_value(ident,*val.get());
+  obj.add_value(ident,*val.get());
   return rv;
 }
 
@@ -86,12 +86,23 @@ NATIVE_WORD_DECL(t_object, add_object_string_any) {
  * Array
  */
 NATIVE_WORD_DECL(t_array, to_array) {
-  rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::implementation_error;
+  rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
+  size_t n = size_t(rpn.stack.pop_integer());
+  StArray array;
+  for(size_t i=0; i<n; i++) {
+    array.add_value(*rpn.stack.pop());
+  }
+  rpn.stack.push(array);
   return rv;
 }
 
 NATIVE_WORD_DECL(t_array, array_to) {
-  rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::implementation_error;
+  rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
+  auto sob = rpn.stack.pop();
+  const auto &v = PEEK_CAST(StArray,*sob).val();
+  for(auto ri = v.rbegin(); ri != v.rend(); ri++) {
+    rpn.stack.push(**ri);
+  }
   return rv;
 }
 
@@ -291,10 +302,9 @@ rpn::Interp::addTypeWords() {
   addDefinition("->FLOAT", NATIVE_WORD_WDEF(types, rpn::StrictTypeValidator::d1_integer, to_float, nullptr));
   addDefinition("->STRING", NATIVE_WORD_WDEF(types, rpn::StackSizeValidator::one, to_string, nullptr));
 
-  addDefinition("->OBJECT", NATIVE_WORD_WDEF(t_object, rpn::StrictTypeValidator::d2_string_any, to_object, nullptr));
+  addDefinition("->OBJ", NATIVE_WORD_WDEF(t_object, rpn::StrictTypeValidator::d2_string_any, to_object, nullptr));
   addDefinition("OBJ->", NATIVE_WORD_WDEF(t_object, rpn::StrictTypeValidator::d1_object, object_to, nullptr));
   addDefinition("->ARRAY", NATIVE_WORD_WDEF(t_array, rpn::StackSizeValidator::ntos, to_array, nullptr));
-  addDefinition("ARRAY->", NATIVE_WORD_WDEF(t_array, rpn::StrictTypeValidator::d1_array, array_to, nullptr));
   addDefinition("OBJ->", NATIVE_WORD_WDEF(t_array, rpn::StrictTypeValidator::d1_array, array_to, nullptr));
 
   addDefinition("+", NATIVE_WORD_WDEF(t_object, rpn::StrictTypeValidator::d3_object_string_any, add_object_string_any, nullptr));

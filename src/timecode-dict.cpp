@@ -219,9 +219,9 @@ rpn::Interp::addTimecodeWords() {
   rpn.addDefinition("->FRAMES", NATIVE_WORD_WDEF(timecode, timecode_validator::d1_tc, to_frames, nullptr));
 }
 
-const rpn::StrictTypeValidator timecode_validator::d1_tc({typeid(stack::Timecode).hash_code()});
-const rpn::StrictTypeValidator timecode_validator::d2_tc_tc({typeid(stack::Timecode).hash_code(),typeid(stack::Timecode).hash_code()});
-const rpn::StrictTypeValidator timecode_validator::d2_int_tc({typeid(StInteger).hash_code(),typeid(stack::Timecode).hash_code()});
-const rpn::StrictTypeValidator timecode_validator::d2_tc_int({typeid(stack::Timecode).hash_code(),typeid(StInteger).hash_code()});
+const rpn::StrictTypeValidator timecode_validator::d1_tc({typeid(stack::Timecode).hash_code()}, "d1_tc");
+const rpn::StrictTypeValidator timecode_validator::d2_tc_tc({typeid(stack::Timecode).hash_code(),typeid(stack::Timecode).hash_code()}, "d2_tc_tc");
+const rpn::StrictTypeValidator timecode_validator::d2_int_tc({typeid(StInteger).hash_code(),typeid(stack::Timecode).hash_code()}, "d2_int_tc");
+const rpn::StrictTypeValidator timecode_validator::d2_tc_int({typeid(stack::Timecode).hash_code(),typeid(StInteger).hash_code()}, "d2_tc_int");
 
 /* end of QInc/Projects/color-calc/src/libs/rpn-lang/src/timecode-dict.cpp */

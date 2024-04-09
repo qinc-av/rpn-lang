@@ -23,14 +23,24 @@ NATIVE_WORD_DECL(logic, ifte) {
 NATIVE_WORD_DECL(logic, equal) {
   auto s1 = rpn.stack.pop();
   auto s2 = rpn.stack.pop();
-  rpn.stack.push_boolean(*s1 == *s2);
+  try {
+    bool val = (*s1 == *s2);
+    rpn.stack.push_boolean(val);
+  } catch (...) {
+    rpn.stack.push_boolean(false);
+  }
   return rpn::WordDefinition::Result::ok;
 }
 
 NATIVE_WORD_DECL(logic, not_equal) {
   auto s1 = rpn.stack.pop();
   auto s2 = rpn.stack.pop();
-  rpn.stack.push_boolean(!(*s1 == *s2));
+  try {
+    bool val = !(*s1 == *s2);
+    rpn.stack.push_boolean(val);
+  } catch (...) {
+    rpn.stack.push_boolean(false);
+  }
   return rpn::WordDefinition::Result::ok;
 }
 

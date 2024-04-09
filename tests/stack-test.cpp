@@ -505,7 +505,7 @@ rpn_main(int ac, char **av) {
   n=g_stack.depth();
   for(unsigned i=0; i<n/2; i++) {
     std::string key="v"+std::to_string(i);
-    obj.inner().add_value(key, *g_stack.pop());
+    obj.add_value(key, *g_stack.pop());
   }
   g_stack.push(obj);
   g_stack.rolld();
@@ -514,7 +514,7 @@ rpn_main(int ac, char **av) {
   StArray arr;
   n=g_stack.depth();
   for(unsigned i=0; i<(n-1); i++) {
-    arr.inner().add_value(*g_stack.pop());
+    arr.add_value(*g_stack.pop());
   }
   g_stack.push(arr);
   g_stack.print("array");

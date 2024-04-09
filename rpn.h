@@ -120,7 +120,10 @@ namespace rpn {
   class StackValidator {
   public:
     virtual bool operator()(const std::vector<size_t> &types, rpn::Stack &stack) const =0;
+    const std::string to_string() const { return _name; }
   protected:
+  StackValidator(const std::string &name) : _name(name) {};
+  std::string _name;
   };
 
   class StrictTypeValidator : public StackValidator {
@@ -174,8 +177,10 @@ namespace rpn {
     static const size_t v_anytype;
     //    static const size_t v_numbertype;  // is harder than it sounds...
 
-    StrictTypeValidator(const std::vector<size_t> &types) : _types(types) {}
+  StrictTypeValidator(const std::vector<size_t> &types, const std::string name) : StackValidator(name),  _types(types) {}
     virtual bool operator()(const std::vector<size_t> &types, rpn::Stack &stack) const override;
+    bool operator<(const StrictTypeValidator &rhs) const;
+    //    std::string to_string() const override;
   private:
     const std::vector<size_t> _types;
   };
@@ -188,8 +193,9 @@ namespace rpn {
     static const StackSizeValidator three;
     static const StackSizeValidator ntos; // n top of stack
     
-    StackSizeValidator(size_t n) : _n(n) {}
+  StackSizeValidator(size_t n) : StackValidator(std::string("StackSizeValidator") + ":" + std::to_string(n)), _n(n) {}
     virtual bool operator()(const std::vector<size_t> &types, rpn::Stack &stack) const override;
+    //    std::string to_string() const override;
   private:
     size_t _n;
   };
@@ -309,8 +315,8 @@ class Double : public rpn::Stack::Object {
   virtual operator std::string() const override { return rpn::to_string(_v); };
   operator double() const override { return _v; };
   virtual bool operator==(const Object &orhs) const override {
-    auto *rhs = OBJECTP_CAST(const Double)(&orhs);
-    return (rhs !=nullptr && _v == rhs->_v);
+    const auto &rhs = PEEK_CAST(const Double,orhs);
+    return (_v == rhs._v);
   }
   virtual bool operator>(const Object &orhs) const override {
     auto &rhs = PEEK_CAST(const Double,orhs);
@@ -334,17 +340,17 @@ Integer(const int64_t &v) : _v(v) {}
   virtual operator std::string() const override { return std::to_string(_v); };
   virtual operator double() const override { return double(_v); };
   virtual bool operator==(const Object &orhs) const override {
-    auto *rhs = OBJECTP_CAST(const Integer)(&orhs);
-    return (rhs !=nullptr && _v == rhs->_v);
+    const auto &rhs = PEEK_CAST(const Integer,orhs);
+    return (_v == rhs._v);
   }
   operator int64_t() const { return _v; };
   operator uint64_t() const { return _v; };
   virtual bool operator>(const Object &orhs) const override {
-    auto &rhs = PEEK_CAST(const Integer,orhs);
+    const auto &rhs = PEEK_CAST(const Integer,orhs);
     return (_v > rhs._v);
   }
   virtual bool operator<(const Object &orhs) const override {
-    auto &rhs = PEEK_CAST(const Integer,orhs);
+    const auto &rhs = PEEK_CAST(const Integer,orhs);
     return (_v < rhs._v);
   }
   virtual std::string deparse() const override {
@@ -362,15 +368,15 @@ class Boolean : public rpn::Stack::Object {
   operator bool() const { return _v; };
   virtual operator double() const override { return double(_v); };
   virtual bool operator==(const Object &orhs) const override {
-    auto *rhs = OBJECTP_CAST(const Boolean)(&orhs);
-    return (rhs !=nullptr && _v == rhs->_v);
+    const auto &rhs = PEEK_CAST(const Boolean,orhs);
+    return (_v == rhs._v);
   }
   virtual bool operator>(const Object &orhs) const override {
-    auto &rhs = PEEK_CAST(const Boolean,orhs);
+    const auto &rhs = PEEK_CAST(const Boolean,orhs);
     return (_v > rhs._v);
   }
   virtual bool operator<(const Object &orhs) const override {
-    auto &rhs = PEEK_CAST(const Boolean,orhs);
+    const auto &rhs = PEEK_CAST(const Boolean,orhs);
     return (_v < rhs._v);
   }
   virtual std::string deparse() const override {
@@ -383,11 +389,11 @@ class Boolean : public rpn::Stack::Object {
 class String : public rpn::Stack::Object {
  public:
   String(const std::string &v) : _v(v) {}
-  virtual operator std::string() const { return _v; };
+  virtual operator std::string() const override { return _v; };
   virtual std::unique_ptr<rpn::Stack::Object> deep_copy() const override { return std::make_unique<String>(_v); };
   virtual bool operator==(const Object &orhs) const override {
-    auto *rhs = OBJECTP_CAST(const String)(&orhs);
-    return (rhs !=nullptr && _v == rhs->_v);
+    const auto &rhs = PEEK_CAST(const String,orhs);
+    return (_v == rhs._v);
   }
   virtual bool operator>(const Object &orhs) const override {
     auto &rhs = PEEK_CAST(const String,orhs);
@@ -406,29 +412,32 @@ class String : public rpn::Stack::Object {
   std::string _v;
 };
 
-} // namespace stack
-
-#include <map>
-class XObject {
+class Object : public rpn::Stack::Object {
 public:
-  XObject() = default;
-  XObject(const XObject &v)  {
+  Object() = default;
+  Object(const Object &v)  {
     for(auto const &m : v._v) {
       _v.emplace(m.first, m.second->deep_copy());
     }
   }
-  bool operator==(const XObject &rhs) const {
+  virtual std::unique_ptr<rpn::Stack::Object> deep_copy() const override {
+    return std::make_unique<stack::Object>(*this);
+  }
+  virtual bool operator==(const rpn::Stack::Object &orhs) const override {
+    const auto &rhs = PEEK_CAST(const Object,orhs);
     bool rv = _v.size() == rhs._v.size();
     for(auto i=_v.cbegin(), j=rhs._v.cbegin(); rv && i!= _v.cend(); i++,j++) {
       rv &= (i->first == j->first) && (*(i->second) == *(j->second));
     }
     return rv;
   }
-  bool operator>(const XObject &rhs) const {
+  virtual bool operator>(const rpn::Stack::Object &orhs) const override {
+    auto &rhs = PEEK_CAST(const stack::Object,orhs);
     // XXX-ELH: todo
     return false;
   }
-  bool operator<(const XObject &rhs) const {
+  virtual bool operator<(const rpn::Stack::Object &orhs) const override {
+    auto &rhs = PEEK_CAST(const stack::Object,orhs);
     // XXX-ELH: todo
     return false;
   }
@@ -447,7 +456,7 @@ public:
       throw std::runtime_error(err + name + ")");
     }
   }
-  virtual operator std::string() const {
+  virtual operator std::string() const override {
     std::string rv = "{";
     for(auto const &m : _v) {
       rv += m.first;
@@ -458,38 +467,52 @@ public:
     rv += "}";
     return rv;
   };
+  virtual std::string deparse() const override {
+    // XXX-ELH: todo
+    return "n/a";
+  }
   const auto &val() const { return _v; };
 protected:
   std::map<std::string,std::unique_ptr<rpn::Stack::Object>> _v;
 };
 
-class XArray {
+class Array : public rpn::Stack::Object {
 public:
-  XArray() = default;
-  XArray(const XArray &a)  {
+  Array() = default;
+  Array(const Array &a)  {
     for(auto const &e : a._v) {
       _v.push_back(e->deep_copy());
     }
   }
-  bool operator==(const XArray &rhs) const {
+  virtual std::unique_ptr<rpn::Stack::Object> deep_copy() const override {
+    return std::make_unique<Array>(*this);
+  }
+  virtual bool operator==(const rpn::Stack::Object &orhs) const override {
+    const auto &rhs = PEEK_CAST(const Array,orhs);
     bool rv = _v.size() == rhs._v.size();
     for(auto i=_v.cbegin(), j=rhs._v.cbegin(); rv && i!= _v.cend(); i++,j++) {
       rv &= (*i == *j);
     }
     return rv;
   }
-  bool operator>(const XArray &rhs) const {
+  virtual bool operator>(const rpn::Stack::Object &orhs) const override {
+    const auto &rhs = PEEK_CAST(const Array,orhs);
     // XXX-ELH: todo
     return false;
   }
-  bool operator<(const XArray &rhs) const {
+  virtual bool operator<(const rpn::Stack::Object &orhs) const override {
+    const auto &rhs = PEEK_CAST(const Array,orhs);
     // XXX-ELH: todo
     return false;
+  }
+  virtual std::string deparse() const override {
+    // XXX-ELH: todo
+    return "n/a";
   }
   void add_value(const rpn::Stack::Object &val) {
     _v.push_back(val.deep_copy());
   }
-  virtual operator std::string() const {
+  virtual operator std::string() const override {
     std::string rv = "[";
     for(auto const &e : _v) {
       rv += e->to_string();
@@ -502,13 +525,14 @@ public:
  protected:
   std::vector<std::unique_ptr<rpn::Stack::Object>> _v;
 };
+} // namespace stack
 
 using StDouble = stack::Double;
 using StInteger = stack::Integer;
 using StBoolean = stack::Boolean;
 using StString = stack::String;
-using StObject = TStackObject<XObject>;
-using StArray = TStackObject<XArray>;
+using StObject = stack::Object;
+using StArray = stack::Array;
 
 class StVec3 : public rpn::Stack::Object {
 public:
