@@ -64,7 +64,10 @@ namespace stack {
 };
 
 } // namespace stack
-
+namespace math_validator {
+  extern const rpn::StrictTypeValidator d1_complex;
+}
+const rpn::StrictTypeValidator math_validator::d1_complex({typeid(stack::Complex).hash_code()}, "d1_complex");
 
 /****************************************
  * math words
@@ -228,6 +231,9 @@ MATH_UNARY_FUNC(floor);
 MATH_UNARY_FUNC(log);
 MATH_UNARY_FUNC(log10);
 
+MATH_UNARY_FUNC(deg_to_rad);
+MATH_UNARY_FUNC(rad_to_deg);
+
 MATH_GENERATE(pi, M_PI);
 MATH_GENERATE(e, M_E);
 MATH_GENERATE(rand, rand());
@@ -250,6 +256,21 @@ NATIVE_WORD_DECL(math,quadratic) {
     rpn.stack.push_double(x1);
     rpn.stack.push_double(x2);
   }
+  return rpn::WordDefinition::Result::ok;
+}
+
+NATIVE_WORD_DECL(math,to_complex) {
+  double im = rpn.stack.pop_as_double();
+  double re = rpn.stack.pop_as_double();
+  rpn.stack.push(stack::Complex(re, im));
+  return rpn::WordDefinition::Result::ok;
+}
+
+NATIVE_WORD_DECL(math,complex_to) {
+  auto sob = rpn.stack.pop();
+  const auto &cx = PEEK_CAST(stack::Complex,*sob);
+  rpn.stack.push_double(cx.real());
+  rpn.stack.push_double(cx.imag());
   return rpn::WordDefinition::Result::ok;
 }
 
@@ -310,6 +331,9 @@ rpn::Interp::addMathWords() {
   ADD_MATH_UNARY_NUMBER_WDEF(rpn, "LOG", log10, log10);
   ADD_MATH_UNARY_NUMBER_WDEF(rpn, "CHS", change_sign, ichange_sign);
 
+  ADD_MATH_UNARY_NUMBER_WDEF(rpn, "D->R", deg_to_rad, deg_to_rad);
+  ADD_MATH_UNARY_NUMBER_WDEF(rpn, "R->D", rad_to_deg, rad_to_deg);
+
   // these don't really make sense on Integers, but maybe we should
   // allow it anyway?
   addDefinition("ROUND", MATH_WORD_WDEF(rpn::StrictTypeValidator::d1_double, round));
@@ -317,6 +341,8 @@ rpn::Interp::addMathWords() {
   addDefinition("FLOOR", MATH_WORD_WDEF(rpn::StrictTypeValidator::d1_double, floor));
 
   ADD_NATIVE_3_NUMBER_WDEF(math, rpn, "QUAD", quadratic, quadratic, nullptr);
+  ADD_NATIVE_2_NUMBER_WDEF(math, rpn, "->COMPLEX", to_complex, to_complex, nullptr);
+  addDefinition("OBJ->", MATH_WORD_WDEF(math_validator::d1_complex, complex_to));
 
   addDefinition("k_PI", MATH_CONSTANT_WDEF(pi));
   addDefinition("k_E", MATH_CONSTANT_WDEF(e));

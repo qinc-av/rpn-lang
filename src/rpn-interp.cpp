@@ -495,6 +495,22 @@ NATIVE_WORD_DECL(private, ct_FOR) {
   return rv;
 }
 
+NATIVE_WORD_DECL(private, deparse) { // not really private
+  rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
+  std::string eval;
+  auto obj = rpn.stack.pop();
+  eval = obj->deparse();
+  rpn.stack.push_string(eval);
+  return rv;
+}
+
+NATIVE_WORD_DECL(private, eval) { // not really private
+  rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
+  std::string eval = rpn.stack.pop_string();
+  rpn.sync_eval(eval);
+  return rv;
+}
+
 rpn::WordDefinition::Result
 rpn::Interp::Privates::start_compile(CompileType t, bool needIdent) {
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
@@ -574,6 +590,8 @@ rpn::Interp::Privates::add_private_words() {
   _rtDictionary.emplace("FOR", rpn::WordDefinition { rpn::StrictTypeValidator::d2_integer_integer, NATIVE_WORD_FN(private, FOR), this });
   _rtDictionary.emplace("TRACE", rpn::WordDefinition { rpn::StrictTypeValidator::d1_boolean, NATIVE_WORD_FN(private, TRACE), this });
   _rtDictionary.emplace("WORDLIST", rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, WORDLIST), this });
+  _rtDictionary.emplace("DEPARSE", rpn::WordDefinition { rpn::StackSizeValidator::one, NATIVE_WORD_FN(private, deparse), this });
+  _rtDictionary.emplace("EVAL", rpn::WordDefinition { rpn::StrictTypeValidator::d1_string, NATIVE_WORD_FN(private, eval), this });
 
   _rtDictionary.emplace("TRUE", rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, BOOL_TRUE), this });
   _rtDictionary.emplace("FALSE", rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, BOOL_FALSE), this });

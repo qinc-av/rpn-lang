@@ -404,7 +404,7 @@ class String : public rpn::Stack::Object {
     return (_v < rhs._v);
   }
   virtual std::string deparse() const override {
-    std::string rv = ".\"";
+    std::string rv = ".\" ";
     rv += _v + "\"";
     return rv;
   }
@@ -506,11 +506,18 @@ public:
     return false;
   }
   virtual std::string deparse() const override {
-    // XXX-ELH: todo
-    return "n/a";
+    std::string rv;
+    for(const auto &e : _v) {
+      rv += e->deparse() + " ";
+    }
+    rv += std::to_string(_v.size()) + " ->ARRAY";
+    return rv;
   }
   void add_value(const rpn::Stack::Object &val) {
     _v.push_back(val.deep_copy());
+  }
+  void reverse() {
+    std::reverse(_v.begin(), _v.end());
   }
   virtual operator std::string() const override {
     std::string rv = "[";
