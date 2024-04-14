@@ -203,7 +203,7 @@ static double atan_deg(double a) {
 MATH_UNARY_FUNC(atan_deg);
 
 static double ln2(double a) {
-  return log(a)/0.69314718056; // ln(2)
+  return log(a)/log(2.);
 }
 MATH_UNARY_FUNC(ln2);
 
