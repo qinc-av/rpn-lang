@@ -32,6 +32,11 @@ rpn::to_string(const double &dv) {
   if (isfinite(dv)) {
     double fp = std::round(sk_precision*(fabs(dv) - abs((int)dv)))/sk_precision;
     int ip = int(dv);
+    if (fp == std::ceil(fp)) {
+      // if fp rounds to 1.0; we need to add to integer part
+      ip += fp;
+      fp = 0.;
+    }
     char frac[100];
     const char *sign = (dv<0 && abs(ip)==0) ? "-" : "";
     snprintf(frac, sizeof(frac),"%.*g", sk_decimals, fp);
