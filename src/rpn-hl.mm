@@ -25,6 +25,10 @@
   return self;
 }
 
+- (rpn::Interp &) rpnInterp {
+  return *_rpn;
+}
+
 - (void) eval:(NSString*)nsline completionHandler:(void(^)(RpnResult result))completionHandler {
   std::string line = [nsline UTF8String];
   _rpn->eval(line, [=](rpn::WordDefinition::Result res) -> void {

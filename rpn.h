@@ -45,7 +45,6 @@ namespace rpn {
       virtual operator double() const { return std::nan(""); };
       //      virtual operator int64_t() const =0;
       virtual std::string deparse() const =0;
-      //      virtual std::unique_ptr<Object> deep_copy() const =0;
       std::string to_string() const { return static_cast<std::string>(*this); }
     };
 

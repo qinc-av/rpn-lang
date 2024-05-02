@@ -43,6 +43,7 @@ typedef NS_ENUM(NSInteger, RpnResult) {
 - (BOOL) wordExists:(NSString *)word;
 - (NSString*) status;
 - (NSArray<NSString*>*) displayStack;
+- (rpn::Interp &) rpnInterp;
 @end
 
 /* C++ version */
@@ -63,6 +64,7 @@ class interp {
   void eval(std::string line, std::function<void(Result)>completionHandler=nullCompletionHandler);
   void parseFile(const std::string &path, std::function<void(Result)>completionHandler=nullCompletionHandler);
   std::vector<std::string> stackItems();
+  rpn::Interp &rpnInterp() const { return *_interp; }
  private:
   rpn::Interp *_interp;
 } SWIFT_IMMORTAL_REFERENCE;

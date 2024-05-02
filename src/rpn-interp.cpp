@@ -20,32 +20,23 @@
 
 #include <cmath>
 #include <algorithm>
+#include <format>
 
 #include "../rpn.h"
 
-// https://stackoverflow.com/a/4247516
 static int sk_decimals=10;
 static double sk_precision=10000000000;
 
 std::string
 rpn::to_string(const double &dv) {
-  if (isfinite(dv)) {
-    double fp = std::round(sk_precision*(fabs(dv) - abs((int)dv)))/sk_precision;
-    int ip = int(dv);
-    if (fp == std::ceil(fp)) {
-      // if fp rounds to 1.0; we need to add to integer part
-      ip += fp;
-      fp = 0.;
-    }
-    char frac[100];
-    const char *sign = (dv<0 && abs(ip)==0) ? "-" : "";
-    snprintf(frac, sizeof(frac),"%.*g", sk_decimals, fp);
-    char strval[100];
-    snprintf(strval, sizeof(strval), "%s%d%s", sign, ip, frac+1); // skip the leading 0
-    return strval;
-  } else {
-    return std::to_string(dv);
+  double dvr = std::round(sk_precision*(dv))/sk_precision;
+  double intpart;
+
+  std::string rv = std::format("{}", dvr);
+  if (modf(dvr, &intpart) == 0.0) {
+    rv += ".";
   }
+  return rv;
 }
 
 static std::string::size_type

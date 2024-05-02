@@ -65,8 +65,8 @@ q::Fraction::Fraction(double val) {    // find nearest fraction
     if (i & 1) {  // odd step: add multiple of low to high
       double test = testHigh / testLow;
       int count = (int)test;    // "N"
-      int num = (count + 1) * low._numerator + high._numerator;
-      int denom = (count + 1) * low._denominator + high._denominator;
+      int64_t num = (count + 1) * low._numerator + high._numerator;
+      int64_t denom = (count + 1) * low._denominator + high._denominator;
       if ((num > 0x8000) ||
 	  (denom > 0x10000))
 	break;
@@ -77,8 +77,8 @@ q::Fraction::Fraction(double val) {    // find nearest fraction
     } else {  // even step: add multiple of high to low
       double test = testLow / testHigh;
       int count = (int)test;     // "N"
-      int num = low._numerator + (count + 1) * high._numerator;
-      int denom = low._denominator + (count + 1) * high._denominator;
+      int64_t num = low._numerator + (count + 1) * high._numerator;
+      int64_t denom = low._denominator + (count + 1) * high._denominator;
       if ((num > 0x10000) ||
 	  (denom > 0x10000))
 	break;
