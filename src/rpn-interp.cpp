@@ -297,7 +297,18 @@ Progn::eval_lambda(rpn::Interp &rpn) {
       }
 
     } else {
-      rv = _p.eval(*wi, rest);
+      if (*wi == ".\"") {
+        // XXX-ELH: special treatment for the '."' word - we need 'rest' to contain the next word from the wordlist
+        std::string word = *wi++;
+        if (wi != _wordlist.cend()) {
+          rest = *wi;
+        }
+        rv = _p.eval(word, rest);
+        rest = ""; // and reset
+
+      } else {
+        rv = _p.eval(*wi, rest);
+      }
 
     }
   }
@@ -467,7 +478,7 @@ NATIVE_WORD_DECL(private, ct_DQUOTE) {
   auto pos = nextWord(literal, rest, "\"");
   if (pos != std::string::npos) {
     p->_ctVprogn.back().addWord(".\"");
-    p->_ctVprogn.back().addWord(literal);
+    p->_ctVprogn.back().addWord(literal + '"');
   } else {
     rv = rpn::WordDefinition::Result::parse_error;
     rest = literal; // reset buffer for error messages and diagnostics
@@ -988,7 +999,7 @@ const rpn::StrictTypeValidator rpn::StrictTypeValidator::d3_integer_integer_doub
 
 const rpn::StrictTypeValidator rpn::StrictTypeValidator::d3_object_string_any({typeid(StObject).hash_code(),typeid(StString).hash_code(),rpn::StrictTypeValidator::v_anytype},"d3_object_string_any");
 const rpn::StrictTypeValidator rpn::StrictTypeValidator::d3_string_any_object({typeid(StString).hash_code(),rpn::StrictTypeValidator::v_anytype,typeid(StObject).hash_code()},"d3_string_any_object");
-const rpn::StrictTypeValidator rpn::StrictTypeValidator::d3_any_any_boolean({rpn::StrictTypeValidator::v_anytype, rpn::StrictTypeValidator::v_anytype, typeid(StBoolean).hash_code()} ,"d3_any_any_boolean");
+const rpn::StrictTypeValidator rpn::StrictTypeValidator::d3_boolean_any_any({typeid(StBoolean).hash_code(), rpn::StrictTypeValidator::v_anytype, rpn::StrictTypeValidator::v_anytype} ,"d3_any_any_boolean");
 
 const rpn::StrictTypeValidator rpn::StrictTypeValidator::d4_double_double_double_integer({typeid(StDouble).hash_code(),typeid(StDouble).hash_code(),typeid(StDouble).hash_code(),typeid(StInteger).hash_code()},"d4_double_double_double_integer");
 const rpn::StrictTypeValidator rpn::StrictTypeValidator::d4_integer_double_double_double({typeid(StInteger).hash_code(),typeid(StDouble).hash_code(),typeid(StDouble).hash_code(),typeid(StDouble).hash_code()},"d4_integer_double_double_double");
