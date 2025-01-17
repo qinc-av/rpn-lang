@@ -69,37 +69,4 @@
 }
 @end
 
-/***********************************************************************
- * C++ version
- */
-interp::interp() : _interp(new rpn::Interp) {
-}
-interp::~interp() {
-  delete _interp;
-}
-
-void
-interp::eval(std::string line, std::function<void(Result)>completionHandler) {
-  _interp->eval(line, [&](rpn::WordDefinition::Result r1) {
-      completionHandler((Result)r1);
-    });
-}
-
-void
-interp::parseFile(const std::string &path, std::function<void(Result)>completionHandler) {
-  _interp->parseFile(path, [&](rpn::WordDefinition::Result r1) {
-      completionHandler((Result)r1);
-    });
-}
-
-std::vector<std::string>
-interp::stackItems() {
-  std::vector<std::string> rv;
-  size_t n = _interp->stack.depth();
-  for(size_t i=0; i<n; i++) {
-    rv.push_back(_interp->stack.peek_as_string(i));
-  }
-  return rv;
-}
-
 /* end of QInc/Projects/RP42/rpn-lang/src/rpn-hl.mm */

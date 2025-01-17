@@ -22,6 +22,8 @@ namespace rpn {
   class Interp;
 }
 
+#if __OBJC__
+
 #import <Foundation/Foundation.h>
 
 typedef NS_ENUM(NSInteger, RpnResult) {
@@ -46,9 +48,11 @@ typedef NS_ENUM(NSInteger, RpnResult) {
 - (rpn::Interp &) rpnInterp;
 @end
 
+#else // ! __OBJC__
+
 /* C++ version */
-class interp {
- public:
+class RpnInterp {
+public:
   enum class Result {
     ok,
       parse_error, // parsing problem, definition, comment, string-literal, etc
@@ -58,15 +62,24 @@ class interp {
       compile_error, // error in compiling
       implementation_error, // not implmemented or similar
       };
-  interp();
-  ~interp();
+  RpnInterp();
+  ~RpnInterp();
   static void nullCompletionHandler(Result) {};
   void eval(std::string line, std::function<void(Result)>completionHandler=nullCompletionHandler);
   void parseFile(const std::string &path, std::function<void(Result)>completionHandler=nullCompletionHandler);
-  std::vector<std::string> stackItems();
-  rpn::Interp &rpnInterp() const { return *_interp; }
- private:
+
+  //  rpn::Interp &rpnInterp() const { return *_interp; }
+
+  bool validateWord(const std::string &word);
+  bool wordExists(const std::string &word);
+
+  std::string status();
+  std::vector<std::string> displayStack();
+
+private:
   rpn::Interp *_interp;
-} SWIFT_IMMORTAL_REFERENCE;
+};
+
+#endif // __OBJC__
 
 /* end of QInc/Projects/RP42/rpn-lang/rpn_hl.h */

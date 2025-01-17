@@ -6,4 +6,4 @@ cmake_minimum_required (VERSION 3.24)
 project(rpn-lang)
 
 add_subdirectory(tests)
-add_subdirectory(ui)
+add_subdirectory(ui/qt)

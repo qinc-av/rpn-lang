@@ -11,6 +11,7 @@ set(RPN_LANG_SRCS
   fraction.cpp
   timecode-dict.cpp  
   keypad-dict.cpp
+  rpn-hl.cpp
 )
 
 list(TRANSFORM RPN_LANG_SRCS PREPEND ${RPN_LANG_DIR}/src/)

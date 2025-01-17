@@ -12,7 +12,7 @@ QT_BEGIN_NAMESPACE
 namespace Ui { class RpnKeypad; }
 QT_END_NAMESPACE
 
-#include "../rpn.h"
+#include "../../rpn.h"
 
 class QtKeypadController : public QWidget, public rpn::KeypadController
 {

@@ -1,6 +1,6 @@
 #include <cmath>
 
-#include "../rpn.h"
+#include "../../rpn.h"
 #include "qtkeypad.h"
 #include "ui_qtkeypad.h"
 
