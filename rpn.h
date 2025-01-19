@@ -160,6 +160,7 @@ namespace rpn {
     static const StrictTypeValidator d3_integer_double_double;
     static const StrictTypeValidator d3_double_integer_double;
     static const StrictTypeValidator d3_double_double_integer;
+    static const StrictTypeValidator d3_vec3_vec3_vec3;
 
     static const StrictTypeValidator d3_integer_integer_integer;
     static const StrictTypeValidator d3_double_integer_integer;
@@ -168,6 +169,7 @@ namespace rpn {
 
     static const StrictTypeValidator d3_any_any_boolean;
     static const StrictTypeValidator d3_boolean_any_any;
+    static const StrictTypeValidator d3_any_any_boolean;
     static const StrictTypeValidator d3_object_string_any;
     static const StrictTypeValidator d3_string_any_object;
 

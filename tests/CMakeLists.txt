@@ -12,11 +12,25 @@ project (rpn-tests)
 if (${Catch2_FOUND})
 
 add_executable(stack-test  ${RPN_LANG_SRCS} stack-test.cpp)
+
+set_target_properties(stack-test PROPERTIES
+          CXX_STANDARD 20
+          CXX_EXTENSIONS OFF
+          )
+
 target_include_directories(stack-test PRIVATE ${RPN_LANG_DIR})
 target_link_libraries(stack-test PRIVATE Catch2::Catch2WithMain)
 
 add_executable(runtime-test ${RPN_LANG_SRCS} runtime-test.cpp )
+
+set_target_properties(runtime-test PROPERTIES
+          CXX_STANDARD 20
+          CXX_EXTENSIONS OFF
+          )
+
 target_include_directories(runtime-test PRIVATE ${RPN_LANG_DIR})
 target_link_libraries(runtime-test PRIVATE Catch2::Catch2WithMain)
 
+else()
+message("couldn't find catch2")
 endif()

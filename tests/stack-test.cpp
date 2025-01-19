@@ -23,13 +23,16 @@ public:
       _v.push_back(e->deep_copy());
     }
   }
-  virtual bool operator==(const rpn::Stack::Object &orhs) const override {
-    auto &rhs = PEEK_CAST(const CustomArray,orhs);
+  bool operator==(const CustomArray &rhs) const {
     bool rv = _v.size() == rhs._v.size();
     for(auto i=_v.cbegin(), j=rhs._v.cbegin(); rv && i!= _v.cend(); i++,j++) {
       rv &= (**i == **j);
     }
     return rv;
+  }
+  virtual bool operator==(const rpn::Stack::Object &orhs) const override {
+    auto &rhs = PEEK_CAST(const CustomArray,orhs);
+    return (*this == rhs);
   }
   virtual std::unique_ptr<rpn::Stack::Object> deep_copy() const override { return std::make_unique<CustomArray>(*this); };
   void add_value(const rpn::Stack::Object &val) {

@@ -1050,4 +1050,28 @@ TEST_CASE( "Math", "operators") {
 
 }
 
+
+TEST_CASE( "geometry tests", "geometry" ) {
+  std::string line;
+  {
+    g_rpn.stack.clear();
+    line = ("0.25  0.125 ->{xy} 2.875 1.9 ->{xy} -3.0 0. ->{xy} CIRCLE");
+    auto st = g_rpn.sync_eval(line);
+
+    REQUIRE( (st == rpn::WordDefinition::Result::ok) );
+    REQUIRE( (2 == g_rpn.stack.depth() ) );
+
+    g_rpn.stack.print("CIRCLE vvv");
+
+    line = ("0.25  0.125 ->{xy} 2.875 1.9 ->{xy} -3.0 0. ->{xy} 3 ->ARRAY CIRCLE");
+    st = g_rpn.sync_eval(line);
+    REQUIRE( (st == rpn::WordDefinition::Result::ok) );
+    REQUIRE( (4 == g_rpn.stack.depth() ) );
+
+    g_rpn.stack.print("CIRCLE a");
+  }
+ 
+}
+
+
 /* end of qinc/rpn-lang/tests/runtime-test.cpp */

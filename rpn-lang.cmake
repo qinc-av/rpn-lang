@@ -9,7 +9,9 @@ set(RPN_LANG_SRCS
   logic-dict.cpp
   fraction-dict.cpp
   fraction.cpp
-  timecode-dict.cpp  
+  timecode-dict.cpp
+  geometry.cpp
+  geometry-dict.cpp
   keypad-dict.cpp
   rpn-hl.cpp
 )
