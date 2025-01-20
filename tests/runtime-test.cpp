@@ -20,7 +20,7 @@
 #include "src/timecode.h"
 #include <cmath>
 
-rpn::Interp g_rpn;
+rpn::Interp g_rpn(false);
 
 TEST_CASE( "parse", "Stack Words" ) {
 

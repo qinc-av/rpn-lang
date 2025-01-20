@@ -62,7 +62,7 @@ public:
       compile_error, // error in compiling
       implementation_error, // not implmemented or similar
       };
-  RpnInterp();
+  RpnInterp(bool async);
   ~RpnInterp();
   static void nullCompletionHandler(Result) {};
   void eval(std::string line, std::function<void(Result)>completionHandler=nullCompletionHandler);

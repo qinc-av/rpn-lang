@@ -169,7 +169,6 @@ namespace rpn {
 
     static const StrictTypeValidator d3_any_any_boolean;
     static const StrictTypeValidator d3_boolean_any_any;
-    static const StrictTypeValidator d3_any_any_boolean;
     static const StrictTypeValidator d3_object_string_any;
     static const StrictTypeValidator d3_string_any_object;
 

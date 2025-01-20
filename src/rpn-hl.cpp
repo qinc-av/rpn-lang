@@ -18,7 +18,7 @@
 /***********************************************************************
  * C++ version
  */
-RpnInterp::RpnInterp() : _interp(new rpn::Interp) {
+RpnInterp::RpnInterp(bool async) : _interp(new rpn::Interp(async)) {
 }
 RpnInterp::~RpnInterp() {
   delete _interp;
