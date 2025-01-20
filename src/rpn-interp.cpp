@@ -133,20 +133,24 @@ using namespace std::chrono_literals;
 
 struct rpn::Interp::Privates : public rpn::WordContext {
   std::future<void> _arv;
-  Privates(rpn::Interp &rpn) : _rpn(rpn), _tracing(false) {
-    _arv = std::async(std::launch::async, &rpn::Interp::Privates::main_loop, this);
+  Privates(rpn::Interp &rpn, bool async) : _rpn(rpn), _tracing(false) {
+    if (async) {
+      _arv = std::async(std::launch::async, &rpn::Interp::Privates::main_loop, this);
+    }
   };
   ~Privates() {
-    _running = false;
-    _qcv.notify_one();
-    std::future_status status;
-    do {
-      switch(status = _arv.wait_for(1s)) {
-      case std::future_status::deferred: printf("deferred\n"); break;
-      case std::future_status::timeout: printf("timeout\n"); break;
-      case std::future_status::ready: printf("ready!\n"); break;
-      }
-    } while (status != std::future_status::ready);
+    if (_running && _arv.valid()) {
+      _running = false;
+      _qcv.notify_one();
+      std::future_status status;
+      do {
+	switch(status = _arv.wait_for(1s)) {
+	case std::future_status::deferred: printf("deferred\n"); break;
+	case std::future_status::timeout: printf("timeout\n"); break;
+	case std::future_status::ready: printf("ready!\n"); break;
+	}
+      } while (status != std::future_status::ready);
+    }
   };
 
   rpn::WordDefinition::Result eval(const std::string &word, std::string &rest);
@@ -814,8 +818,8 @@ rpn::Interp::Privates::compiletime_eval(const std::string &word, std::string &re
   return rv;
 }
 
-rpn::Interp::Interp() {
-  m_p = new Privates(*this);
+rpn::Interp::Interp(bool async) {
+  m_p = new Privates(*this, async);
   m_p->add_private_words();
   addStackWords();
   addLogicWords();
@@ -831,7 +835,7 @@ rpn::Interp::~Interp() {
 }
 
 const std::string &
-rpn::Interp::status() {
+rpn::Interp::status() const {
   return m_p->_status;
 }
 

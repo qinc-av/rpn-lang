@@ -157,7 +157,7 @@ rpn::Stack::pop_as_boolean() {
 }
 
 rpn::Stack::Object &
-rpn::Stack::peek(int n) {
+rpn::Stack::peek(int n) const {
   if(n>0 && _stack.size()>=n) {
     return **(_stack.begin()+n-1);
   } else {
@@ -168,37 +168,37 @@ rpn::Stack::peek(int n) {
 }
 
 bool
-rpn::Stack::peek_boolean(int n) {
+rpn::Stack::peek_boolean(int n) const {
   auto const &sv = dynamic_cast<const StBoolean&>(peek(n));
   return sv;
 }
 
 std::string
-rpn::Stack::peek_string(int n) {
+rpn::Stack::peek_string(int n) const {
   auto const &sv = dynamic_cast<const StString&>(peek(n));
   return sv;
 }
 
 std::string
-rpn::Stack::peek_as_string(int n) {
+rpn::Stack::peek_as_string(int n) const {
   auto const &sv = peek(n);
   return (std::string)sv;
 }
 
 int64_t
-rpn::Stack::peek_integer(int n) {
+rpn::Stack::peek_integer(int n) const {
   auto const &sv = dynamic_cast<const StInteger&>(peek(n));
   return sv;
 }
 
 double
-rpn::Stack::peek_double(int n) {
+rpn::Stack::peek_double(int n) const {
   auto const &sv = dynamic_cast<const StDouble&>(peek(n));
   return sv;
 }
 
 double
-rpn::Stack::peek_as_double(int n) {
+rpn::Stack::peek_as_double(int n) const {
   auto &raw = peek(n);
   double val = raw;
   return val;
@@ -310,7 +310,7 @@ rpn::Stack::drop() {
 }
 
 size_t
-rpn::Stack::depth() {
+rpn::Stack::depth() const {
   return _stack.size();
 }
 

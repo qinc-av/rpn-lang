@@ -66,18 +66,18 @@ namespace rpn {
 
     std::unique_ptr<Object> pop();
 
-    Object &peek(int n);
-    bool peek_boolean(int n);
-    std::string peek_string(int n);
-    std::string peek_as_string(int n); // auto-converts to string if the type is not string
-    int64_t peek_integer(int n);
-    double peek_double(int n);
-    double peek_as_double(int n); // auto-converts integers to double, returns NaN if it couldn't convert
+    Object &peek(int n) const;
+    bool peek_boolean(int n) const;
+    std::string peek_string(int n) const;
+    std::string peek_as_string(int n) const; // auto-converts to string if the type is not string
+    int64_t peek_integer(int n) const;
+    double peek_double(int n) const;
+    double peek_as_double(int n) const; // auto-converts integers to double, returns NaN if it couldn't convert
 
     // basic stack operations
 
     void clear(); // [prim]
-    size_t depth(); // [prim]
+    size_t depth() const; // [prim]
     void dropn(int n); // [prim]
     void dupn(int n); // [prim]
     void nipn(int n); // [prim] drop Nos
@@ -220,7 +220,7 @@ namespace rpn {
 
   class Interp {
   public:
-    Interp();
+    Interp(bool async);
     ~Interp();
     static void nullCompletionHandler(rpn::WordDefinition::Result) {};
 
@@ -247,7 +247,7 @@ namespace rpn {
      */
 
     Stack stack;
-    const std::string &status();
+    const std::string &status() const;
 
     struct Privates;
   private:

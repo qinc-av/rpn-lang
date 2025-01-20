@@ -21,7 +21,7 @@
 
 - (id) init {
   self = [super init];
-  _rpn = new rpn::Interp;
+  _rpn = new rpn::Interp(true);
   return self;
 }
 
