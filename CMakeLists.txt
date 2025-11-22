@@ -24,15 +24,15 @@ target_sources(rpn-lang
 #add_subdirectory(ui/qt)
 
 install(TARGETS rpn-lang
-  EXPORT rpn-lang-targets
+  EXPORT rpn-langTargets
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib
   RUNTIME DESTINATION bin
   FILE_SET HEADERS DESTINATION include/rpn-lang
 )
 
-install(EXPORT rpn-lang-targets
-  FILE rpn-lang-targets.cmake
+install(EXPORT rpn-langTargets
+  FILE rpn-langTargets.cmake
   NAMESPACE q::
   DESTINATION lib/cmake/rpn-lang
 )
