@@ -15,7 +15,7 @@ target_sources(rpn-lang
   ${RPN_LANG_SRCS}
 
   PUBLIC FILE_SET HEADERS
-#  BASE_DIRS ${MY_LIB_SOURCE_DIR}
+  BASE_DIRS include
   FILES
   rpn.h rpn-hl.h
 )
