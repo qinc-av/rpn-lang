@@ -27,7 +27,11 @@ target_compile_options(rpn-wasm PUBLIC
 if(EMSCRIPTEN)
   target_link_options(rpn-wasm PUBLIC
   --no-entry
-  -sENVIRONMENT=web
+  -sASSERTIONS
+  -sALLOW_MEMORY_GROWTH=1
+  -sMODULARIZE
+  -sEXPORT_ES6=1
+  -sENVIRONMENT=worker
   -sSINGLE_FILE=1
   -sEXPORT_NAME=rpn_lang
   -sUSE_ES6_IMPORT_META=1

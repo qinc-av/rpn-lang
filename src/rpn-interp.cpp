@@ -137,8 +137,10 @@ struct rpn::Interp::Privates : public rpn::WordContext {
     if (async) {
       _arv = std::async(std::launch::async, &rpn::Interp::Privates::main_loop, this);
     }
+    printf("%s: (tracing %d)\n", __func__, _tracing);
   };
   ~Privates() {
+    printf("bye bye\n");
     if (_running && _arv.valid()) {
       _running = false;
       _qcv.notify_one();
@@ -744,6 +746,7 @@ rpn::Interp::Privates::runtime_eval(const std::string &word, std::string &rest) 
 	rv = rpn::WordDefinition::Result::param_error;
       }
     } else {
+      printf("%s: '%s' does not exist\n", __func__, word.c_str());
       // default to dictionary error
     }
   }
@@ -828,9 +831,11 @@ rpn::Interp::Interp(bool async) {
   addFractionWords();
   addTimecodeWords();
   geometry::addWords(*this);
+  printf("rpn::Interp::Interp()\n");
 }
 
 rpn::Interp::~Interp() {
+  printf("%s: bye bye\n", __func__);
   if (m_p) delete m_p;
 }
 
@@ -870,6 +875,14 @@ bool
 rpn::Interp::Privates::word_exists(const std::string &word) {
   auto beg = _rtDictionary.lower_bound(word);
   const auto &end = _rtDictionary.upper_bound(word);
+  if (beg == _rtDictionary.end() && false) {
+    printf("dictionary has %d entries\n", _rtDictionary.size());
+    for(const auto &w : _rtDictionary) {
+      printf("  [%s] => %d\n", w.first.c_str(), w.first == word);
+    }
+  }
+  printf("'%s' beg: %d\n", word.c_str(), beg == _rtDictionary.end());
+  printf("end: %d\n", end == _rtDictionary.end());
   return (beg != end);
 }
 

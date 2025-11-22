@@ -4,6 +4,9 @@
 cmake_minimum_required (VERSION 3.24)
 
 project(rpn-lang)
+include(rpn-lang.cmake)
+add_library(rpn-lang)
+add_target_sources(rpn-lang ${RPN_LANG_SRCS})
 
-add_subdirectory(tests)
-add_subdirectory(ui/qt)
+#add_subdirectory(tests)
+#add_subdirectory(ui/qt)
