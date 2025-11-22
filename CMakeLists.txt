@@ -15,15 +15,12 @@ target_sources(rpn-lang
   ${RPN_LANG_SRCS}
 
   PUBLIC FILE_SET HEADERS
-  BASE_DIRS
+#  BASE_DIRS
   FILES
   rpn.h rpn-hl.h
 )
 
-target_include_directories(rpn-lang PUBLIC
-  #  $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include/mylib>
-  $<INSTALL_INTERFACE:>
-)
+target_include_directories(rpn-lang INTERFACE $<INSTALL_INTERFACE:include>)
 
 #add_subdirectory(tests)
 #add_subdirectory(ui/qt)
