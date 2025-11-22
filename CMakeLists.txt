@@ -4,9 +4,21 @@
 cmake_minimum_required (VERSION 3.24)
 
 project(rpn-lang)
+
 include(rpn-lang.cmake)
+
 add_library(rpn-lang)
-target_sources(rpn-lang ${RPN_LANG_SRCS})
+set_property(TARGET rpn-lang PROPERTY CXX_STANDARD 20)
+
+target_sources(rpn-lang
+  PRIVATE
+  ${RPN_LANG_SRCS}
+
+  PUBLIC FILE_SET HEADERS
+#  BASE_DIRS ${MY_LIB_SOURCE_DIR}
+  FILES
+  rpn.h rpn-hl.h
+)
 
 #add_subdirectory(tests)
 #add_subdirectory(ui/qt)
@@ -16,7 +28,7 @@ install(TARGETS rpn-lang
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib
   RUNTIME DESTINATION bin
-  INCLUDES DESTINATION include
+  FILE_SET HEADERS DESTINATION include/rpn-lang
 )
 
 install(EXPORT rpn-lang-targets
