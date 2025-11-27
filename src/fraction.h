@@ -83,7 +83,7 @@ class Fraction {
     auto vr = double(rhs);
     return std::abs(v-vr) < s_precision;
   }
-  
+
   std::string to_string() const { return std::to_string(_numerator) + "/" + std::to_string(_denominator); };
 
   int64_t _numerator;
@@ -119,9 +119,18 @@ namespace stack {
       std::string rv;
       rv += std::to_string(_numerator);
       rv += " ";
-      rv += std::to_string(_numerator);
+      rv += std::to_string(_denominator);
       rv += " ->FRAC";
       return rv;
+    }
+
+    virtual operator rpn::display_value() const override {
+      std::string rv = "\\frac{";
+      rv += std::to_string(_numerator);
+      rv += "}{";
+      rv += std::to_string(_denominator);
+      rv += "}";
+      return { rpn::display_type::latex, rv };
     }
   private:
 };

@@ -20,7 +20,14 @@ target_sources(rpn-lang
   rpn.h rpn-hl.h
 )
 
-target_include_directories(rpn-lang INTERFACE $<INSTALL_INTERFACE:include>)
+target_include_directories(rpn-lang INTERFACE
+  $<INSTALL_INTERFACE:include>
+)
+
+#  target_include_directories(web-bridge PUBLIC
+#  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>
+#  $<INSTALL_INTERFACE:include>  # <prefix>/include
+#)
 
 #add_subdirectory(tests)
 #add_subdirectory(ui/qt)

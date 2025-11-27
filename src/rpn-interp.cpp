@@ -120,7 +120,12 @@ public:
   virtual std::string deparse() const override {
     return "not-yet";
   }
-    
+
+// default display
+//  virtual operator rpn::display_value() const override {
+//    return { rpn::display_type::text,  (std::string)(*this)};
+//  }
+
   rpn::Interp::Privates &_p;
   std::vector<std::string> _wordlist;
   std::shared_ptr<var_dict_t> _locals;
@@ -720,7 +725,7 @@ rpn::Interp::Privates::eval(const std::string &word, std::string &rest) {
 
   if (_tracing)
     printf("returns: %d (%s)\n", rv, rest.c_str());
-   
+
   return rv;
 }
 
@@ -776,7 +781,7 @@ rpn::WordDefinition::Result
 rpn::Interp::Privates::compiletime_eval(const std::string &word, std::string &rest) {
   rpn::WordDefinition::Result rv=rpn::WordDefinition::Result::dict_error;
   auto &progn = _ctVprogn.back();
-  
+
   if (_needIdent && (progn._ident=="")) {
     progn._ident = word;
     _needIdent = false;
@@ -799,7 +804,7 @@ rpn::Interp::Privates::compiletime_eval(const std::string &word, std::string &re
       // push it
       progn.addWord(word);
       rv=rpn::WordDefinition::Result::ok;
-      
+
     } else {
       // everything else, we check in the runtime dictionary
       const auto &rw = _rtDictionary.find(word);
@@ -937,7 +942,7 @@ rpn::StrictTypeValidator::operator<(const rpn::StrictTypeValidator &rhs) const {
   return _types < rhs._types;
 }
 
-#if 0 // 
+#if 0 //
 std::string
 rpn::StrictTypeValidator::to_string() const {
   std::string rv = "(StrictTypeValidator ";

@@ -68,6 +68,10 @@ public:
       rv += std::to_string(_frameRate._denominator) + " ->FRAC ->TC";
       return rv;
     }
+// default display
+//    virtual operator rpn::display_value() const override {
+//      return { rpn::display_type::text, (std::string)(*this) };
+//  }
   };
 } // namespace stack
 

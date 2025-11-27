@@ -62,8 +62,8 @@
 - (NSArray<NSString*>*) displayStack {
   NSMutableArray<NSString*> *si = [[NSMutableArray<NSString*> alloc] init];
   for(size_t i=0; i<_rpn->stack.depth(); i++) {
-    auto so = _rpn->stack.peek_as_string((int)(i+1));
-    [si addObject:@(so.c_str())];
+    auto disp = _rpn->stack.peek_for_display((int)(i+1));
+    [si addObject:@(disp.value.c_str())];
   }
   return si;
 }

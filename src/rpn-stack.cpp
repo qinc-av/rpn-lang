@@ -152,7 +152,7 @@ rpn::Stack::pop_as_boolean() {
     val = (std::string(*sp)!="");
 
   }
-  
+
   return val;
 }
 
@@ -179,10 +179,10 @@ rpn::Stack::peek_string(int n) const {
   return sv;
 }
 
-std::string
-rpn::Stack::peek_as_string(int n) const {
+rpn::display_value
+rpn::Stack::peek_for_display(int n) const {
   auto const &sv = peek(n);
-  return (std::string)sv;
+  return sv;
 }
 
 int64_t

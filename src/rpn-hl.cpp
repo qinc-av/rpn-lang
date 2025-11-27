@@ -58,7 +58,7 @@ RpnInterp::displayStack() {
   std::vector<std::string> rv;
   size_t n = _interp->stack.depth();
   for(size_t i=0; i<n; i++) {
-    rv.push_back(_interp->stack.peek_as_string(i));
+    rv.push_back(_interp->stack.peek_for_display(i));
   }
   return rv;
 }

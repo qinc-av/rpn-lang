@@ -102,7 +102,7 @@ TEST_CASE("peek and types" "stack") {
   REQUIRE( "abcdefg" == g_stack.peek_string(3) );
   REQUIRE( 2.71828182846 == g_stack.peek_double(4) );
   REQUIRE( 3.14159265359 == g_stack.peek_double(5) );
-  REQUIRE( "1023" == g_stack.peek_as_string(2) ); // converts to string
+  REQUIRE( "1023" == g_stack.peek_for_display(2) ); // converts to string
   REQUIRE( 1023.0 == g_stack.peek_as_double(2) ); // converts to double
 
   CHECK_THROWS(g_stack.peek_string(2) == "1023"); // cast fails
@@ -373,7 +373,7 @@ TEST_CASE("stack operations" "stack") {
 
   REQUIRE(2.787 != g_stack.peek_double(stackCount));
   CHECK_THROWS(g_stack.peek_integer(stackCount) == 0); // conversion fails
-  
+
   {
     CustomArray ar1;
     ar1.add_value(StDouble(9.8));
@@ -420,7 +420,7 @@ rpn_main(int ac, char **av) {
     g_stack.push(ar1); stackCount++;
     assert (g_stack.depth() == stackCount);
   }
-		 
+
   g_stack.push(StString(std::string("abcdefg"))); stackCount++;
   assert (g_stack.depth() == stackCount);
 
@@ -442,7 +442,7 @@ rpn_main(int ac, char **av) {
 
   g_stack.push(StCustomObject(std::string("yyz"))); stackCount++;
   assert (g_stack.depth() == stackCount);
-  
+
   g_stack.push_boolean(true); stackCount++;
 
   g_stack.swap();
@@ -450,7 +450,7 @@ rpn_main(int ac, char **av) {
 
   g_stack.rolldn(2);
   g_stack.print("rolld(2) [aka swap]");
-  
+
   g_stack.pick(2); stackCount++;
   g_stack.print("over");
 
@@ -529,7 +529,7 @@ rpn_main(int ac, char **av) {
   //  s_g_stack.push_back(new TStackType<int>(23));
   //  auto v = s_g_stack.back();
 
-  
+
 }
 
 /* end of qinc/rpn-lang/tests/test-g_stack.cpp */

@@ -244,10 +244,11 @@ const rpn::StrictTypeValidator frac_validator::d5_int_int_int_int_frac({
 void
 rpn::Interp::addFractionWords() {
   rpn::Interp &rpn = *this; // in case we want to move this out someday
-  
+
   rpn.addDefinition("->FRAC", NATIVE_WORD_WDEF(fraction, rpn::StrictTypeValidator::d2_integer_integer, to_frac_ii, nullptr));
   rpn.addDefinition("->FRAC", NATIVE_WORD_WDEF(fraction, rpn::StrictTypeValidator::d1_double, to_frac_d, nullptr));
   rpn.addDefinition("->FLOAT", NATIVE_WORD_WDEF(fraction, frac_validator::d1_frac, to_float, nullptr));
+  rpn.addDefinition("EVAL", NATIVE_WORD_WDEF(fraction, frac_validator::d1_frac, to_float, nullptr));
   rpn.addDefinition("OBJ->", NATIVE_WORD_WDEF(fraction, frac_validator::d1_frac, obj_to, nullptr));
   rpn.addDefinition("INV", NATIVE_WORD_WDEF(fraction, frac_validator::d1_frac, inv_f, nullptr));
   rpn.addDefinition("NEG", NATIVE_WORD_WDEF(fraction, frac_validator::d1_frac, neg_f, nullptr));

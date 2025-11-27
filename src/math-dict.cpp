@@ -60,6 +60,9 @@ namespace stack {
     rv += std::to_string(this->imag()) + " ->COMPLEX";
     return rv;
   }
+    virtual operator rpn::display_value() const override {
+      return { rpn::display_type::latex, to_string() };
+  }
   private:
 };
 

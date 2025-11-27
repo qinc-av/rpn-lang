@@ -27,6 +27,14 @@
 
 namespace rpn {
   std::string to_string(const double &dv);
+  enum class display_type {
+    text,
+    latex
+  };
+  struct display_value {
+    display_type type;
+    std::string value;
+  };
 
   class Stack {
   public:
@@ -46,6 +54,9 @@ namespace rpn {
       //      virtual operator int64_t() const =0;
       virtual std::string deparse() const =0;
       std::string to_string() const { return static_cast<std::string>(*this); }
+      virtual operator display_value() const {
+	return { display_type::text, (std::string)(*this) };
+      }
     };
 
     Stack() {};
@@ -69,7 +80,7 @@ namespace rpn {
     Object &peek(int n) const;
     bool peek_boolean(int n) const;
     std::string peek_string(int n) const;
-    std::string peek_as_string(int n) const; // auto-converts to string if the type is not string
+    display_value peek_for_display(int n) const; // auto-converts to string if the type is not string
     int64_t peek_integer(int n) const;
     double peek_double(int n) const;
     double peek_as_double(int n) const; // auto-converts integers to double, returns NaN if it couldn't convert
@@ -193,7 +204,7 @@ namespace rpn {
     static const StackSizeValidator two;
     static const StackSizeValidator three;
     static const StackSizeValidator ntos; // n top of stack
-    
+
   StackSizeValidator(size_t n) : StackValidator(std::string("StackSizeValidator") + ":" + std::to_string(n)), _n(n) {}
     virtual bool operator()(const std::vector<size_t> &types, rpn::Stack &stack) const override;
     //    std::string to_string() const override;
@@ -242,7 +253,7 @@ namespace rpn {
      *
      * Making it public makes it easier for the native words to manipulate it.
      * It is not an implementation detail, but rather an integral part of what
-     * it is and how it is intended to be used. 
+     * it is and how it is intended to be used.
      */
 
     Stack stack;
@@ -330,6 +341,10 @@ class Double : public rpn::Stack::Object {
   virtual std::string deparse() const override {
     return std::to_string(_v);
   }
+  virtual operator rpn::display_value() const override {
+    return { rpn::display_type::latex, rpn::to_string(_v) };
+  }
+
  private:
   double _v;
 };
@@ -357,6 +372,9 @@ Integer(const int64_t &v) : _v(v) {}
   virtual std::string deparse() const override {
     return std::to_string(_v);
   }
+  virtual operator rpn::display_value() const override {
+    return { rpn::display_type::latex, rpn::to_string(_v) };
+  }
  private:
   int64_t _v;
 };
@@ -383,6 +401,9 @@ class Boolean : public rpn::Stack::Object {
   virtual std::string deparse() const override {
     return std::string(*this);
   }
+//  virtual operator rpn::display_value() const override {
+//    return { rpn::display_type::text, (std::string)(*this) };
+//  }
  private:
   bool _v;
 };
@@ -409,6 +430,10 @@ class String : public rpn::Stack::Object {
     rv += _v + "\"";
     return rv;
   }
+  virtual operator rpn::display_value() const override {
+    return { rpn::display_type::text, std::string("\"") + _v + "\"" };
+  }
+
  private:
   std::string _v;
 };
@@ -473,6 +498,9 @@ public:
     return "n/a";
   }
   const auto &val() const { return _v; };
+//  virtual operator rpn::display_value() const override {
+//    return { rpn::display_type::latex, (std::string)(*this)};
+//  }
 protected:
   std::map<std::string,std::unique_ptr<rpn::Stack::Object>> _v;
 };
@@ -530,6 +558,9 @@ public:
     return rv;
   };
   const auto &val() const { return _v; };
+  virtual operator rpn::display_value() const override {
+    return { rpn::display_type::latex, (std::string)(*this) };
+  }
  protected:
   std::vector<std::unique_ptr<rpn::Stack::Object>> _v;
 };
@@ -580,6 +611,23 @@ public:
     rv += std::to_string(_z) + " ->VEC3";
     return rv;
   }
+  virtual operator rpn::display_value() const override {
+    std::string rv = "<";
+    if (!std::isnan(_x)) {
+      rv += rpn::to_string(_x);
+      rv += "_x";
+    }
+    if (!std::isnan(_y)) {
+      rv += rpn::to_string(_y);
+      rv += "_y";
+    }
+    if (!std::isnan(_z)) {
+      rv += rpn::to_string(_z);
+      rv += "_z";
+    }
+    rv += " >";
+    return { rpn::display_type::latex, rv };
+  }
 
 public:
   // should these be public or private?
@@ -594,7 +642,7 @@ public:
 
 #define NATIVE_WORD_DECL(mangler, fn) \
   static rpn::WordDefinition::Result NATIVE_WORD_FN(mangler, fn)(rpn::Interp &rpn, rpn::WordContext *ctx, std::string &rest)
-   
+
 #define NATIVE_WORD_FN_0_DOUBLE(mangler, fn, val) \
   NATIVE_WORD_DECL(mangler, fn) {					\
     rpn.stack.push_double(val);						\
@@ -613,14 +661,14 @@ public:
     rpn.stack.push_double(fn(s1));					\
     return rpn::WordDefinition::Result::ok;				\
   }
-  
+
 #define NATIVE_WORD_FN_1_INTEGER(mangler, fn) \
   NATIVE_WORD_DECL(mangler, fn) {					\
     auto s1 = rpn.stack.pop_integer();					\
     rpn.stack.push_integer(fn(s1));					\
     return rpn::WordDefinition::Result::ok;				\
   }
-  
+
 #define NATIVE_WORD_FN_2_NUMBER(mangler, fn)				\
   NATIVE_WORD_DECL(mangler, fn) {					\
     auto s1 = rpn.stack.pop_as_double();				\
@@ -628,7 +676,7 @@ public:
     rpn.stack.push_double(fn(s2,s1));					\
     return rpn::WordDefinition::Result::ok;				\
   }
-  
+
 #define NATIVE_WORD_FN_2_INTEGER(mangler, fn)				\
   NATIVE_WORD_DECL(mangler, fn) {					\
     auto s1 = rpn.stack.pop_integer();					\
