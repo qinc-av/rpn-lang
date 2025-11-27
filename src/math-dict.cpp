@@ -54,17 +54,17 @@ namespace stack {
       rv += "i";
       return rv;
     }
-  virtual std::string deparse() const override {
-    std::string rv;
-    rv += std::to_string(this->real()) + " ";
-    rv += std::to_string(this->imag()) + " ->COMPLEX";
-    return rv;
-  }
-    virtual operator rpn::display_value() const override {
-      return { rpn::display_type::latex, to_string() };
-  }
+    virtual std::string deparse() const override {
+      std::string rv;
+      rv += std::to_string(this->real()) + " ";
+      rv += std::to_string(this->imag()) + " ->COMPLEX";
+      return rv;
+    }
+    virtual std::string latex() const {
+      return (std::string)(*this);
+    }
   private:
-};
+  };
 
 } // namespace stack
 namespace math_validator {

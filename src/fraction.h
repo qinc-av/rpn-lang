@@ -124,13 +124,13 @@ namespace stack {
       return rv;
     }
 
-    virtual operator rpn::display_value() const override {
+    virtual std::string latex() const {
       std::string rv = "\\frac{";
       rv += std::to_string(_numerator);
       rv += "}{";
       rv += std::to_string(_denominator);
       rv += "}";
-      return { rpn::display_type::latex, rv };
+      return rv;
     }
   private:
 };

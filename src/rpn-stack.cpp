@@ -179,10 +179,10 @@ rpn::Stack::peek_string(int n) const {
   return sv;
 }
 
-rpn::display_value
+std::string
 rpn::Stack::peek_for_display(int n) const {
   auto const &sv = peek(n);
-  return sv;
+  return sv.latex();
 }
 
 int64_t

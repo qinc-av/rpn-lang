@@ -27,14 +27,6 @@
 
 namespace rpn {
   std::string to_string(const double &dv);
-  enum class display_type {
-    text,
-    latex
-  };
-  struct display_value {
-    display_type type;
-    std::string value;
-  };
 
   class Stack {
   public:
@@ -54,8 +46,9 @@ namespace rpn {
       //      virtual operator int64_t() const =0;
       virtual std::string deparse() const =0;
       std::string to_string() const { return static_cast<std::string>(*this); }
-      virtual operator display_value() const {
-	return { display_type::text, (std::string)(*this) };
+      virtual std::string latex() const {
+	std::string rv = "\\text{" + (std::string)(*this) + "}";
+	return rv;
       }
     };
 
@@ -80,7 +73,7 @@ namespace rpn {
     Object &peek(int n) const;
     bool peek_boolean(int n) const;
     std::string peek_string(int n) const;
-    display_value peek_for_display(int n) const; // auto-converts to string if the type is not string
+    std::string peek_for_display(int n) const; // auto-converts to string if the type is not string
     int64_t peek_integer(int n) const;
     double peek_double(int n) const;
     double peek_as_double(int n) const; // auto-converts integers to double, returns NaN if it couldn't convert
@@ -341,8 +334,8 @@ class Double : public rpn::Stack::Object {
   virtual std::string deparse() const override {
     return std::to_string(_v);
   }
-  virtual operator rpn::display_value() const override {
-    return { rpn::display_type::latex, rpn::to_string(_v) };
+  virtual std::string latex() const override {
+    return rpn::to_string(_v);
   }
 
  private:
@@ -372,8 +365,8 @@ Integer(const int64_t &v) : _v(v) {}
   virtual std::string deparse() const override {
     return std::to_string(_v);
   }
-  virtual operator rpn::display_value() const override {
-    return { rpn::display_type::latex, rpn::to_string(_v) };
+  virtual std::string latex() const override {
+    return rpn::to_string(_v);
   }
  private:
   int64_t _v;
@@ -401,9 +394,11 @@ class Boolean : public rpn::Stack::Object {
   virtual std::string deparse() const override {
     return std::string(*this);
   }
-//  virtual operator rpn::display_value() const override {
-//    return { rpn::display_type::text, (std::string)(*this) };
-//  }
+  // default latex
+  //  virtual std::string latex() const {
+  //	std::string rv = "\\text{" + (std::string)(*this) + "}";
+  //	return rv;
+  //      }
  private:
   bool _v;
 };
@@ -430,8 +425,8 @@ class String : public rpn::Stack::Object {
     rv += _v + "\"";
     return rv;
   }
-  virtual operator rpn::display_value() const override {
-    return { rpn::display_type::text, std::string("\"") + _v + "\"" };
+  virtual std::string latex() const {
+    return std::string("\"") + _v + "\"";
   }
 
  private:
@@ -498,9 +493,11 @@ public:
     return "n/a";
   }
   const auto &val() const { return _v; };
-//  virtual operator rpn::display_value() const override {
-//    return { rpn::display_type::latex, (std::string)(*this)};
-//  }
+  // default latex
+  //  virtual std::string latex() const {
+  //	std::string rv = "\\text{" + (std::string)(*this) + "}";
+  //	return rv;
+  //  }
 protected:
   std::map<std::string,std::unique_ptr<rpn::Stack::Object>> _v;
 };
@@ -558,8 +555,8 @@ public:
     return rv;
   };
   const auto &val() const { return _v; };
-  virtual operator rpn::display_value() const override {
-    return { rpn::display_type::latex, (std::string)(*this) };
+  virtual std::string latex() const {
+    return (std::string)(*this);
   }
  protected:
   std::vector<std::unique_ptr<rpn::Stack::Object>> _v;
@@ -611,8 +608,8 @@ public:
     rv += std::to_string(_z) + " ->VEC3";
     return rv;
   }
-  virtual operator rpn::display_value() const override {
-    std::string rv = "<";
+  virtual std::string latex() const {
+    std::string rv = "[";
     if (!std::isnan(_x)) {
       rv += rpn::to_string(_x);
       rv += "_x";
@@ -625,8 +622,8 @@ public:
       rv += rpn::to_string(_z);
       rv += "_z";
     }
-    rv += " >";
-    return { rpn::display_type::latex, rv };
+    rv += "]";
+    return rv;
   }
 
 public:

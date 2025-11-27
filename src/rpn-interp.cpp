@@ -121,10 +121,11 @@ public:
     return "not-yet";
   }
 
-// default display
-//  virtual operator rpn::display_value() const override {
-//    return { rpn::display_type::text,  (std::string)(*this)};
-//  }
+  // default latex
+  //  virtual std::string latex() const {
+  //	std::string rv = "\\text{" + (std::string)(*this) + "}";
+  //	return rv;
+  //  }
 
   rpn::Interp::Privates &_p;
   std::vector<std::string> _wordlist;
