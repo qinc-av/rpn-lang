@@ -27,8 +27,8 @@
 
 namespace rpn {
   std::string to_string(const double &dv);
-  std::string to_string(const int64_t &dv);
-  int int_base();
+  std::string to_string(int64_t dv);
+  int int_radix();
 
   class Stack {
   public:
@@ -376,7 +376,7 @@ Integer(const int64_t &v) : _v(v) {}
   }
   // default to_text()
   virtual std::string to_latex() const override {
-    return std::to_string(_v) + "_{" + std::to_string(rpn::int_base()) + "}";
+    return rpn::to_string(_v) + "_{" + std::to_string(rpn::int_radix()) + "}";
   }
  private:
   int64_t _v;

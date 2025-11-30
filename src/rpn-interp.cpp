@@ -27,7 +27,7 @@
 
 static int sk_double_decimals=10;
 static double sk_double_precision=10000000000;
-static int _sk_int_base = 10;
+static int _sk_int_radix = 10;
 
 std::string
 rpn::to_string(const double &dv) {
@@ -42,14 +42,30 @@ rpn::to_string(const double &dv) {
 }
 
 std::string
-rpn::to_string(const int64_t &iv) {
-  // XXX needs to be converted to base
-  return std::to_string(iv);
+rpn::to_string(int64_t iv) {
+
+  int signbit = (iv<0 ? true : false);
+  iv = std::abs(iv);
+
+  const char digit[] = "0123456789ABCDEFGHIJKLMNOPRSTUVWXYZ";
+  std::vector<char> stack;
+
+  int64_t quot, rem;
+  do {
+    quot = iv / _sk_int_radix;
+    rem = iv % _sk_int_radix;
+
+    stack.push_back(digit[rem]);
+    iv = quot;
+  }  while( iv>0 );
+
+  std::string result = (signbit ? "-" : "");
+  return result + std::string(stack.rbegin(), stack.rend());
 }
 
 int
-rpn::int_base() {
-  return _sk_int_base;
+rpn::int_radix() {
+  return _sk_int_radix;
 }
 
 static std::string::size_type
@@ -461,9 +477,24 @@ NATIVE_WORD_DECL(private, precision_to) {
 NATIVE_WORD_DECL(private, to_precision) {
   // (rpn::Interp &rpn, rpn::WordContext *ctx, std::string &rest)
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
-  auto new_dec = rpn.stack.pop_as_double();
-  sk_double_decimals = (int)std::clamp(new_dec, 0., 20.); // there is probably a known upper bound here
+  auto new_dec = rpn.stack.pop_as_integer();
+  sk_double_decimals = std::clamp(new_dec, 0LL, 20LL); // there is probably a known upper bound here
   sk_double_precision = std::pow(10, sk_double_decimals);
+  return rv;
+}
+
+NATIVE_WORD_DECL(private, radix_to) {
+  // (rpn::Interp &rpn, rpn::WordContext *ctx, std::string &rest)
+  rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
+  rpn.stack.push_double(_sk_int_radix);
+  return rv;
+}
+
+NATIVE_WORD_DECL(private, to_radix) {
+  // (rpn::Interp &rpn, rpn::WordContext *ctx, std::string &rest)
+  rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
+  auto new_radix = rpn.stack.pop_as_integer();
+  _sk_int_radix = new_radix;
   return rv;
 }
 
@@ -627,8 +658,11 @@ rpn::Interp::Privates::add_private_words() {
 
   _rtDictionary.emplace("TRUE", rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, BOOL_TRUE), this });
   _rtDictionary.emplace("FALSE", rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, BOOL_FALSE), this });
-  _rtDictionary.emplace("->PRECISION", rpn::WordDefinition { rpn::StrictTypeValidator::d1_integer, NATIVE_WORD_FN(private, to_precision), this });
+  _rtDictionary.emplace("->PRECISION", rpn::WordDefinition { rpn::StrictTypeValidator::d1_double, NATIVE_WORD_FN(private, to_precision), this });
   _rtDictionary.emplace("PRECISION->", rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, precision_to), this });
+
+  _rtDictionary.emplace("->RADIX", rpn::WordDefinition { rpn::StrictTypeValidator::d1_double, NATIVE_WORD_FN(private, to_radix), this });
+  _rtDictionary.emplace("RADIX->", rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, radix_to), this });
 
   _ctDictionary.emplace(";", rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, ct_SEMICOLON), this });
   _ctDictionary.emplace("(", rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, OPAREN), this });
@@ -747,6 +781,8 @@ rpn::Interp::Privates::runtime_eval(const std::string &word, std::string &rest) 
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::dict_error;
   // numbers just push
   if (std::isdigit(word[0])||(word[0]=='-'&&std::isdigit(word[1]))) {
+    auto underscore = word.find("_");
+
     if (word.find("0x") != std::string::npos ||
 	word.find("0d") != std::string::npos ||
 	word.find("0o") != std::string::npos ||
@@ -778,15 +814,15 @@ rpn::Interp::Privates::runtime_eval(const std::string &word, std::string &rest) 
       }
 
       if (rv != rpn::WordDefinition::Result::parse_error) {
-	long val = strtol(word.c_str()+pos, nullptr, base);
-	_rpn.stack.push_integer(val);
-	rv = rpn::WordDefinition::Result::ok;
+        long val = strtol(word.c_str()+pos, nullptr, base);
+        _rpn.stack.push_integer(val);
+        rv = rpn::WordDefinition::Result::ok;
       }
 
-    } else if (auto pos = word.find("_") != std::string::npos) {
+    } else if (underscore != std::string::npos) {
 
-      int base = (pos == word.size()-1) ? 10 : strtol(word.c_str()+pos+1, nullptr, 0);
-      long val = strtol(word.c_str(), nullptr, base);
+      int radix = (underscore == word.size()-1) ? 10 : strtol(word.c_str()+underscore+1, nullptr, 10);
+      long val = strtol(word.c_str(), nullptr, radix);
       _rpn.stack.push_integer(val);
       rv = rpn::WordDefinition::Result::ok;
 
