@@ -87,7 +87,7 @@ NATIVE_WORD_DECL(t_object, add_object_string_any) {
  */
 NATIVE_WORD_DECL(t_array, to_array) {
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
-  size_t n = size_t(rpn.stack.pop_integer());
+  size_t n = size_t(rpn.stack.pop_as_integer());
   rpn.stack.reversen(n);
   StArray array;
   for(size_t i=0; i<n; i++) {

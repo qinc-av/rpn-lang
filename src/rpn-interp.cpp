@@ -25,12 +25,13 @@
 #include "../rpn.h"
 #include "geometry.h"
 
-static int sk_decimals=10;
-static double sk_precision=10000000000;
+static int sk_double_decimals=10;
+static double sk_double_precision=10000000000;
+static int _sk_int_base = 10;
 
 std::string
 rpn::to_string(const double &dv) {
-  double dvr = std::round(sk_precision*(dv))/sk_precision;
+  double dvr = std::round(sk_double_precision*(dv))/sk_double_precision;
   double intpart;
 
   std::string rv = std::format("{}", dvr);
@@ -38,6 +39,17 @@ rpn::to_string(const double &dv) {
     rv += ".";
   }
   return rv;
+}
+
+std::string
+rpn::to_string(const int64_t &iv) {
+  // XXX needs to be converted to base
+  return std::to_string(iv);
+}
+
+int
+rpn::int_base() {
+  return _sk_int_base;
 }
 
 static std::string::size_type
@@ -121,8 +133,8 @@ public:
     return "not-yet";
   }
 
-  // default latex
-  //  virtual std::string latex() const {
+  // default to_latex()
+  //  virtual std::string to_latex() const override {
   //	std::string rv = "\\text{" + (std::string)(*this) + "}";
   //	return rv;
   //  }
@@ -442,16 +454,16 @@ NATIVE_WORD_DECL(private, BOOL_FALSE) {
 NATIVE_WORD_DECL(private, precision_to) {
   // (rpn::Interp &rpn, rpn::WordContext *ctx, std::string &rest)
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
-  rpn.stack.push_integer(sk_decimals);
+  rpn.stack.push_double(sk_double_decimals);
   return rv;
 }
 
 NATIVE_WORD_DECL(private, to_precision) {
   // (rpn::Interp &rpn, rpn::WordContext *ctx, std::string &rest)
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
-  auto new_dec = rpn.stack.pop_integer();
-  sk_decimals = (int)std::clamp(new_dec, 0LL, 20LL); // there is probably a known upper bound here
-  sk_precision = std::pow(10, sk_decimals);
+  auto new_dec = rpn.stack.pop_as_double();
+  sk_double_decimals = (int)std::clamp(new_dec, 0., 20.); // there is probably a known upper bound here
+  sk_double_precision = std::pow(10, sk_double_decimals);
   return rv;
 }
 
@@ -597,7 +609,7 @@ NATIVE_WORD_DECL(private, ct_NEXT) {
 NATIVE_WORD_DECL(private, ct_STEP) {
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
   // rpn::Interp::Privates *p = dynamic_cast<rpn::Interp::Privates*>(ctx);
-  auto step = rpn.stack.pop_integer();
+  auto step = rpn.stack.pop_as_integer();
   return rv;
 }
 #endif
@@ -607,7 +619,7 @@ rpn::Interp::Privates::add_private_words() {
   _rtDictionary.emplace(":", rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, COLON), this });
   _rtDictionary.emplace("(", rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, OPAREN), this });
   _rtDictionary.emplace(".\"", rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, DQUOTE), this });
-  _rtDictionary.emplace("FOR", rpn::WordDefinition { rpn::StrictTypeValidator::d2_integer_integer, NATIVE_WORD_FN(private, FOR), this });
+  _rtDictionary.emplace("FOR", rpn::WordDefinition { rpn::StrictTypeValidator::d2_double_double, NATIVE_WORD_FN(private, FOR), this });
   _rtDictionary.emplace("TRACE", rpn::WordDefinition { rpn::StrictTypeValidator::d1_boolean, NATIVE_WORD_FN(private, TRACE), this });
   _rtDictionary.emplace("WORDLIST", rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, WORDLIST), this });
   _rtDictionary.emplace("DEPARSE", rpn::WordDefinition { rpn::StackSizeValidator::one, NATIVE_WORD_FN(private, deparse), this });
@@ -735,14 +747,56 @@ rpn::Interp::Privates::runtime_eval(const std::string &word, std::string &rest) 
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::dict_error;
   // numbers just push
   if (std::isdigit(word[0])||(word[0]=='-'&&std::isdigit(word[1]))) {
-    if (word.find('.') != std::string::npos) {
+    if (word.find("0x") != std::string::npos ||
+	word.find("0d") != std::string::npos ||
+	word.find("0o") != std::string::npos ||
+	word.find("0b") != std::string::npos) {
+      // XXX-ELH: parse as a base'd int
+      int base = 10;
+      auto zero = word.find("0");
+      std::string::size_type pos = zero+2;
+      switch(word[zero+1]) {
+      case 'x':
+	base = 16;
+	break;
+
+      case 'd':
+	base = 10;
+	break;
+
+      case 'o':
+	base = 8;
+	break;
+
+      case 'b':
+	base = 2;
+	break;
+
+      default:
+	rv = rpn::WordDefinition::Result::parse_error;
+	break;
+      }
+
+      if (rv != rpn::WordDefinition::Result::parse_error) {
+	long val = strtol(word.c_str()+pos, nullptr, base);
+	_rpn.stack.push_integer(val);
+	rv = rpn::WordDefinition::Result::ok;
+      }
+
+    } else if (auto pos = word.find("_") != std::string::npos) {
+
+      int base = (pos == word.size()-1) ? 10 : strtol(word.c_str()+pos+1, nullptr, 0);
+      long val = strtol(word.c_str(), nullptr, base);
+      _rpn.stack.push_integer(val);
+      rv = rpn::WordDefinition::Result::ok;
+
+    } else {
       double val = strtod(word.c_str(), nullptr);
       _rpn.stack.push_double(val);
-    } else {
-      long val = strtol(word.c_str(), nullptr, 0);
-      _rpn.stack.push_integer(val);
+      rv = rpn::WordDefinition::Result::ok;
+
     }
-    rv = rpn::WordDefinition::Result::ok;
+
   } else {
     if (word_exists(word)) {
       auto we = validate_word(word, _rpn.stack);
@@ -968,9 +1022,12 @@ rpn::StackSizeValidator::to_string() const {
 bool
 rpn::StackSizeValidator::operator()(const std::vector<size_t> &types, rpn::Stack &stack) const {
   bool rv = false;
-  if ((_n==(size_t)-1) && types.size()>0 && types[0]==typeid(StInteger).hash_code()) { // negative means to ntos - check top of stack as integer and make sure that the stack is >=
-    auto nn = stack.peek_integer(1);
-    rv = (types.size()-1) >= nn;
+  if ((_n==(size_t)-1) &&
+      types.size()>0 &&
+      (types[0]==typeid(StInteger).hash_code() ||
+       types[0]==typeid(StDouble).hash_code())) { // negative means to ntos - check top of stack as integer and make sure that the stack is >=
+    auto nn = stack.peek_as_integer(1);
+    rv = (nn && (types.size()-1) >= nn);
   } else {
     rv = (types.size() >=_n);
   }

@@ -226,7 +226,7 @@ rpn_calc::Controller::getStackAsString() {
   for(size_t i=_rpn.stack.depth(); i!=0; i--) {
     char level[32];
     snprintf(level, sizeof(level), " : %02d%s", i, i>1?"\r\n":"");
-    auto so = _rpn.stack.peek_as_string(i);
+    auto so = _rpn.stack.peek_for_display(i);
     display += so;
     display += level;
   }

@@ -41,7 +41,7 @@ public:
   virtual operator std::string() const override {
     std::string rv = "[";
     for(auto const &e : _v) {
-      rv += e->to_string();
+      rv += e->to_text();
       rv += ", ";
     }
     rv += "]";
@@ -80,7 +80,7 @@ static rpn::Stack g_stack;
 
 TEST_CASE("peek and types" "stack") {
   g_stack.push_double(3.14159265359); stackCount++;
-  REQUIRE(g_stack.depth() == 1);
+  REQUIRE(g_stack.depth() == stackCount);
 
   g_stack.push_double(2.71828182846); stackCount++;
   g_stack.push_string("abcdefg"); stackCount++;

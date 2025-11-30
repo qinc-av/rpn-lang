@@ -68,19 +68,19 @@ public:
       rv += std::to_string(_frameRate._denominator) + " ->FRAC ->TC";
       return rv;
     }
-  // default latex
-  //  virtual std::string latex() const {
-  //	std::string rv = "\\text{" + (std::string)(*this) + "}";
-  //	return rv;
-  //  }
+    // default to_latex()
+    //  virtual std::string to_latex() const {
+    //	std::string rv = "\\text{" + (std::string)(*this) + "}";
+    //	return rv;
+    //  }
   };
 } // namespace stack
 
 namespace timecode_validator {
   extern const rpn::StrictTypeValidator d1_tc;
   extern const rpn::StrictTypeValidator d2_tc_tc;
-  extern const rpn::StrictTypeValidator d2_int_tc;
-  extern const rpn::StrictTypeValidator d2_tc_int;
+  extern const rpn::StrictTypeValidator d2_double_tc;
+  extern const rpn::StrictTypeValidator d2_tc_double;
 }
 #endif
 

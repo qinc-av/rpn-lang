@@ -128,6 +128,13 @@ rpn::Stack::pop_as_double() {
   return val;
 }
 
+int64_t
+rpn::Stack::pop_as_integer() {
+  auto tos = pop();
+  int64_t val = *tos;
+  return val;
+}
+
 bool
 rpn::Stack::pop_as_boolean() {
   auto tos = pop();
@@ -182,7 +189,11 @@ rpn::Stack::peek_string(int n) const {
 std::string
 rpn::Stack::peek_for_display(int n) const {
   auto const &sv = peek(n);
-  return sv.latex();
+  if (false) {
+    return sv.to_latex();
+  } else {
+    return sv.to_text();
+  }
 }
 
 int64_t
@@ -197,10 +208,17 @@ rpn::Stack::peek_double(int n) const {
   return sv;
 }
 
-double
+std::optional<double>
 rpn::Stack::peek_as_double(int n) const {
   auto &raw = peek(n);
   double val = raw;
+  return val;
+}
+
+std::optional<int64_t>
+rpn::Stack::peek_as_integer(int n) const {
+  auto &raw = peek(n);
+  int64_t val = raw;
   return val;
 }
 
@@ -360,7 +378,7 @@ rpn::Stack::print(const std::string &msg) {
     }
     type += ":";
     type += hc;
-    std::string strval = (*i)->to_string();
+    std::string strval = std::string(**i);
     if (strval.size() > 40) {
       strval.erase(37);
       strval += "...";

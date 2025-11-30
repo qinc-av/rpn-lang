@@ -26,7 +26,7 @@
 
 #define STACK_OPn_FUNC(op)						\
   static rpn::WordDefinition::Result STACK_OP(op)(rpn::Interp &rpn, rpn::WordContext *ctx, std::string &rest) { \
-    int n = (int)rpn.stack.pop_integer();					\
+    int n = (int)rpn.stack.pop_as_double();					\
     rpn.stack.op(n);							\
     return rpn::WordDefinition::Result::ok;				\
   }
@@ -54,7 +54,7 @@ STACK_OPn_FUNC(reversen);
 
 // depth is special because we push the value back on the stack
 static rpn::WordDefinition::Result STACK_OP(depth)(rpn::Interp &rpn, rpn::WordContext *ctx, std::string &rest) {
-  rpn.stack.push_integer(rpn.stack.depth());
+  rpn.stack.push_double(rpn.stack.depth());
   return rpn::WordDefinition::Result::ok;
 }
 

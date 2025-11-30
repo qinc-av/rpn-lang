@@ -124,7 +124,8 @@ namespace stack {
       return rv;
     }
 
-    virtual std::string latex() const {
+  // default to_text()
+    virtual std::string to_latex() const {
       std::string rv = "\\frac{";
       rv += std::to_string(_numerator);
       rv += "}{";
@@ -144,7 +145,7 @@ namespace frac_validator {
   extern const rpn::StrictTypeValidator d2_frac_double;
   extern const rpn::StrictTypeValidator d2_int_frac;
   extern const rpn::StrictTypeValidator d2_double_frac;
-  extern const rpn::StrictTypeValidator d5_int_int_int_int_frac;
+  extern const rpn::StrictTypeValidator d5_double_double_double_double_frac;
 }
 #endif
 

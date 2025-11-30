@@ -27,6 +27,8 @@
 
 namespace rpn {
   std::string to_string(const double &dv);
+  std::string to_string(const int64_t &dv);
+  int int_base();
 
   class Stack {
   public:
@@ -45,8 +47,11 @@ namespace rpn {
       virtual operator double() const { return std::nan(""); };
       //      virtual operator int64_t() const =0;
       virtual std::string deparse() const =0;
-      std::string to_string() const { return static_cast<std::string>(*this); }
-      virtual std::string latex() const {
+
+      virtual std::string to_text() const {
+        return static_cast<std::string>(*this);
+      }
+      virtual std::string to_latex() const {
 	std::string rv = "\\text{" + (std::string)(*this) + "}";
 	return rv;
       }
@@ -65,7 +70,8 @@ namespace rpn {
     std::string pop_string();
     int64_t pop_integer();
     double pop_double();
-    double pop_as_double(); // auto-converts integers to double, returns NaN if it couldn't convert
+    double pop_as_double(); // auto-converts integers to double, throws if not possible
+    int64_t pop_as_integer(); // auto-converts doubles to integer, throws if not possible
     bool pop_as_boolean(); // auto-converts boolean, integer, double, and string, returns false if it couldn't convert
 
     std::unique_ptr<Object> pop();
@@ -76,7 +82,8 @@ namespace rpn {
     std::string peek_for_display(int n) const; // auto-converts to string if the type is not string
     int64_t peek_integer(int n) const;
     double peek_double(int n) const;
-    double peek_as_double(int n) const; // auto-converts integers to double, returns NaN if it couldn't convert
+    std::optional<double> peek_as_double(int n) const; // auto-converts integers to double
+    std::optional<int64_t> peek_as_integer(int n) const; // auto-converts doubles to integers
 
     // basic stack operations
 
@@ -253,6 +260,8 @@ namespace rpn {
     const std::string &status() const;
 
     struct Privates;
+    Privates *m_p; // it's opaque so it's still private, except that anything in rpn-interp.cpp can access it
+
   private:
     rpn::WordDefinition::Result parse(std::string &line);
     void addStackWords();
@@ -261,7 +270,6 @@ namespace rpn {
     void addTypeWords();
     void addFractionWords();
     void addTimecodeWords();
-    Privates *m_p;
   };
 
 
@@ -334,7 +342,8 @@ class Double : public rpn::Stack::Object {
   virtual std::string deparse() const override {
     return std::to_string(_v);
   }
-  virtual std::string latex() const override {
+  // default to_text()
+  virtual std::string to_latex() const override {
     return rpn::to_string(_v);
   }
 
@@ -363,10 +372,11 @@ Integer(const int64_t &v) : _v(v) {}
     return (_v < rhs._v);
   }
   virtual std::string deparse() const override {
-    return std::to_string(_v);
+    return std::string("0d") + std::to_string(_v);
   }
-  virtual std::string latex() const override {
-    return rpn::to_string(_v);
+  // default to_text()
+  virtual std::string to_latex() const override {
+    return std::to_string(_v) + "_{" + std::to_string(rpn::int_base()) + "}";
   }
  private:
   int64_t _v;
@@ -394,9 +404,9 @@ class Boolean : public rpn::Stack::Object {
   virtual std::string deparse() const override {
     return std::string(*this);
   }
-  // default latex
-  //  virtual std::string latex() const {
-  //	std::string rv = "\\text{" + (std::string)(*this) + "}";
+  // default to_latex()
+  //  virtual std::string to_latex() const override {
+  //	std::string rv = "\\text{" + std::string(*this) + "}";
   //	return rv;
   //      }
  private:
@@ -425,7 +435,8 @@ class String : public rpn::Stack::Object {
     rv += _v + "\"";
     return rv;
   }
-  virtual std::string latex() const {
+  // default to_text()
+  virtual std::string to_latex() const override {
     return std::string("\"") + _v + "\"";
   }
 
@@ -482,7 +493,7 @@ public:
     for(auto const &m : _v) {
       rv += m.first;
       rv += ":";
-      rv += m.second->to_string();
+      rv += std::string(*m.second);
       rv += ", ";
     }
     rv += "}";
@@ -493,9 +504,9 @@ public:
     return "n/a";
   }
   const auto &val() const { return _v; };
-  // default latex
-  //  virtual std::string latex() const {
-  //	std::string rv = "\\text{" + (std::string)(*this) + "}";
+  // default to_latex()
+  //  virtual std::string to_latex() const override {
+  //	std::string rv = "\\text{" + std::string(*this) + "}";
   //	return rv;
   //  }
 protected:
@@ -548,14 +559,15 @@ public:
   virtual operator std::string() const override {
     std::string rv = "[";
     for(auto const &e : _v) {
-      rv += e->to_string();
+      rv += std::string(*e);
       rv += ", ";
     }
     rv += "]";
     return rv;
   };
   const auto &val() const { return _v; };
-  virtual std::string latex() const {
+  // default to_text()
+  virtual std::string to_latex() const override {
     return (std::string)(*this);
   }
  protected:
@@ -608,7 +620,8 @@ public:
     rv += std::to_string(_z) + " ->VEC3";
     return rv;
   }
-  virtual std::string latex() const {
+  // default to_text()
+  virtual std::string to_latex() const override {
     std::string rv = "[";
     if (!std::isnan(_x)) {
       rv += rpn::to_string(_x);
@@ -646,12 +659,13 @@ public:
     return rpn::WordDefinition::Result::ok;				\
   }
 
+#if 0
 #define NATIVE_WORD_FN_0_INTEGER(mangler, fn, val) \
   NATIVE_WORD_DECL(mangler, fn) {					\
     rpn.stack.push_integer(val);					\
     return rpn::WordDefinition::Result::ok;				\
   }
-
+#endif
 #define NATIVE_WORD_FN_1_NUMBER(mangler, fn)				\
   NATIVE_WORD_DECL(mangler, fn) {					\
     double s1 = rpn.stack.pop_as_double();				\

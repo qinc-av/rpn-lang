@@ -44,7 +44,7 @@ public:
     std::vector<std::string> ds;
     size_t n = _interp.stack.depth();
     for(size_t i=0; i<n; i++) {
-      ds.push_back(_interp.stack.peek_as_string(i+1));
+      ds.push_back(_interp.stack.peek_for_display(i+1));
     }
     return emscripten::val::array(ds.begin(), ds.end());
   }

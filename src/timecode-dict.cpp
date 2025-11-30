@@ -173,21 +173,21 @@ q::Timecode::to_string() const {
   return tmp;
 }
 
-NATIVE_WORD_DECL(timecode, to_tc_if) {
+NATIVE_WORD_DECL(timecode, to_tc_df) {
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
-  auto frame = rpn.stack.pop_integer();
+  auto frame = rpn.stack.pop_as_integer();
   auto ofrac = rpn.stack.pop();
   const auto &fr = POP_CAST(stack::Fraction,ofrac);
   rpn.stack.push(stack::Timecode(q::Timecode(frame,fr)));
   return rv;
 }
 
-NATIVE_WORD_DECL(timecode, to_tc_iiiif) {
+NATIVE_WORD_DECL(timecode, to_tc_ddddf) {
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
-  auto frame = rpn.stack.pop_integer();
-  auto second = rpn.stack.pop_integer();
-  auto minute = rpn.stack.pop_integer();
-  auto hour = rpn.stack.pop_integer();
+  auto frame = rpn.stack.pop_as_integer();
+  auto second = rpn.stack.pop_as_integer();
+  auto minute = rpn.stack.pop_as_integer();
+  auto hour = rpn.stack.pop_as_integer();
   auto ofrac = rpn.stack.pop();
   const auto &fr = POP_CAST(stack::Fraction,ofrac);
   rpn.stack.push(stack::Timecode(q::Timecode(hour,minute,second,frame,fr)));
@@ -213,15 +213,15 @@ NATIVE_WORD_DECL(timecode, framerate) {
 void
 rpn::Interp::addTimecodeWords() {
   rpn::Interp &rpn = *this; // in case we want to move this out someday
-  rpn.addDefinition("->TC", NATIVE_WORD_WDEF(timecode, frac_validator::d2_int_frac, to_tc_if, nullptr));
-  rpn.addDefinition("->TC", NATIVE_WORD_WDEF(timecode, frac_validator::d5_int_int_int_int_frac, to_tc_iiiif, nullptr));
+  rpn.addDefinition("->TC", NATIVE_WORD_WDEF(timecode, frac_validator::d2_double_frac, to_tc_df, nullptr));
+  rpn.addDefinition("->TC", NATIVE_WORD_WDEF(timecode, frac_validator::d5_double_double_double_double_frac, to_tc_ddddf, nullptr));
   rpn.addDefinition("FR", NATIVE_WORD_WDEF(timecode, timecode_validator::d1_tc, framerate, nullptr));
   rpn.addDefinition("->FRAMES", NATIVE_WORD_WDEF(timecode, timecode_validator::d1_tc, to_frames, nullptr));
 }
 
 const rpn::StrictTypeValidator timecode_validator::d1_tc({typeid(stack::Timecode).hash_code()}, "d1_tc");
 const rpn::StrictTypeValidator timecode_validator::d2_tc_tc({typeid(stack::Timecode).hash_code(),typeid(stack::Timecode).hash_code()}, "d2_tc_tc");
-const rpn::StrictTypeValidator timecode_validator::d2_int_tc({typeid(StInteger).hash_code(),typeid(stack::Timecode).hash_code()}, "d2_int_tc");
-const rpn::StrictTypeValidator timecode_validator::d2_tc_int({typeid(stack::Timecode).hash_code(),typeid(StInteger).hash_code()}, "d2_tc_int");
+const rpn::StrictTypeValidator timecode_validator::d2_double_tc({typeid(StDouble).hash_code(),typeid(stack::Timecode).hash_code()}, "d2_double_tc");
+const rpn::StrictTypeValidator timecode_validator::d2_tc_double({typeid(stack::Timecode).hash_code(),typeid(StDouble).hash_code()}, "d2_tc_double");
 
 /* end of QInc/Projects/color-calc/src/libs/rpn-lang/src/timecode-dict.cpp */

@@ -60,7 +60,8 @@ namespace stack {
       rv += std::to_string(this->imag()) + " ->COMPLEX";
       return rv;
     }
-    virtual std::string latex() const {
+  // default to_text()
+    virtual std::string to_latex() const override {
       return (std::string)(*this);
     }
   private:
