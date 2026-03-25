@@ -95,7 +95,9 @@ enum CompileType {
   ct_forloop,
   ct_whileloop,
   ct_lambda,
-  ct_mathexpr
+  ct_mathexpr,
+  ct_ifblock,      // IF ... THEN ... [ELSE ...] END
+  ct_ifbranch,     // internal: collecting one branch of an if-block
 };
 
 struct Progn : public rpn::WordContext, public rpn::Stack::Object {
@@ -137,6 +139,7 @@ public:
   rpn::WordDefinition::Result eval_whileloop(rpn::Interp &rpn);
   rpn::WordDefinition::Result eval_lambda(rpn::Interp &rpn);
   rpn::WordDefinition::Result eval_mathexpr(rpn::Interp &rpn);
+  rpn::WordDefinition::Result eval_ifblock(rpn::Interp &rpn);
 
   const std::vector<std::string> &wordlist() const { return _wordlist; };
 
@@ -329,6 +332,18 @@ Progn::eval_whileloop(rpn::Interp &rpn) {
 }
 
 rpn::WordDefinition::Result
+Progn::eval_ifblock(rpn::Interp &rpn) {
+  bool cond = rpn.stack.pop_as_boolean();
+  const char *key = cond ? "__true" : "__false";
+  auto it = _locals->find(key);
+  if (it != _locals->end()) {
+    auto *branch = dynamic_cast<Progn *>(it->second.get());
+    if (branch) return branch->eval(rpn);
+  }
+  return rpn::WordDefinition::Result::ok;
+}
+
+rpn::WordDefinition::Result
 Progn::eval_lambda(rpn::Interp &rpn) {
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
   std::string rest;
@@ -411,6 +426,14 @@ Progn::eval(rpn::Interp &rpn) {
     break;
 
   case ct_lambda:
+    rv = eval_lambda(rpn);
+    break;
+
+  case ct_ifblock:
+    rv = eval_ifblock(rpn);
+    break;
+
+  case ct_ifbranch:
     rv = eval_lambda(rpn);
     break;
 
@@ -673,6 +696,71 @@ NATIVE_WORD_DECL(private, ct_STEP) {
 }
 #endif
 
+// ── IF / THEN / ELSE / END ─────────────────────────────────────────────────
+//
+// Syntax (HP48-compatible):
+//   IF <true-branch> THEN END
+//   IF <true-branch> THEN <false-branch> ELSE END
+//
+// IF:   start ct_ifblock, start ct_ifbranch  (collecting true words)
+// THEN: end ct_ifbranch → store as "__true" in if-block locals.
+//       No new branch started — ELSE will start one if needed.
+// ELSE: start ct_ifbranch  (collecting false words)
+// END:  if a ct_ifbranch is open (ELSE was used), end it → "__false".
+//       End ct_ifblock. Top-level: execute immediately.
+//       Nested: store in parent locals with address key (ct_NEXT pattern).
+
+NATIVE_WORD_DECL(private, IF) {
+  rpn::Interp::Privates *p = dynamic_cast<rpn::Interp::Privates*>(ctx);
+  auto rv = p->start_compile(ct_ifblock, false);
+  if (rv == rpn::WordDefinition::Result::ok)
+    rv = p->start_compile(ct_ifbranch, false);
+  return rv;
+}
+
+NATIVE_WORD_DECL(private, ct_THEN) {
+  rpn::Interp::Privates *p = dynamic_cast<rpn::Interp::Privates*>(ctx);
+  Progn *branch = nullptr;
+  auto rv = p->end_compile(branch, ct_ifbranch);
+  if (rv != rpn::WordDefinition::Result::ok) return rv;
+  p->_ctVprogn.back()._locals->emplace("__true", branch);
+  return rv;
+}
+
+NATIVE_WORD_DECL(private, ct_ELSE) {
+  rpn::Interp::Privates *p = dynamic_cast<rpn::Interp::Privates*>(ctx);
+  // End the true branch (still open since IF), store it, start false branch.
+  Progn *branch = nullptr;
+  auto rv = p->end_compile(branch, ct_ifbranch);
+  if (rv != rpn::WordDefinition::Result::ok) return rv;
+  p->_ctVprogn.back()._locals->emplace("__true", branch);
+  return p->start_compile(ct_ifbranch, false);
+}
+
+NATIVE_WORD_DECL(private, ct_END) {
+  rpn::Interp::Privates *p = dynamic_cast<rpn::Interp::Privates*>(ctx);
+  // If a false-branch is open (ELSE was used), close it.
+  if (!p->_ctVprogn.empty() && p->_ctVprogn.back()._type == ct_ifbranch) {
+    Progn *branch = nullptr;
+    auto rv = p->end_compile(branch, ct_ifbranch);
+    if (rv != rpn::WordDefinition::Result::ok) return rv;
+    p->_ctVprogn.back()._locals->emplace("__false", branch);
+  }
+  // End the if-block.
+  Progn *progp = nullptr;
+  auto rv = p->end_compile(progp, ct_ifblock);
+  if (rv != rpn::WordDefinition::Result::ok) return rv;
+  if (p->_ctVprogn.size() == 0) {
+    rv = progp->eval(rpn);
+    delete progp;
+  } else {
+    std::string word = std::to_string((uint64_t)progp);
+    p->_ctVprogn.back()._locals->emplace(word, progp);
+    p->_ctVprogn.back().addWord(word);
+  }
+  return rv;
+}
+
 // << starts a lambda compile.  Valid at both runtime and compile time.
 NATIVE_WORD_DECL(private, LSHIFT_LAMBDA) {
   rpn::Interp::Privates *p = dynamic_cast<rpn::Interp::Privates*>(ctx);
@@ -730,16 +818,21 @@ rpn::Interp::Privates::add_private_words() {
   _rtDictionary.emplace("->RADIX", rpn::WordDefinition { rpn::StrictTypeValidator::d1_double, NATIVE_WORD_FN(private, to_radix), this });
   _rtDictionary.emplace("RADIX->", rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, radix_to), this });
 
-  _rtDictionary.emplace("<<", rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, LSHIFT_LAMBDA), this });
-  _rtDictionary.emplace("EXEC", rpn::WordDefinition { rpn::StackSizeValidator::one, NATIVE_WORD_FN(private, EXEC), this });
+  _rtDictionary.emplace("<<",   rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, LSHIFT_LAMBDA), this });
+  _rtDictionary.emplace("IF",   rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, IF),             this });
+  _rtDictionary.emplace("EXEC", rpn::WordDefinition { rpn::StackSizeValidator::one,  NATIVE_WORD_FN(private, EXEC),           this });
 
-  _ctDictionary.emplace(";", rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, ct_SEMICOLON), this });
-  _ctDictionary.emplace("(", rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, OPAREN), this });
-  _ctDictionary.emplace(".\"", rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, ct_DQUOTE), this });
-  _ctDictionary.emplace("FOR", rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, ct_FOR), this });
-  _ctDictionary.emplace("NEXT", rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, ct_NEXT), this });
-  _ctDictionary.emplace("<<", rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, LSHIFT_LAMBDA), this });
-  _ctDictionary.emplace(">>", rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, ct_RSHIFT_LAMBDA), this });
+  _ctDictionary.emplace(";",    rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, ct_SEMICOLON),   this });
+  _ctDictionary.emplace("(",    rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, OPAREN),         this });
+  _ctDictionary.emplace(".\"",  rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, ct_DQUOTE),      this });
+  _ctDictionary.emplace("FOR",  rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, ct_FOR),         this });
+  _ctDictionary.emplace("NEXT", rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, ct_NEXT),        this });
+  _ctDictionary.emplace("<<",   rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, LSHIFT_LAMBDA),  this });
+  _ctDictionary.emplace(">>",   rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, ct_RSHIFT_LAMBDA), this });
+  _ctDictionary.emplace("IF",   rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, IF),             this });
+  _ctDictionary.emplace("THEN", rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, ct_THEN),        this });
+  _ctDictionary.emplace("ELSE", rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, ct_ELSE),        this });
+  _ctDictionary.emplace("END",  rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, ct_END),         this });
 #ifdef notyet
   _ctDictionary.emplace("STEP", rpn::WordDefinition { rpn::StrictTypeValidator::d1_double, NATIVE_WORD_FN(private, ct_STEP), this });
 #endif
@@ -949,8 +1042,8 @@ rpn::Interp::Privates::compiletime_eval(const std::string &word, std::string &re
       // found something in the compiletime dict, evaluate it
       rv = cw->second.eval(_rpn, cw->second.context, rest);
 
-    } else if (std::isdigit(word[0])) {
-      // numbers just push
+    } else if (std::isdigit(word[0]) || (word[0]=='-' && word.size()>1 && std::isdigit(word[1]))) {
+      // numbers just push (including negative literals like -1. or -42)
       progn.addWord(word);
       rv=rpn::WordDefinition::Result::ok;
 

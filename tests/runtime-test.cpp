@@ -1079,4 +1079,89 @@ TEST_CASE( "geometry tests", "geometry" ) {
 }
 
 
+TEST_CASE( "if/then/else", "control" ) {
+  g_rpn.stack.clear();
+
+  // basic IF THEN (true branch)
+  {
+    g_rpn.stack.clear();
+    auto st = g_rpn.sync_eval("TRUE IF 42 THEN END");
+    REQUIRE( st == rpn::WordDefinition::Result::ok );
+    REQUIRE( 1 == g_rpn.stack.depth() );
+    REQUIRE( 42.0 == g_rpn.stack.peek_double(1) );
+  }
+
+  // basic IF THEN (false branch — stack unchanged)
+  {
+    g_rpn.stack.clear();
+    auto st = g_rpn.sync_eval("FALSE IF 42 THEN END");
+    REQUIRE( st == rpn::WordDefinition::Result::ok );
+    REQUIRE( 0 == g_rpn.stack.depth() );
+  }
+
+  // IF THEN ELSE END (true)
+  {
+    g_rpn.stack.clear();
+    auto st = g_rpn.sync_eval("TRUE IF 1 ELSE 2 END");
+    REQUIRE( st == rpn::WordDefinition::Result::ok );
+    REQUIRE( 1 == g_rpn.stack.depth() );
+    REQUIRE( 1.0 == g_rpn.stack.peek_double(1) );
+  }
+
+  // IF THEN ELSE END (false)
+  {
+    g_rpn.stack.clear();
+    auto st = g_rpn.sync_eval("FALSE IF 1 ELSE 2 END");
+    REQUIRE( st == rpn::WordDefinition::Result::ok );
+    REQUIRE( 1 == g_rpn.stack.depth() );
+    REQUIRE( 2.0 == g_rpn.stack.peek_double(1) );
+  }
+
+  // IF inside a word definition
+  {
+    g_rpn.stack.clear();
+    auto st = g_rpn.sync_eval(": abs-val DUP 0 < IF CHS THEN END ;");
+    REQUIRE( st == rpn::WordDefinition::Result::ok );
+
+    g_rpn.stack.clear();
+    g_rpn.sync_eval("-5 abs-val");
+    REQUIRE( 1 == g_rpn.stack.depth() );
+    REQUIRE( 5.0 == g_rpn.stack.peek_double(1) );
+
+    g_rpn.stack.clear();
+    g_rpn.sync_eval("5 abs-val");
+    REQUIRE( 1 == g_rpn.stack.depth() );
+    REQUIRE( 5.0 == g_rpn.stack.peek_double(1) );
+  }
+
+  // IF THEN ELSE inside a word definition
+  {
+    g_rpn.stack.clear();
+    auto st = g_rpn.sync_eval(": sign DUP 0 < IF DROP -1. ELSE DROP 1. END ;");
+    REQUIRE( st == rpn::WordDefinition::Result::ok );
+
+    g_rpn.stack.clear();
+    g_rpn.sync_eval("-99 sign");
+    REQUIRE( 1 == g_rpn.stack.depth() );
+    REQUIRE( -1.0 == g_rpn.stack.peek_double(1) );
+
+    g_rpn.stack.clear();
+    g_rpn.sync_eval("99 sign");
+    REQUIRE( 1 == g_rpn.stack.depth() );
+    REQUIRE( 1.0 == g_rpn.stack.peek_double(1) );
+  }
+
+  // nested IF inside FOR loop
+  {
+    g_rpn.stack.clear();
+    // push values less than 3 from 0..4
+    auto st = g_rpn.sync_eval("0 5 FOR i i 3. < IF i THEN END NEXT");
+    REQUIRE( st == rpn::WordDefinition::Result::ok );
+    REQUIRE( 3 == g_rpn.stack.depth() );
+    REQUIRE( 0.0 == g_rpn.stack.peek_double(3) );
+    REQUIRE( 1.0 == g_rpn.stack.peek_double(2) );
+    REQUIRE( 2.0 == g_rpn.stack.peek_double(1) );
+  }
+}
+
 /* end of qinc/rpn-lang/tests/runtime-test.cpp */
