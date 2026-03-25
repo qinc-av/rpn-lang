@@ -1207,4 +1207,160 @@ TEST_CASE("while/until loops", "control") {
   }
 }
 
+TEST_CASE("literal syntax", "types") {
+
+  // String literal "..." pushes StString
+  {
+    g_rpn.stack.clear();
+    auto st = g_rpn.sync_eval("\"hello\"");
+    REQUIRE( st == rpn::WordDefinition::Result::ok );
+    REQUIRE( 1 == g_rpn.stack.depth() );
+    REQUIRE( "hello" == g_rpn.stack.peek_string(1) );
+  }
+
+  // String literal with embedded spaces (requires parser grouping)
+  {
+    g_rpn.stack.clear();
+    auto st = g_rpn.sync_eval("\"hello world\"");
+    REQUIRE( st == rpn::WordDefinition::Result::ok );
+    REQUIRE( 1 == g_rpn.stack.depth() );
+    REQUIRE( "hello world" == g_rpn.stack.peek_string(1) );
+  }
+
+  // Backward compat: ." still works
+  {
+    g_rpn.stack.clear();
+    auto st = g_rpn.sync_eval(".\" abcdefg\"");
+    REQUIRE( st == rpn::WordDefinition::Result::ok );
+    REQUIRE( 1 == g_rpn.stack.depth() );
+    REQUIRE( "abcdefg" == g_rpn.stack.peek_string(1) );
+  }
+
+  // Name literal 'x' pushes StName
+  {
+    g_rpn.stack.clear();
+    auto st = g_rpn.sync_eval("'myvar'");
+    REQUIRE( st == rpn::WordDefinition::Result::ok );
+    REQUIRE( 1 == g_rpn.stack.depth() );
+    // StName operator string() returns the name
+    REQUIRE( "myvar" == std::string(g_rpn.stack.peek(1)) );
+  }
+
+  // String literal inside a compiled word
+  {
+    g_rpn.stack.clear();
+    auto st = g_rpn.sync_eval(": push-greeting \"hi there\" ;");
+    REQUIRE( st == rpn::WordDefinition::Result::ok );
+    st = g_rpn.sync_eval("push-greeting");
+    REQUIRE( st == rpn::WordDefinition::Result::ok );
+    REQUIRE( 1 == g_rpn.stack.depth() );
+    REQUIRE( "hi there" == g_rpn.stack.peek_string(1) );
+  }
+
+  // Name literal inside a compiled word
+  {
+    g_rpn.stack.clear();
+    auto st = g_rpn.sync_eval(": push-name 'x' ;");
+    REQUIRE( st == rpn::WordDefinition::Result::ok );
+    st = g_rpn.sync_eval("push-name");
+    REQUIRE( st == rpn::WordDefinition::Result::ok );
+    REQUIRE( 1 == g_rpn.stack.depth() );
+    REQUIRE( "x" == std::string(g_rpn.stack.peek(1)) );
+  }
+
+  // deparse produces new "..." format
+  {
+    g_rpn.stack.clear();
+    g_rpn.sync_eval("\"hello\"");
+    auto st = g_rpn.sync_eval("DEPARSE");
+    REQUIRE( st == rpn::WordDefinition::Result::ok );
+    REQUIRE( "\"hello\"" == g_rpn.stack.peek_string(1) );
+  }
+}
+
+TEST_CASE("global variables STO/RCL", "variables") {
+
+  // STO and RCL with StName ('x' syntax)
+  {
+    g_rpn.stack.clear();
+    auto st = g_rpn.sync_eval("42. 'x' STO");
+    REQUIRE( st == rpn::WordDefinition::Result::ok );
+    REQUIRE( 0 == g_rpn.stack.depth() );
+
+    st = g_rpn.sync_eval("'x' RCL");
+    REQUIRE( st == rpn::WordDefinition::Result::ok );
+    REQUIRE( 1 == g_rpn.stack.depth() );
+    REQUIRE( 42.0 == g_rpn.stack.peek_double(1) );
+  }
+
+  // STO and RCL also accept StString ("x" syntax — backward compat for embedders)
+  {
+    g_rpn.stack.clear();
+    auto st = g_rpn.sync_eval("99. \"mystr\" STO");
+    REQUIRE( st == rpn::WordDefinition::Result::ok );
+    st = g_rpn.sync_eval("\"mystr\" RCL");
+    REQUIRE( st == rpn::WordDefinition::Result::ok );
+    REQUIRE( 99.0 == g_rpn.stack.peek_double(1) );
+    g_rpn.sync_eval("'mystr' PURGE");
+  }
+
+  // Auto-recall by name (HP48 convention: variables shadow words)
+  {
+    g_rpn.stack.clear();
+    auto st = g_rpn.sync_eval("77. 'myvar' STO");
+    REQUIRE( st == rpn::WordDefinition::Result::ok );
+    st = g_rpn.sync_eval("myvar");
+    REQUIRE( st == rpn::WordDefinition::Result::ok );
+    REQUIRE( 1 == g_rpn.stack.depth() );
+    REQUIRE( 77.0 == g_rpn.stack.peek_double(1) );
+    g_rpn.sync_eval("'myvar' PURGE");
+  }
+
+  // VARS returns StName array of all global variable names
+  {
+    g_rpn.stack.clear();
+    g_rpn.sync_eval("'x' PURGE");
+    auto st = g_rpn.sync_eval("1. 'a' STO  2. 'b' STO");
+    REQUIRE( st == rpn::WordDefinition::Result::ok );
+    st = g_rpn.sync_eval("VARS");
+    REQUIRE( st == rpn::WordDefinition::Result::ok );
+    REQUIRE( 1 == g_rpn.stack.depth() );
+    auto arr_str = std::string(g_rpn.stack.peek(1));
+    REQUIRE( arr_str.find("a") != std::string::npos );
+    REQUIRE( arr_str.find("b") != std::string::npos );
+  }
+
+  // PURGE removes a variable
+  {
+    g_rpn.stack.clear();
+    g_rpn.sync_eval("'a' PURGE  'b' PURGE");
+    auto st = g_rpn.sync_eval("VARS");
+    REQUIRE( st == rpn::WordDefinition::Result::ok );
+    auto arr_str = std::string(g_rpn.stack.peek(1));
+    REQUIRE( arr_str.find("a") == std::string::npos );
+    REQUIRE( arr_str.find("b") == std::string::npos );
+  }
+
+  // Variable overwrite
+  {
+    g_rpn.stack.clear();
+    g_rpn.sync_eval("10. 'z' STO");
+    g_rpn.sync_eval("20. 'z' STO");
+    auto st = g_rpn.sync_eval("'z' RCL");
+    REQUIRE( st == rpn::WordDefinition::Result::ok );
+    REQUIRE( 20.0 == g_rpn.stack.peek_double(1) );
+    g_rpn.sync_eval("'z' PURGE");
+  }
+
+  // Word definition callable by name (existing dict behavior)
+  {
+    g_rpn.stack.clear();
+    auto st = g_rpn.sync_eval(": double2 2 * ;");
+    REQUIRE( st == rpn::WordDefinition::Result::ok );
+    st = g_rpn.sync_eval("7. double2");
+    REQUIRE( st == rpn::WordDefinition::Result::ok );
+    REQUIRE( 14.0 == g_rpn.stack.peek_double(1) );
+  }
+}
+
 /* end of qinc/rpn-lang/tests/runtime-test.cpp */

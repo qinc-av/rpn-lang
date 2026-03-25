@@ -437,9 +437,7 @@ class String : public rpn::Stack::Object {
     return (_v < rhs._v);
   }
   virtual std::string deparse() const override {
-    std::string rv = ".\" ";
-    rv += _v + "\"";
-    return rv;
+    return "\"" + _v + "\"";
   }
   // default to_text()
   virtual std::string to_latex() const override {
@@ -588,12 +586,40 @@ public:
  protected:
   std::vector<std::unique_ptr<rpn::Stack::Object>> _v;
 };
+// stack::Name — an HP48-style name/identifier object.
+// Pushed by the 'name' literal syntax; used as the name argument to STO/RCL/PURGE.
+// Names are more restricted than strings: no spaces, follow identifier rules.
+class Name : public rpn::Stack::Object {
+public:
+  Name(const std::string &v) : _v(v) {}
+  virtual operator std::string() const override { return _v; }
+  virtual std::unique_ptr<rpn::Stack::Object> deep_copy() const override {
+    return std::make_unique<Name>(_v);
+  }
+  virtual bool operator==(const Object &orhs) const override {
+    const auto &rhs = PEEK_CAST(const Name, orhs);
+    return (_v == rhs._v);
+  }
+  virtual bool operator>(const Object &orhs) const override {
+    const auto &rhs = PEEK_CAST(const Name, orhs);
+    return (_v > rhs._v);
+  }
+  virtual bool operator<(const Object &orhs) const override {
+    const auto &rhs = PEEK_CAST(const Name, orhs);
+    return (_v < rhs._v);
+  }
+  virtual std::string deparse() const override { return "'" + _v + "'"; }
+  virtual std::string to_latex() const override { return "'" + _v + "'"; }
+private:
+  std::string _v;
+};
 } // namespace stack
 
 using StDouble = stack::Double;
 using StInteger = stack::Integer;
 using StBoolean = stack::Boolean;
 using StString = stack::String;
+using StName = stack::Name;
 using StObject = stack::Object;
 using StArray = stack::Array;
 

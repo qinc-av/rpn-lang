@@ -77,6 +77,21 @@ rpn::int_radix() {
 static std::string::size_type
 nextWord(std::string &word, std::string &buffer, const std::string &delim=" \n\t") {
   word = "";
+
+  // Quoted string literal: "..." is one token even when it contains spaces.
+  // Guard: only applies when " is not itself a delimiter (skip in ." handler context).
+  if (!buffer.empty() && buffer[0] == '"' && delim.find('"') == std::string::npos) {
+    auto p_close = buffer.find('"', 1);
+    if (p_close != std::string::npos) {
+      word = buffer.substr(0, p_close + 1);   // includes both quote chars
+      buffer = buffer.substr(p_close + 1);
+      auto p_start = buffer.find_first_not_of(" \n\t");
+      buffer = (p_start != std::string::npos) ? buffer.substr(p_start) : "";
+      return p_close;
+    }
+    // Unterminated quote — fall through to whitespace splitting
+  }
+
   auto p1 = buffer.find_first_of(delim, 0);
   if (p1 == std::string::npos) { // not found
     word = buffer;
@@ -267,6 +282,8 @@ struct rpn::Interp::Privates : public rpn::WordContext {
 
   rpn::Interp &_rpn;
   std::string _status;
+
+  var_dict_t _globalVars;                              // STO/RCL global variables
 
   std::vector<Progn> _ctVprogn;
   std::vector<std::shared_ptr<var_dict_t>> _vlocals;
@@ -858,6 +875,61 @@ NATIVE_WORD_DECL(private, EXEC) {
   return progn->eval(rpn);
 }
 
+// ── STO / RCL / VARS / PURGE ────────────────────────────────────────────────
+
+// Extract a variable name from TOS — accepts StName ('x') or StString ("x").
+static std::string name_from_tos(rpn::Stack &stack) {
+  auto obj = stack.pop();
+  if (auto *n = dynamic_cast<StName*>(obj.get()))   return std::string(*n);
+  if (auto *s = dynamic_cast<StString*>(obj.get())) return std::string(*s);
+  throw std::runtime_error("expected name or string");
+}
+
+NATIVE_WORD_DECL(private, STO) {
+  // ( val name -- )  Store TOS value into global variable.  Name is StName or StString.
+  rpn::Interp::Privates *p = dynamic_cast<rpn::Interp::Privates*>(ctx);
+  std::string name;
+  try { name = name_from_tos(rpn.stack); }
+  catch (...) { return rpn::WordDefinition::Result::param_error; }
+  auto val = rpn.stack.pop();
+  if (!val) return rpn::WordDefinition::Result::param_error;
+  p->_globalVars[name] = std::move(val);
+  return rpn::WordDefinition::Result::ok;
+}
+
+NATIVE_WORD_DECL(private, RCL) {
+  // ( name -- val )  Recall a global variable.  Name is StName or StString.
+  rpn::Interp::Privates *p = dynamic_cast<rpn::Interp::Privates*>(ctx);
+  std::string name;
+  try { name = name_from_tos(rpn.stack); }
+  catch (...) { return rpn::WordDefinition::Result::param_error; }
+  auto gv = p->_globalVars.find(name);
+  if (gv == p->_globalVars.end()) return rpn::WordDefinition::Result::dict_error;
+  rpn.stack.push(*gv->second);
+  return rpn::WordDefinition::Result::ok;
+}
+
+NATIVE_WORD_DECL(private, VARS) {
+  // ( -- array )  Push StName array of all global variable names.
+  rpn::Interp::Privates *p = dynamic_cast<rpn::Interp::Privates*>(ctx);
+  StArray arr;
+  for (const auto &kv : p->_globalVars) {
+    arr.add_value(StName(kv.first));
+  }
+  rpn.stack.push(arr);
+  return rpn::WordDefinition::Result::ok;
+}
+
+NATIVE_WORD_DECL(private, PURGE) {
+  // ( name -- )  Remove a global variable.  Name is StName or StString.
+  rpn::Interp::Privates *p = dynamic_cast<rpn::Interp::Privates*>(ctx);
+  std::string name;
+  try { name = name_from_tos(rpn.stack); }
+  catch (...) { return rpn::WordDefinition::Result::param_error; }
+  p->_globalVars.erase(name);
+  return rpn::WordDefinition::Result::ok;
+}
+
 void
 rpn::Interp::Privates::add_private_words() {
   _rtDictionary.emplace(":", rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, COLON), this });
@@ -881,6 +953,10 @@ rpn::Interp::Privates::add_private_words() {
   _rtDictionary.emplace("IF",    rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, IF),             this });
   _rtDictionary.emplace("BEGIN", rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, BEGIN),          this });
   _rtDictionary.emplace("EXEC",  rpn::WordDefinition { rpn::StackSizeValidator::one,  NATIVE_WORD_FN(private, EXEC),           this });
+  _rtDictionary.emplace("STO",   rpn::WordDefinition { rpn::StackSizeValidator::two,  NATIVE_WORD_FN(private, STO),            this });
+  _rtDictionary.emplace("RCL",   rpn::WordDefinition { rpn::StackSizeValidator::one,  NATIVE_WORD_FN(private, RCL),            this });
+  _rtDictionary.emplace("VARS",  rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, VARS),           this });
+  _rtDictionary.emplace("PURGE", rpn::WordDefinition { rpn::StackSizeValidator::one,  NATIVE_WORD_FN(private, PURGE),          this });
 
   _ctDictionary.emplace(";",      rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, ct_SEMICOLON),    this });
   _ctDictionary.emplace("(",      rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, OPAREN),          this });
@@ -1001,6 +1077,18 @@ rpn::Interp::Privates::eval(const std::string &word, std::string &rest) {
 rpn::WordDefinition::Result
 rpn::Interp::Privates::runtime_eval(const std::string &word, std::string &rest) {
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::dict_error;
+
+  // String literal: "content" → push StString (strips surrounding quotes)
+  if (!word.empty() && word[0] == '"') {
+    _rpn.stack.push_string(word.size() >= 2 ? word.substr(1, word.size() - 2) : "");
+    return rpn::WordDefinition::Result::ok;
+  }
+  // Name literal: 'identifier' → push StName (strips surrounding quotes)
+  if (word.size() >= 3 && word[0] == '\'' && word.back() == '\'') {
+    _rpn.stack.push(StName(word.substr(1, word.size() - 2)));
+    return rpn::WordDefinition::Result::ok;
+  }
+
   // numbers just push
   if (std::isdigit(word[0])||(word[0]=='-'&&std::isdigit(word[1]))) {
     auto underscore = word.find("_");
@@ -1056,7 +1144,17 @@ rpn::Interp::Privates::runtime_eval(const std::string &word, std::string &rest) 
     }
 
   } else {
-    if (word_exists(word)) {
+    // HP48 convention: global variables shadow dictionary words
+    auto gv = _globalVars.find(word);
+    if (gv != _globalVars.end()) {
+      auto *pn = dynamic_cast<Progn*>(gv->second.get());
+      if (pn && pn->_type != ct_lambda) {
+        rv = pn->eval(_rpn);
+      } else {
+        _rpn.stack.push(*gv->second);
+        rv = rpn::WordDefinition::Result::ok;
+      }
+    } else if (word_exists(word)) {
       auto we = validate_word(word, _rpn.stack);
       if (we != _rtDictionary.end()) {
 	rv = we->second.eval(_rpn,  we->second.context, rest);
@@ -1105,6 +1203,16 @@ rpn::Interp::Privates::compiletime_eval(const std::string &word, std::string &re
     if (cw != _ctDictionary.end()) {
       // found something in the compiletime dict, evaluate it
       rv = cw->second.eval(_rpn, cw->second.context, rest);
+
+    } else if (!word.empty() && word[0] == '"') {
+      // string literal: stored verbatim; runtime_eval detects and pushes StString
+      progn.addWord(word);
+      rv = rpn::WordDefinition::Result::ok;
+
+    } else if (word.size() >= 3 && word[0] == '\'' && word.back() == '\'') {
+      // name literal: stored verbatim; runtime_eval detects and pushes StName
+      progn.addWord(word);
+      rv = rpn::WordDefinition::Result::ok;
 
     } else if (std::isdigit(word[0]) || (word[0]=='-' && word.size()>1 && std::isdigit(word[1]))) {
       // numbers just push (including negative literals like -1. or -42)
