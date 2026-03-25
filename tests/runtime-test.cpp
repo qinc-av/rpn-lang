@@ -1268,6 +1268,18 @@ TEST_CASE("literal syntax", "types") {
     REQUIRE( "x" == std::string(g_rpn.stack.peek(1)) );
   }
 
+  // Invalid name literals are rejected (fall through to dict_error)
+  {
+    g_rpn.stack.clear();
+    auto st = g_rpn.sync_eval("'42'");        // starts with digit
+    REQUIRE( st != rpn::WordDefinition::Result::ok );
+    st = g_rpn.sync_eval("'+'");              // operator char
+    REQUIRE( st != rpn::WordDefinition::Result::ok );
+    st = g_rpn.sync_eval("'hello world'");    // space splits token; outer ' missing from each half
+    REQUIRE( st != rpn::WordDefinition::Result::ok );
+    REQUIRE( 0 == g_rpn.stack.depth() );
+  }
+
   // deparse produces new "..." format
   {
     g_rpn.stack.clear();

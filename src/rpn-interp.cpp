@@ -1074,7 +1074,20 @@ rpn::Interp::Privates::eval(const std::string &word, std::string &rest) {
   return rv;
 }
 
+// A valid name starts with a letter or '_'; remaining chars are alnum, '_', or '-'.
+// This prevents names that shadow operators ('+'), look like numbers ('42'), etc.
+static bool is_valid_name(const std::string &s) {
+  if (s.empty()) return false;
+  if (!std::isalpha((unsigned char)s[0]) && s[0] != '_') return false;
+  for (size_t i = 1; i < s.size(); ++i) {
+    char c = s[i];
+    if (!std::isalnum((unsigned char)c) && c != '_' && c != '-') return false;
+  }
+  return true;
+}
+
 rpn::WordDefinition::Result
+
 rpn::Interp::Privates::runtime_eval(const std::string &word, std::string &rest) {
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::dict_error;
 
@@ -1083,10 +1096,18 @@ rpn::Interp::Privates::runtime_eval(const std::string &word, std::string &rest) 
     _rpn.stack.push_string(word.size() >= 2 ? word.substr(1, word.size() - 2) : "");
     return rpn::WordDefinition::Result::ok;
   }
-  // Name literal: 'identifier' → push StName (strips surrounding quotes)
+  // Name literal: 'identifier' → push StName.  Content must be a valid name.
+  // Invalid names (e.g. '+', '42') fall through to dict_error rather than
+  // silently creating variables that shadow operators or number literals.
   if (word.size() >= 3 && word[0] == '\'' && word.back() == '\'') {
-    _rpn.stack.push(StName(word.substr(1, word.size() - 2)));
-    return rpn::WordDefinition::Result::ok;
+    std::string name = word.substr(1, word.size() - 2);
+    if (is_valid_name(name)) {
+      _rpn.stack.push(StName(name));
+      return rpn::WordDefinition::Result::ok;
+    }
+    // Invalid name — fall through to dict_error
+    _trace("invalid name literal: '" + name + "'");
+    return rpn::WordDefinition::Result::dict_error;
   }
 
   // numbers just push
@@ -1210,9 +1231,15 @@ rpn::Interp::Privates::compiletime_eval(const std::string &word, std::string &re
       rv = rpn::WordDefinition::Result::ok;
 
     } else if (word.size() >= 3 && word[0] == '\'' && word.back() == '\'') {
-      // name literal: stored verbatim; runtime_eval detects and pushes StName
-      progn.addWord(word);
-      rv = rpn::WordDefinition::Result::ok;
+      // name literal: validate then store verbatim; runtime_eval pushes StName
+      std::string name = word.substr(1, word.size() - 2);
+      if (is_valid_name(name)) {
+        progn.addWord(word);
+        rv = rpn::WordDefinition::Result::ok;
+      } else {
+        _trace("invalid name literal at compile time: '" + name + "'");
+        rv = rpn::WordDefinition::Result::dict_error;
+      }
 
     } else if (std::isdigit(word[0]) || (word[0]=='-' && word.size()>1 && std::isdigit(word[1]))) {
       // numbers just push (including negative literals like -1. or -42)
