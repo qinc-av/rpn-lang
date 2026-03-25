@@ -815,6 +815,31 @@ TEST_CASE( "loop tests", "control" ) {
   }
 #endif
 
+  // FOR ... n STEP: body leaves n on TOS each iteration; STEP pops it as step.
+  // "0. 6. FOR i i 2. STEP" → i=0,2,4 (body pushes i then 2.; STEP pops 2.)
+  {
+    g_rpn.stack.clear();
+    auto st = g_rpn.sync_eval("0. 6. FOR i i 2. STEP");
+    REQUIRE( st == rpn::WordDefinition::Result::ok );
+    REQUIRE( g_rpn.stack.depth() == 3 );
+    REQUIRE( g_rpn.stack.peek_double(3) == 0. );
+    REQUIRE( g_rpn.stack.peek_double(2) == 2. );
+    REQUIRE( g_rpn.stack.peek_double(1) == 4. );
+  }
+
+  // Countdown: "5. 0. FOR i i -1. STEP" → i=5,4,3,2,1
+  {
+    g_rpn.stack.clear();
+    auto st = g_rpn.sync_eval("5. 0. FOR i i -1. STEP");
+    REQUIRE( st == rpn::WordDefinition::Result::ok );
+    REQUIRE( g_rpn.stack.depth() == 5 );
+    REQUIRE( g_rpn.stack.peek_double(5) == 5. );
+    REQUIRE( g_rpn.stack.peek_double(4) == 4. );
+    REQUIRE( g_rpn.stack.peek_double(3) == 3. );
+    REQUIRE( g_rpn.stack.peek_double(2) == 2. );
+    REQUIRE( g_rpn.stack.peek_double(1) == 1. );
+  }
+
 }
 
 TEST_CASE( "bolt-circle", "control" ) {

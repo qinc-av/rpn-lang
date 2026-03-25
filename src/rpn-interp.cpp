@@ -20,6 +20,7 @@
 #include <set>
 
 #include <cmath>
+#include <limits>
 #include <algorithm>
 #include <format>
 
@@ -118,7 +119,7 @@ enum CompileType {
 struct Progn : public rpn::WordContext, public rpn::Stack::Object {
 public:
   Progn(rpn::Interp::Privates &p, CompileType t) : _p(p), _type(t) { _locals = std::make_shared<var_dict_t>(); };
-  Progn(const Progn &other) : _p(other._p), _wordlist(other._wordlist), _type(other._type), _ident(other._ident) {
+  Progn(const Progn &other) : _p(other._p), _wordlist(other._wordlist), _type(other._type), _ident(other._ident), _step(other._step) {
     _locals = std::make_shared<var_dict_t>();
     for(auto const &v : *other._locals) {
       _locals->emplace(v.first, v.second->deep_copy());
@@ -190,6 +191,7 @@ public:
   std::shared_ptr<var_dict_t> _locals;
   CompileType _type;
   std::string _ident; // value and usage depends on type
+  double _step = 1.0; // FOR loop step (default 1, set by STEP word)
 };
 
 #include <chrono>
@@ -334,9 +336,29 @@ Progn::eval_forloop(rpn::Interp &rpn) {
   double end = rpn.stack.pop_as_double();
   double start = rpn.stack.pop_as_double();
   _p._vlocals.push_back(_locals);
-  for(; rv==rpn::WordDefinition::Result::ok && start<end; start += 1) {
-    (*_locals)[_ident] = std::make_unique<StDouble>(StDouble(start));
-    rv = eval_lambda(rpn);
+  bool step_from_stack = std::isnan(_step);
+
+  if (step_from_stack) {
+    // FOR ... n STEP: body runs first, then pops step from TOS each iteration.
+    // Loop exits when counter (after increment) would pass end.
+    double current = start;
+    double step = 1.0; // sentinel; overwritten after first body execution
+    do {
+      (*_locals)[_ident] = std::make_unique<StDouble>(current);
+      rv = eval_lambda(rpn);
+      if (rv != rpn::WordDefinition::Result::ok) break;
+      step = rpn.stack.pop_as_double();
+      current += step;
+    } while (rv == rpn::WordDefinition::Result::ok &&
+             (step > 0 ? current < end : current > end));
+  } else {
+    // FOR ... NEXT: check before body, fixed step (_step defaults to 1.0).
+    double step = _step;
+    auto loop_cond = [&]() { return step > 0 ? start < end : start > end; };
+    for(; rv==rpn::WordDefinition::Result::ok && loop_cond(); start += step) {
+      (*_locals)[_ident] = std::make_unique<StDouble>(start);
+      rv = eval_lambda(rpn);
+    }
   }
   _p._vlocals.pop_back();
   return rv;
@@ -711,14 +733,30 @@ NATIVE_WORD_DECL(private, ct_NEXT) {
   return rv;
 }
 
-#ifdef notyet
+// ct_STEP is the compile-time terminator for FOR...n STEP loops.
+// It marks the Progn with NaN so eval_forloop knows to pop the step from TOS
+// after each body execution (the body is responsible for leaving n on the stack).
+// The actual stack usage is identical to ct_NEXT except for the NaN marker.
 NATIVE_WORD_DECL(private, ct_STEP) {
+  rpn::Interp::Privates *p = dynamic_cast<rpn::Interp::Privates*>(ctx);
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
-  // rpn::Interp::Privates *p = dynamic_cast<rpn::Interp::Privates*>(ctx);
-  auto step = rpn.stack.pop_as_integer();
+  p->_ctVprogn.back()._step = std::numeric_limits<double>::quiet_NaN();
+  Progn *progp = nullptr;
+  rv = p->end_compile(progp, ct_forloop);
+  if (rv == rpn::WordDefinition::Result::ok) {
+    if (p->_ctVprogn.size() == 0) {
+      rv = progp->eval(rpn);
+      delete progp;
+    } else {
+      std::string word = std::to_string((uint64_t)progp);
+      p->_ctVprogn.back()._locals->emplace(word, progp);
+      p->_ctVprogn.back().addWord(word);
+    }
+  } else {
+    rv = rpn::WordDefinition::Result::compile_error;
+  }
   return rv;
 }
-#endif
 
 // ── BEGIN / WHILE / REPEAT / UNTIL ─────────────────────────────────────────
 //
@@ -973,9 +1011,7 @@ rpn::Interp::Privates::add_private_words() {
   _ctDictionary.emplace("THEN",   rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, ct_THEN),         this });
   _ctDictionary.emplace("ELSE",   rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, ct_ELSE),         this });
   _ctDictionary.emplace("END",    rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, ct_END),          this });
-#ifdef notyet
-  _ctDictionary.emplace("STEP", rpn::WordDefinition { rpn::StrictTypeValidator::d1_double, NATIVE_WORD_FN(private, ct_STEP), this });
-#endif
+  _ctDictionary.emplace("STEP",   rpn::WordDefinition { rpn::StackSizeValidator::zero,     NATIVE_WORD_FN(private, ct_STEP),         this });
 }
 
 rpn::WordDefinition::Result
