@@ -188,12 +188,7 @@ rpn::Stack::peek_string(int n) const {
 
 std::string
 rpn::Stack::peek_for_display(int n) const {
-  auto const &sv = peek(n);
-  if (true) {
-    return sv.to_latex();
-  } else {
-    return sv.to_text();
-  }
+  return peek(n).to_latex();
 }
 
 int64_t

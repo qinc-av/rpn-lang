@@ -13,6 +13,7 @@
  */
 
 #include <fstream>
+#include <iostream>
 #include <queue>
 #include <future>
 #include <mutex>
@@ -25,8 +26,13 @@
 #include "../rpn.h"
 #include "geometry.h"
 
-static int sk_double_decimals=10;
-static double sk_double_precision=10000000000;
+// These globals back the rpn::to_string() free functions used by stack type
+// operator string() methods, which have no interpreter context.  The canonical
+// per-instance state lives in Interp::Privates; these are kept in sync by the
+// ->PRECISION and ->RADIX words.  TODO(Phase 2.2): remove once display is
+// refactored to flow through the interpreter.
+static int sk_double_decimals = 10;
+static double sk_double_precision = 10000000000.0;
 static int _sk_int_radix = 10;
 
 std::string
@@ -115,9 +121,12 @@ public:
       rv += " ";
       rv += w;
     }
-    rv += ">>";
+    rv += " >>";
     return rv;
   };
+  virtual std::string to_latex() const override {
+    return (std::string)(*this);
+  }
   virtual std::unique_ptr<rpn::Stack::Object> deep_copy() const override { return std::make_unique<Progn>(*this); };
 
   void addWord(const std::string &word) { _wordlist.push_back(word); };
@@ -133,20 +142,23 @@ public:
 
   void clear() { _wordlist.clear(); };
 
-  void print() {
+  void print(std::ostream &out = std::cerr) {
     std::string str = (std::string)(*this);
-    printf("Progn %s\n", str.c_str());
-    printf("  type: %d\n", _type);
-    printf("  ident: %s\n", _ident.c_str());
-    printf("  locals:");
+    out << "Progn " << str << "\n";
+    out << "  type: " << _type << "\n";
+    out << "  ident: " << _ident << "\n";
+    out << "  locals:";
     for(const auto &lv : *_locals) {
-      printf(" %s,", lv.first.c_str());
+      out << " " << lv.first << ",";
     }
-    printf("\n");
+    out << "\n";
   }
 
   virtual std::string deparse() const override {
-    return "not-yet";
+    // Note: wordlists containing address-key references to nested lambdas
+    // (stored in _locals by ct_NEXT / ct_RSHIFT_LAMBDA) will not round-trip
+    // correctly.  Flat lambda wordlists deparse cleanly.
+    return (std::string)(*this);
   }
 
   // default to_latex()
@@ -166,25 +178,32 @@ public:
 using namespace std::chrono_literals;
 
 struct rpn::Interp::Privates : public rpn::WordContext {
+  // Per-instance display state.  Canonical values; globals above are kept in
+  // sync for use by the rpn::to_string() free functions.
+  int _double_decimals = 10;
+  double _double_precision = 10000000000.0;
+  int _int_radix = 10;
+
+  // Optional debug/trace sink.  When set, _trace() messages are forwarded here
+  // instead of being silently discarded.  Set via rpn::Interp::setDebugSink().
+  std::function<void(const std::string &)> _debugSink;
+  void _trace(const std::string &msg) const {
+    if (_tracing && _debugSink) _debugSink(msg);
+  }
+
   std::future<void> _arv;
   Privates(rpn::Interp &rpn, bool async) : _rpn(rpn), _tracing(false) {
     if (async) {
       _arv = std::async(std::launch::async, &rpn::Interp::Privates::main_loop, this);
     }
-    printf("%s: (tracing %d)\n", __func__, _tracing);
   };
   ~Privates() {
-    printf("bye bye\n");
     if (_running && _arv.valid()) {
       _running = false;
       _qcv.notify_one();
       std::future_status status;
       do {
-	switch(status = _arv.wait_for(1s)) {
-	case std::future_status::deferred: printf("deferred\n"); break;
-	case std::future_status::timeout: printf("timeout\n"); break;
-	case std::future_status::ready: printf("ready!\n"); break;
-	}
+        status = _arv.wait_for(1s);
       } while (status != std::future_status::ready);
     }
   };
@@ -231,7 +250,7 @@ struct rpn::Interp::Privates : public rpn::WordContext {
     for(auto line = lines.begin(); line!=lines.end() && rv==rpn::WordDefinition::Result::ok; line++, lineNo++) {
       rv = parse(*line);
       if (rv != rpn::WordDefinition::Result::ok) {
-	printf("parse error at %s:%d\n", path.c_str(), lineNo);
+        _status = "parse error at " + path + ":" + std::to_string(lineNo) + " " + _status;
       }
     }
 
@@ -326,14 +345,24 @@ Progn::eval_lambda(rpn::Interp &rpn) {
     if (lvp) {
       auto *pn = dynamic_cast<Progn*>(&(*lv->second));
       if (pn != nullptr) {
-	rpn.stack.print("recursive progn");
-	pn->print();
-	pn->eval(rpn);
+        if (_p._tracing) {
+          rpn.stack.print("progn local");
+          pn->print();
+        }
+        if (pn->_type == ct_lambda) {
+          // A lambda found in locals is pushed onto the stack, not executed.
+          // Use EXEC to execute it.
+          rpn.stack.push(*pn);
+        } else {
+          pn->eval(rpn);
+        }
 
       } else {
-	std::string sv = (*lv->second);
-	printf("push local: %s => %s\n", lv->first.c_str(), sv.c_str());
-	rpn.stack.push(*lv->second);
+        if (_p._tracing) {
+          std::string sv = (*lv->second);
+          _p._trace("push local: " + lv->first + " => " + sv);
+        }
+        rpn.stack.push(*lv->second);
 
       }
 
@@ -414,9 +443,7 @@ NATIVE_WORD_DECL(private, ct_SEMICOLON) {
   rpn::WordDefinition::Result rv = p->end_compile(progp, ct_worddef);
   if (rv == rpn::WordDefinition::Result::ok) {
 
-    if (p->_tracing) {
-      printf("adding '%s' to the dictionary\n", progp->_ident.c_str());
-    }
+    p->_trace("adding '" + progp->_ident + "' to the dictionary");
 
     p->_rtDictionary.emplace(progp->_ident, rpn::WordDefinition {
 	rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, COMPILED_EVAL), progp });
@@ -468,34 +495,35 @@ NATIVE_WORD_DECL(private, BOOL_FALSE) {
 }
 
 NATIVE_WORD_DECL(private, precision_to) {
-  // (rpn::Interp &rpn, rpn::WordContext *ctx, std::string &rest)
-  rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
-  rpn.stack.push_double(sk_double_decimals);
-  return rv;
+  rpn::Interp::Privates *p = dynamic_cast<rpn::Interp::Privates*>(ctx);
+  rpn.stack.push_double(p->_double_decimals);
+  return rpn::WordDefinition::Result::ok;
 }
 
 NATIVE_WORD_DECL(private, to_precision) {
-  // (rpn::Interp &rpn, rpn::WordContext *ctx, std::string &rest)
-  rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
+  rpn::Interp::Privates *p = dynamic_cast<rpn::Interp::Privates*>(ctx);
   auto new_dec = rpn.stack.pop_as_integer();
-  sk_double_decimals = std::clamp(new_dec, 0LL, 20LL); // there is probably a known upper bound here
-  sk_double_precision = std::pow(10, sk_double_decimals);
-  return rv;
+  p->_double_decimals = (int)std::clamp(new_dec, 0LL, 20LL);
+  p->_double_precision = std::pow(10, p->_double_decimals);
+  // Keep globals in sync for rpn::to_string() free functions (TODO Phase 2.2)
+  sk_double_decimals = p->_double_decimals;
+  sk_double_precision = p->_double_precision;
+  return rpn::WordDefinition::Result::ok;
 }
 
 NATIVE_WORD_DECL(private, radix_to) {
-  // (rpn::Interp &rpn, rpn::WordContext *ctx, std::string &rest)
-  rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
-  rpn.stack.push_double(_sk_int_radix);
-  return rv;
+  rpn::Interp::Privates *p = dynamic_cast<rpn::Interp::Privates*>(ctx);
+  rpn.stack.push_double(p->_int_radix);
+  return rpn::WordDefinition::Result::ok;
 }
 
 NATIVE_WORD_DECL(private, to_radix) {
-  // (rpn::Interp &rpn, rpn::WordContext *ctx, std::string &rest)
-  rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
+  rpn::Interp::Privates *p = dynamic_cast<rpn::Interp::Privates*>(ctx);
   auto new_radix = rpn.stack.pop_as_integer();
-  _sk_int_radix = new_radix;
-  return rv;
+  p->_int_radix = (int)new_radix;
+  // Keep global in sync for rpn::to_string() free functions (TODO Phase 2.2)
+  _sk_int_radix = p->_int_radix;
+  return rpn::WordDefinition::Result::ok;
 }
 
 NATIVE_WORD_DECL(private, OPAREN) {
@@ -645,6 +673,44 @@ NATIVE_WORD_DECL(private, ct_STEP) {
 }
 #endif
 
+// << starts a lambda compile.  Valid at both runtime and compile time.
+NATIVE_WORD_DECL(private, LSHIFT_LAMBDA) {
+  rpn::Interp::Privates *p = dynamic_cast<rpn::Interp::Privates*>(ctx);
+  return p->start_compile(ct_lambda, false);
+}
+
+// >> ends a lambda compile.
+// At top level: push the compiled Progn onto the stack.
+// Nested (inside a word def or another lambda): store in parent locals
+// and add a reference that, when executed, pushes the lambda onto the stack.
+NATIVE_WORD_DECL(private, ct_RSHIFT_LAMBDA) {
+  rpn::Interp::Privates *p = dynamic_cast<rpn::Interp::Privates*>(ctx);
+  Progn *progp = nullptr;
+  rpn::WordDefinition::Result rv = p->end_compile(progp, ct_lambda);
+  if (rv == rpn::WordDefinition::Result::ok) {
+    if (p->_ctVprogn.size() == 0) {
+      // Top level: push the lambda onto the stack
+      rpn.stack.push(*progp);
+      delete progp;
+    } else {
+      // Nested: store in parent locals; eval_lambda will push it (not execute)
+      // because its _type is ct_lambda.
+      std::string word = std::to_string((uint64_t)progp);
+      p->_ctVprogn.back()._locals->emplace(word, progp);
+      p->_ctVprogn.back().addWord(word);
+    }
+  }
+  return rv;
+}
+
+// EXEC: pop a lambda (Progn) from TOS and evaluate it.
+NATIVE_WORD_DECL(private, EXEC) {
+  auto sob = rpn.stack.pop();
+  Progn *progn = dynamic_cast<Progn*>(sob.get());
+  if (progn == nullptr) return rpn::WordDefinition::Result::param_error;
+  return progn->eval(rpn);
+}
+
 void
 rpn::Interp::Privates::add_private_words() {
   _rtDictionary.emplace(":", rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, COLON), this });
@@ -664,11 +730,16 @@ rpn::Interp::Privates::add_private_words() {
   _rtDictionary.emplace("->RADIX", rpn::WordDefinition { rpn::StrictTypeValidator::d1_double, NATIVE_WORD_FN(private, to_radix), this });
   _rtDictionary.emplace("RADIX->", rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, radix_to), this });
 
+  _rtDictionary.emplace("<<", rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, LSHIFT_LAMBDA), this });
+  _rtDictionary.emplace("EXEC", rpn::WordDefinition { rpn::StackSizeValidator::one, NATIVE_WORD_FN(private, EXEC), this });
+
   _ctDictionary.emplace(";", rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, ct_SEMICOLON), this });
   _ctDictionary.emplace("(", rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, OPAREN), this });
   _ctDictionary.emplace(".\"", rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, ct_DQUOTE), this });
   _ctDictionary.emplace("FOR", rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, ct_FOR), this });
   _ctDictionary.emplace("NEXT", rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, ct_NEXT), this });
+  _ctDictionary.emplace("<<", rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, LSHIFT_LAMBDA), this });
+  _ctDictionary.emplace(">>", rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, ct_RSHIFT_LAMBDA), this });
 #ifdef notyet
   _ctDictionary.emplace("STEP", rpn::WordDefinition { rpn::StrictTypeValidator::d1_double, NATIVE_WORD_FN(private, ct_STEP), this });
 #endif
@@ -676,8 +747,7 @@ rpn::Interp::Privates::add_private_words() {
 
 rpn::WordDefinition::Result
 rpn::Interp::Privates::eval(const std::string &word, std::string &rest) {
-  if (_tracing)
-    printf("evaluating: '%s' '%s'\n", word.c_str(), rest.c_str());
+  _trace("evaluating: '" + word + "' '" + rest + "'");
 
   if (word.size()==0) {
     return rpn::WordDefinition::Result::ok;
@@ -766,12 +836,7 @@ rpn::Interp::Privates::eval(const std::string &word, std::string &rest) {
 
   _status = wstatus + msg;
 
-  if (rv != rpn::WordDefinition::Result::ok) {
-    printf("%s: %s\n", __func__, _status.c_str());
-  }
-
-  if (_tracing)
-    printf("returns: %d (%s)\n", rv, rest.c_str());
+  _trace("returns: " + std::to_string((int)rv) + " ('" + rest + "')");
 
   return rv;
 }
@@ -842,8 +907,7 @@ rpn::Interp::Privates::runtime_eval(const std::string &word, std::string &rest) 
 	rv = rpn::WordDefinition::Result::param_error;
       }
     } else {
-      printf("%s: '%s' does not exist\n", __func__, word.c_str());
-      // default to dictionary error
+      _trace("runtime_eval: '" + word + "' does not exist");
     }
   }
   return rv;
@@ -909,7 +973,7 @@ rpn::Interp::Privates::compiletime_eval(const std::string &word, std::string &re
 
       } else {
 	rv = rpn::WordDefinition::Result::dict_error;
-	printf("unrecognized word at compile time: '%s'\n", word.c_str());
+        _trace("unrecognized word at compile time: '" + word + "'");
 
       }
     }
@@ -927,12 +991,15 @@ rpn::Interp::Interp(bool async) {
   addFractionWords();
   addTimecodeWords();
   geometry::addWords(*this);
-  printf("rpn::Interp::Interp()\n");
 }
 
 rpn::Interp::~Interp() {
-  printf("%s: bye bye\n", __func__);
   if (m_p) delete m_p;
+}
+
+void
+rpn::Interp::setDebugSink(std::function<void(const std::string &)> sink) {
+  m_p->_debugSink = std::move(sink);
 }
 
 const std::string &
@@ -950,6 +1017,15 @@ bool
 rpn::Interp::removeDefinition(const std::string &word) {
   m_p->_rtDictionary.erase(word);
   return true;
+}
+
+bool
+rpn::Interp::addCompiledWord(const std::string &word, const std::string &def, const StackValidator &/*v*/) {
+  // Compile and register 'word' by evaluating a colon definition.
+  // The custom validator 'v' is not yet applied; all compiled words currently
+  // use StackSizeValidator::zero.  TODO(Phase 2.3): apply 'v' post-registration.
+  auto rv = sync_eval(": " + word + " " + def + " ;");
+  return rv == rpn::WordDefinition::Result::ok;
 }
 
 std::multimap<std::string,rpn::WordDefinition>::iterator
@@ -971,14 +1047,6 @@ bool
 rpn::Interp::Privates::word_exists(const std::string &word) {
   auto beg = _rtDictionary.lower_bound(word);
   const auto &end = _rtDictionary.upper_bound(word);
-  if (beg == _rtDictionary.end() && false) {
-    printf("dictionary has %d entries\n", _rtDictionary.size());
-    for(const auto &w : _rtDictionary) {
-      printf("  [%s] => %d\n", w.first.c_str(), w.first == word);
-    }
-  }
-  printf("'%s' beg: %d\n", word.c_str(), beg == _rtDictionary.end());
-  printf("end: %d\n", end == _rtDictionary.end());
   return (beg != end);
 }
 

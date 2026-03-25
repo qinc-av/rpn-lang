@@ -245,6 +245,10 @@ namespace rpn {
     bool removeDefinition(const std::string &word);
     bool addCompiledWord(const std::string &word, const std::string &def, const StackValidator &v = StackSizeValidator::zero);
 
+    // Set a callback for debug/trace output.  Pass nullptr to disable.
+    // Output is only produced when tracing is enabled (TRUE TRACE).
+    void setDebugSink(std::function<void(const std::string &)> sink);
+
     bool validateWord(const std::string &word);
     bool wordExists(const std::string &word);
 
@@ -355,7 +359,7 @@ class Integer : public rpn::Stack::Object {
 public:
 Integer(const int64_t &v) : _v(v) {}
   virtual std::unique_ptr<rpn::Stack::Object> deep_copy() const override { return std::make_unique<Integer>(*this); };
-  virtual operator std::string() const override { return std::to_string(_v); };
+  virtual operator std::string() const override { return rpn::to_string(_v); };
   virtual operator double() const override { return double(_v); };
   virtual bool operator==(const Object &orhs) const override {
     const auto &rhs = PEEK_CAST(const Integer,orhs);
@@ -376,7 +380,9 @@ Integer(const int64_t &v) : _v(v) {}
   }
   // default to_text()
   virtual std::string to_latex() const override {
-    return rpn::to_string(_v) + "_{" + std::to_string(rpn::int_radix()) + "}";
+    std::string digits = rpn::to_string(_v);
+    if (rpn::int_radix() == 10) return digits;
+    return digits + "_{" + std::to_string(rpn::int_radix()) + "}";
   }
  private:
   int64_t _v;
@@ -500,8 +506,17 @@ public:
     return rv;
   };
   virtual std::string deparse() const override {
-    // XXX-ELH: todo
-    return "n/a";
+    if (_v.empty()) return "";
+    std::string rv;
+    bool first = true;
+    for (const auto &m : _v) {
+      rv += m.second->deparse();
+      rv += " .\" " + m.first + "\"";
+      rv += first ? " ->OBJ" : " +";
+      rv += " ";
+      first = false;
+    }
+    return rv;
   }
   const auto &val() const { return _v; };
   // default to_latex()

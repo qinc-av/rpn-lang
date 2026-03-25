@@ -63,8 +63,14 @@ NATIVE_WORD_DECL(t_object, to_object) {
 }
 
 NATIVE_WORD_DECL(t_object, object_to) {
-  rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
-  return rv;
+  auto sob = rpn.stack.pop();
+  const auto &obj = PEEK_CAST(const StObject, *sob);
+  for (const auto &m : obj.val()) {
+    rpn.stack.push(*m.second);
+    rpn.stack.push_string(m.first);
+  }
+  rpn.stack.push_integer((int64_t)obj.val().size());
+  return rpn::WordDefinition::Result::ok;
 }
 
 NATIVE_WORD_DECL(t_object, add_string_any_object) {
@@ -109,13 +115,27 @@ NATIVE_WORD_DECL(t_array, array_to) {
 }
 
 NATIVE_WORD_DECL(t_array, add_array_any) {
-  rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::implementation_error;
-  return rv;
+  // d2_array_any: TOS=any, NOS=array → append any to array
+  auto any = rpn.stack.pop();
+  auto sob = rpn.stack.pop();
+  StArray arr = PEEK_CAST(const StArray, *sob);
+  arr.add_value(*any);
+  rpn.stack.push(arr);
+  return rpn::WordDefinition::Result::ok;
 }
 
 NATIVE_WORD_DECL(t_array, add_any_array) {
-  rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::implementation_error;
-  return rv;
+  // d2_any_array: TOS=array, NOS=any → prepend any to array
+  auto sob = rpn.stack.pop();
+  const StArray &src = PEEK_CAST(const StArray, *sob);
+  auto any = rpn.stack.pop();
+  StArray result;
+  result.add_value(*any);
+  for (const auto &e : src.val()) {
+    result.add_value(*e);
+  }
+  rpn.stack.push(result);
+  return rpn::WordDefinition::Result::ok;
 }
 
 
