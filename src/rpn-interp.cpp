@@ -328,6 +328,13 @@ Progn::eval_forloop(rpn::Interp &rpn) {
 rpn::WordDefinition::Result
 Progn::eval_whileloop(rpn::Interp &rpn) {
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
+  bool until_style = (_locals->find("__until") != _locals->end());
+  while (rv == rpn::WordDefinition::Result::ok) {
+    rv = eval_lambda(rpn);
+    if (rv != rpn::WordDefinition::Result::ok) break;
+    bool cond = rpn.stack.pop_as_boolean();
+    if (until_style ? cond : !cond) break;  // UNTIL: stop when true; WHILE: stop when false
+  }
   return rv;
 }
 
@@ -696,6 +703,58 @@ NATIVE_WORD_DECL(private, ct_STEP) {
 }
 #endif
 
+// ── BEGIN / WHILE / REPEAT / UNTIL ─────────────────────────────────────────
+//
+// Syntax (HP48-compatible):
+//   BEGIN <body> <condition> WHILE REPEAT    ( loop while condition is true )
+//   BEGIN <body> UNTIL                       ( loop until condition is true )
+//
+// All words between BEGIN and WHILE/UNTIL are compiled into one wordlist.
+// At runtime, the wordlist is run; WHILE/UNTIL consume the top boolean:
+//   WHILE: continue if true (stop if false)
+//   UNTIL: stop if true (continue if false)
+// "__until" key in _locals distinguishes the two flavours.
+
+NATIVE_WORD_DECL(private, BEGIN) {
+  rpn::Interp::Privates *p = dynamic_cast<rpn::Interp::Privates*>(ctx);
+  return p->start_compile(ct_whileloop, false);
+}
+
+NATIVE_WORD_DECL(private, ct_WHILE) {
+  // WHILE is a compile-time no-op: absence of "__until" marks WHILE semantics.
+  (void)ctx; (void)rpn;
+  return rpn::WordDefinition::Result::ok;
+}
+
+static rpn::WordDefinition::Result
+finalize_whileloop(rpn::Interp &rpn, rpn::Interp::Privates *p) {
+  Progn *progp = nullptr;
+  auto rv = p->end_compile(progp, ct_whileloop);
+  if (rv != rpn::WordDefinition::Result::ok) return rv;
+  if (p->_ctVprogn.size() == 0) {
+    rv = progp->eval(rpn);
+    delete progp;
+  } else {
+    std::string word = std::to_string((uint64_t)progp);
+    p->_ctVprogn.back()._locals->emplace(word, progp);
+    p->_ctVprogn.back().addWord(word);
+  }
+  return rv;
+}
+
+NATIVE_WORD_DECL(private, ct_REPEAT) {
+  rpn::Interp::Privates *p = dynamic_cast<rpn::Interp::Privates*>(ctx);
+  return finalize_whileloop(rpn, p);
+}
+
+NATIVE_WORD_DECL(private, ct_UNTIL) {
+  rpn::Interp::Privates *p = dynamic_cast<rpn::Interp::Privates*>(ctx);
+  // Mark as UNTIL-style (exit when condition is true) before end_compile
+  // so the flag is visible in the copied Progn's shared _locals.
+  p->_ctVprogn.back()._locals->emplace("__until", std::make_unique<StBoolean>(StBoolean(true)));
+  return finalize_whileloop(rpn, p);
+}
+
 // ── IF / THEN / ELSE / END ─────────────────────────────────────────────────
 //
 // Syntax (HP48-compatible):
@@ -818,21 +877,26 @@ rpn::Interp::Privates::add_private_words() {
   _rtDictionary.emplace("->RADIX", rpn::WordDefinition { rpn::StrictTypeValidator::d1_double, NATIVE_WORD_FN(private, to_radix), this });
   _rtDictionary.emplace("RADIX->", rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, radix_to), this });
 
-  _rtDictionary.emplace("<<",   rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, LSHIFT_LAMBDA), this });
-  _rtDictionary.emplace("IF",   rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, IF),             this });
-  _rtDictionary.emplace("EXEC", rpn::WordDefinition { rpn::StackSizeValidator::one,  NATIVE_WORD_FN(private, EXEC),           this });
+  _rtDictionary.emplace("<<",    rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, LSHIFT_LAMBDA), this });
+  _rtDictionary.emplace("IF",    rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, IF),             this });
+  _rtDictionary.emplace("BEGIN", rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, BEGIN),          this });
+  _rtDictionary.emplace("EXEC",  rpn::WordDefinition { rpn::StackSizeValidator::one,  NATIVE_WORD_FN(private, EXEC),           this });
 
-  _ctDictionary.emplace(";",    rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, ct_SEMICOLON),   this });
-  _ctDictionary.emplace("(",    rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, OPAREN),         this });
-  _ctDictionary.emplace(".\"",  rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, ct_DQUOTE),      this });
-  _ctDictionary.emplace("FOR",  rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, ct_FOR),         this });
-  _ctDictionary.emplace("NEXT", rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, ct_NEXT),        this });
-  _ctDictionary.emplace("<<",   rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, LSHIFT_LAMBDA),  this });
-  _ctDictionary.emplace(">>",   rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, ct_RSHIFT_LAMBDA), this });
-  _ctDictionary.emplace("IF",   rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, IF),             this });
-  _ctDictionary.emplace("THEN", rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, ct_THEN),        this });
-  _ctDictionary.emplace("ELSE", rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, ct_ELSE),        this });
-  _ctDictionary.emplace("END",  rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, ct_END),         this });
+  _ctDictionary.emplace(";",      rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, ct_SEMICOLON),    this });
+  _ctDictionary.emplace("(",      rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, OPAREN),          this });
+  _ctDictionary.emplace(".\"",    rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, ct_DQUOTE),       this });
+  _ctDictionary.emplace("FOR",    rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, ct_FOR),          this });
+  _ctDictionary.emplace("NEXT",   rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, ct_NEXT),         this });
+  _ctDictionary.emplace("BEGIN",  rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, BEGIN),           this });
+  _ctDictionary.emplace("WHILE",  rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, ct_WHILE),        this });
+  _ctDictionary.emplace("REPEAT", rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, ct_REPEAT),       this });
+  _ctDictionary.emplace("UNTIL",  rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, ct_UNTIL),        this });
+  _ctDictionary.emplace("<<",     rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, LSHIFT_LAMBDA),   this });
+  _ctDictionary.emplace(">>",     rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, ct_RSHIFT_LAMBDA), this });
+  _ctDictionary.emplace("IF",     rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, IF),              this });
+  _ctDictionary.emplace("THEN",   rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, ct_THEN),         this });
+  _ctDictionary.emplace("ELSE",   rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, ct_ELSE),         this });
+  _ctDictionary.emplace("END",    rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, ct_END),          this });
 #ifdef notyet
   _ctDictionary.emplace("STEP", rpn::WordDefinition { rpn::StrictTypeValidator::d1_double, NATIVE_WORD_FN(private, ct_STEP), this });
 #endif

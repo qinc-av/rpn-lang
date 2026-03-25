@@ -1164,4 +1164,47 @@ TEST_CASE( "if/then/else", "control" ) {
   }
 }
 
+TEST_CASE("while/until loops", "control") {
+
+  // BEGIN...UNTIL: count up until reaching 3
+  {
+    g_rpn.stack.clear();
+    auto st = g_rpn.sync_eval("0 BEGIN 1 + DUP 3. == UNTIL");
+    REQUIRE( st == rpn::WordDefinition::Result::ok );
+    REQUIRE( 1 == g_rpn.stack.depth() );
+    REQUIRE( 3.0 == g_rpn.stack.peek_double(1) );
+  }
+
+  // BEGIN...WHILE...REPEAT: count down from 3 to 0
+  {
+    g_rpn.stack.clear();
+    auto st = g_rpn.sync_eval("3 BEGIN 1 - DUP 0. > WHILE REPEAT");
+    REQUIRE( st == rpn::WordDefinition::Result::ok );
+    REQUIRE( 1 == g_rpn.stack.depth() );
+    REQUIRE( 0.0 == g_rpn.stack.peek_double(1) );
+  }
+
+  // UNTIL inside a word definition
+  {
+    g_rpn.stack.clear();
+    auto st = g_rpn.sync_eval(": count-up 0 BEGIN 1 + DUP 5. == UNTIL ;");
+    REQUIRE( st == rpn::WordDefinition::Result::ok );
+    st = g_rpn.sync_eval("count-up");
+    REQUIRE( st == rpn::WordDefinition::Result::ok );
+    REQUIRE( 1 == g_rpn.stack.depth() );
+    REQUIRE( 5.0 == g_rpn.stack.peek_double(1) );
+  }
+
+  // WHILE inside a word definition: count down from 5, leave 0
+  {
+    g_rpn.stack.clear();
+    auto st = g_rpn.sync_eval(": countdown5 5 BEGIN 1 - DUP 0. > WHILE REPEAT ;");
+    REQUIRE( st == rpn::WordDefinition::Result::ok );
+    st = g_rpn.sync_eval("countdown5");
+    REQUIRE( st == rpn::WordDefinition::Result::ok );
+    REQUIRE( 1 == g_rpn.stack.depth() );
+    REQUIRE( 0.0 == g_rpn.stack.peek_double(1) );
+  }
+}
+
 /* end of qinc/rpn-lang/tests/runtime-test.cpp */
