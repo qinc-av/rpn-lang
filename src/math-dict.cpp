@@ -101,6 +101,25 @@ static double rad_to_deg(const double &rad) {
   return rad * 180. / M_PI;
 }
 
+// Convert an angle value from the current angle mode to radians.
+static double to_radians(double a, rpn::AngleMode mode) {
+  switch (mode) {
+    case rpn::AngleMode::degrees:  return a * (M_PI / 180.);
+    case rpn::AngleMode::radians:  return a;
+    case rpn::AngleMode::gradians: return a * (M_PI / 200.);
+  }
+  return a;
+}
+// Convert an angle value from radians to the current angle mode.
+static double from_radians(double a, rpn::AngleMode mode) {
+  switch (mode) {
+    case rpn::AngleMode::degrees:  return a * (180. / M_PI);
+    case rpn::AngleMode::radians:  return a;
+    case rpn::AngleMode::gradians: return a * (200. / M_PI);
+  }
+  return a;
+}
+
 static double multiply(double a, double b) {
   return a*b;
 }
@@ -176,45 +195,52 @@ static int64_t ipow(int64_t a, int64_t b) {
 }
 MATH_BINARY_INTEGER_FUNC(ipow);
 
-static double cos_deg(double a) {
-  return cos(deg_to_rad(a));
-}
-MATH_UNARY_FUNC(cos_deg);
+// Angle-mode-aware trig words.  Each reads rpn.angleMode() at call time so the
+// mode can be changed between evaluations without re-registering words.
 
-static double acos_deg(double a) {
-  return rad_to_deg(acos(a));
+NATIVE_WORD_DECL(math, trig_cos) {
+  double a = rpn.stack.pop_as_double();
+  rpn.stack.push_double(::cos(to_radians(a, rpn.angleMode())));
+  return rpn::WordDefinition::Result::ok;
 }
-MATH_UNARY_FUNC(acos_deg);
-
-static double sin_deg(double a) {
-  return sin(deg_to_rad(a));
+NATIVE_WORD_DECL(math, trig_acos) {
+  double a = rpn.stack.pop_as_double();
+  rpn.stack.push_double(from_radians(::acos(a), rpn.angleMode()));
+  return rpn::WordDefinition::Result::ok;
 }
-MATH_UNARY_FUNC(sin_deg);
-
-static double asin_deg(double a) {
-  return rad_to_deg(asin(a));
+NATIVE_WORD_DECL(math, trig_sin) {
+  double a = rpn.stack.pop_as_double();
+  rpn.stack.push_double(::sin(to_radians(a, rpn.angleMode())));
+  return rpn::WordDefinition::Result::ok;
 }
-MATH_UNARY_FUNC(asin_deg);
-
-static double tan_deg(double a) {
-  return tan(deg_to_rad(a));
+NATIVE_WORD_DECL(math, trig_asin) {
+  double a = rpn.stack.pop_as_double();
+  rpn.stack.push_double(from_radians(::asin(a), rpn.angleMode()));
+  return rpn::WordDefinition::Result::ok;
 }
-MATH_UNARY_FUNC(tan_deg);
-
-static double atan_deg(double a) {
-  return rad_to_deg(atan(a));
+NATIVE_WORD_DECL(math, trig_tan) {
+  double a = rpn.stack.pop_as_double();
+  rpn.stack.push_double(::tan(to_radians(a, rpn.angleMode())));
+  return rpn::WordDefinition::Result::ok;
 }
-MATH_UNARY_FUNC(atan_deg);
+NATIVE_WORD_DECL(math, trig_atan) {
+  double a = rpn.stack.pop_as_double();
+  rpn.stack.push_double(from_radians(::atan(a), rpn.angleMode()));
+  return rpn::WordDefinition::Result::ok;
+}
 
 static double ln2(double a) {
   return log(a)/log(2.);
 }
 MATH_UNARY_FUNC(ln2);
 
-static double atan2_deg(double a, double b) {
-  return rad_to_deg(atan2(a,b));
+// atan2: stack order is ( x y -- angle ), i.e. y=TOS, x=TOS-1 → atan2(y,x)
+NATIVE_WORD_DECL(math, trig_atan2) {
+  double y = rpn.stack.pop_as_double();
+  double x = rpn.stack.pop_as_double();
+  rpn.stack.push_double(from_radians(::atan2(y, x), rpn.angleMode()));
+  return rpn::WordDefinition::Result::ok;
 }
-MATH_BINARY_FUNC(atan2_deg);
 
 static int64_t imin(int64_t a, int64_t b) {
   return std::min(a,b);
@@ -316,19 +342,28 @@ rpn::Interp::addMathWords() {
   ADD_MATH_BINARY_NUMBER_WDEF(rpn, "/", divide, idivide);
   ADD_MATH_BINARY_NUMBER_WDEF(rpn, "^", pow, ipow);
   ADD_MATH_BINARY_NUMBER_WDEF(rpn, "HYPOT", hypot, hypot);
-  ADD_MATH_BINARY_NUMBER_WDEF(rpn, "ATAN2", atan2_deg, atan2_deg);
+  // ATAN2 accepts any two numeric types; both paths use the mode-aware body.
+  rpn.addDefinition("ATAN2", { rpn::StrictTypeValidator::d2_double_double,   NATIVE_WORD_FN(math, trig_atan2), nullptr });
+  rpn.addDefinition("ATAN2", { rpn::StrictTypeValidator::d2_double_integer,  NATIVE_WORD_FN(math, trig_atan2), nullptr });
+  rpn.addDefinition("ATAN2", { rpn::StrictTypeValidator::d2_integer_double,  NATIVE_WORD_FN(math, trig_atan2), nullptr });
+  rpn.addDefinition("ATAN2", { rpn::StrictTypeValidator::d2_integer_integer, NATIVE_WORD_FN(math, trig_atan2), nullptr });
   ADD_MATH_BINARY_NUMBER_WDEF(rpn, "MIN", fmin, imin);
   ADD_MATH_BINARY_NUMBER_WDEF(rpn, "MAX", fmax, imax);
 
   ADD_MATH_UNARY_NUMBER_WDEF(rpn, "INV", inverse, inverse);
   ADD_MATH_UNARY_NUMBER_WDEF(rpn, "SQ", square, isquare);
   ADD_MATH_UNARY_NUMBER_WDEF(rpn, "SQRT", sqrt, sqrt);
-  ADD_MATH_UNARY_NUMBER_WDEF(rpn, "COS", cos_deg, cos_deg);
-  ADD_MATH_UNARY_NUMBER_WDEF(rpn, "SIN", sin_deg, sin_deg);
-  ADD_MATH_UNARY_NUMBER_WDEF(rpn, "TAN", tan_deg, tan_deg);
-  ADD_MATH_UNARY_NUMBER_WDEF(rpn, "ACOS", acos_deg, acos_deg);
-  ADD_MATH_UNARY_NUMBER_WDEF(rpn, "ASIN", asin_deg, asin_deg);
-  ADD_MATH_UNARY_NUMBER_WDEF(rpn, "ATAN", atan_deg, atan_deg);
+  // Mode-aware trig words: both double and integer inputs accepted (pop_as_double handles cast).
+#define ADD_TRIG_WDEF(sym, fn) \
+  rpn.addDefinition(sym, { rpn::StrictTypeValidator::d1_double,  NATIVE_WORD_FN(math, fn), nullptr }); \
+  rpn.addDefinition(sym, { rpn::StrictTypeValidator::d1_integer, NATIVE_WORD_FN(math, fn), nullptr })
+  ADD_TRIG_WDEF("COS",  trig_cos);
+  ADD_TRIG_WDEF("SIN",  trig_sin);
+  ADD_TRIG_WDEF("TAN",  trig_tan);
+  ADD_TRIG_WDEF("ACOS", trig_acos);
+  ADD_TRIG_WDEF("ASIN", trig_asin);
+  ADD_TRIG_WDEF("ATAN", trig_atan);
+#undef ADD_TRIG_WDEF
   ADD_MATH_UNARY_NUMBER_WDEF(rpn, "EXP", exp, exp);
   ADD_MATH_UNARY_NUMBER_WDEF(rpn, "LN", log, log);
   ADD_MATH_UNARY_NUMBER_WDEF(rpn, "LN2", ln2, ln2);
@@ -352,6 +387,28 @@ rpn::Interp::addMathWords() {
   addDefinition("k_E", MATH_CONSTANT_WDEF(e));
   addDefinition("RAND", MATH_CONSTANT_WDEF(rand));
   addDefinition("DRAND", MATH_CONSTANT_WDEF(drand));
+
+  // Angle mode: ->DEG / ->RAD / ->GRAD set the mode; ANGLEMODE queries it.
+  rpn.addDefinition("->DEG",  { rpn::StackSizeValidator::zero, [](rpn::Interp &rpn, rpn::WordContext *, std::string &) {
+    rpn.setAngleMode(rpn::AngleMode::degrees);
+    return rpn::WordDefinition::Result::ok;
+  }, nullptr });
+  rpn.addDefinition("->RAD",  { rpn::StackSizeValidator::zero, [](rpn::Interp &rpn, rpn::WordContext *, std::string &) {
+    rpn.setAngleMode(rpn::AngleMode::radians);
+    return rpn::WordDefinition::Result::ok;
+  }, nullptr });
+  rpn.addDefinition("->GRAD", { rpn::StackSizeValidator::zero, [](rpn::Interp &rpn, rpn::WordContext *, std::string &) {
+    rpn.setAngleMode(rpn::AngleMode::gradians);
+    return rpn::WordDefinition::Result::ok;
+  }, nullptr });
+  rpn.addDefinition("ANGLEMODE", { rpn::StackSizeValidator::zero, [](rpn::Interp &rpn, rpn::WordContext *, std::string &) {
+    switch (rpn.angleMode()) {
+      case rpn::AngleMode::degrees:  rpn.stack.push_string("DEG");  break;
+      case rpn::AngleMode::radians:  rpn.stack.push_string("RAD");  break;
+      case rpn::AngleMode::gradians: rpn.stack.push_string("GRAD"); break;
+    }
+    return rpn::WordDefinition::Result::ok;
+  }, nullptr });
 
   //  rpn.addDefinition("LSHIFT", MATH_BINARY_DEF(lshift)); // integer
   //  rpn.addDefinition("RSHIFT", MATH_BINARY_DEF(rshift)); // integer

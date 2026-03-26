@@ -1400,4 +1400,95 @@ TEST_CASE("global variables STO/RCL", "variables") {
   }
 }
 
+TEST_CASE("angle mode DEG/RAD/GRAD", "trig") {
+  static constexpr double kPi = M_PI;
+  // helper: abs difference
+  auto near = [](double a, double b, double eps=1e-10) { return std::abs(a-b) < eps; };
+
+  // Default is degrees
+  {
+    g_rpn.setAngleMode(rpn::AngleMode::degrees);
+    g_rpn.stack.clear();
+    g_rpn.sync_eval("90. SIN");
+    REQUIRE( near(g_rpn.stack.peek_double(1), 1.0) );
+
+    g_rpn.stack.clear();
+    g_rpn.sync_eval("0. COS");
+    REQUIRE( near(g_rpn.stack.peek_double(1), 1.0) );
+
+    g_rpn.stack.clear();
+    g_rpn.sync_eval("45. TAN");
+    REQUIRE( near(g_rpn.stack.peek_double(1), 1.0) );
+  }
+
+  // ASIN/ACOS/ATAN in degrees mode
+  {
+    g_rpn.setAngleMode(rpn::AngleMode::degrees);
+    g_rpn.stack.clear();
+    g_rpn.sync_eval("1. ASIN");
+    REQUIRE( near(g_rpn.stack.peek_double(1), 90.0) );
+
+    g_rpn.stack.clear();
+    g_rpn.sync_eval("1. ACOS");
+    REQUIRE( near(g_rpn.stack.peek_double(1), 0.0) );
+
+    g_rpn.stack.clear();
+    g_rpn.sync_eval("1. ATAN");
+    REQUIRE( near(g_rpn.stack.peek_double(1), 45.0) );
+  }
+
+  // Radians mode
+  {
+    g_rpn.stack.clear();
+    g_rpn.sync_eval("->RAD");
+    REQUIRE( g_rpn.angleMode() == rpn::AngleMode::radians );
+
+    g_rpn.stack.clear();
+    g_rpn.sync_eval("1. ASIN");
+    REQUIRE( near(g_rpn.stack.peek_double(1), kPi/2.) );
+
+    g_rpn.stack.clear();
+    g_rpn.sync_eval("0. SIN");
+    REQUIRE( near(g_rpn.stack.peek_double(1), 0.0) );
+
+    // ATAN2: stack is ( x y -- angle ); y=TOS, x=TOS-1
+    g_rpn.stack.clear();
+    g_rpn.sync_eval("0. 1. ATAN2");   // atan2(1, 0) = π/2
+    REQUIRE( near(g_rpn.stack.peek_double(1), kPi/2.) );
+  }
+
+  // Gradians mode: 100 grad = 90 deg = π/2 rad
+  {
+    g_rpn.stack.clear();
+    g_rpn.sync_eval("->GRAD");
+    REQUIRE( g_rpn.angleMode() == rpn::AngleMode::gradians );
+
+    g_rpn.stack.clear();
+    g_rpn.sync_eval("100. SIN");
+    REQUIRE( near(g_rpn.stack.peek_double(1), 1.0) );
+
+    g_rpn.stack.clear();
+    g_rpn.sync_eval("1. ASIN");
+    REQUIRE( near(g_rpn.stack.peek_double(1), 100.0) );
+  }
+
+  // ANGLEMODE query word
+  {
+    g_rpn.stack.clear();
+    g_rpn.sync_eval("->DEG ANGLEMODE");
+    REQUIRE( g_rpn.stack.peek_string(1) == "DEG" );
+
+    g_rpn.stack.clear();
+    g_rpn.sync_eval("->RAD ANGLEMODE");
+    REQUIRE( g_rpn.stack.peek_string(1) == "RAD" );
+
+    g_rpn.stack.clear();
+    g_rpn.sync_eval("->GRAD ANGLEMODE");
+    REQUIRE( g_rpn.stack.peek_string(1) == "GRAD" );
+  }
+
+  // Leave in degrees for subsequent tests
+  g_rpn.setAngleMode(rpn::AngleMode::degrees);
+}
+
 /* end of qinc/rpn-lang/tests/runtime-test.cpp */

@@ -286,6 +286,7 @@ struct rpn::Interp::Privates : public rpn::WordContext {
   std::string _status;
 
   var_dict_t _globalVars;                              // STO/RCL global variables
+  rpn::AngleMode _angleMode = rpn::AngleMode::degrees; // trig mode
 
   std::vector<Progn> _ctVprogn;
   std::vector<std::shared_ptr<var_dict_t>> _vlocals;
@@ -1324,6 +1325,9 @@ rpn::Interp::Interp(bool async) {
 rpn::Interp::~Interp() {
   if (m_p) delete m_p;
 }
+
+rpn::AngleMode rpn::Interp::angleMode() const { return m_p->_angleMode; }
+void rpn::Interp::setAngleMode(rpn::AngleMode mode) { m_p->_angleMode = mode; }
 
 void
 rpn::Interp::setDebugSink(std::function<void(const std::string &)> sink) {

@@ -212,6 +212,8 @@ namespace rpn {
     size_t _n;
   };
 
+  enum class AngleMode { degrees, radians, gradians };
+
   struct WordDefinition {
     enum class Result {
       ok,
@@ -251,6 +253,9 @@ namespace rpn {
 
     bool validateWord(const std::string &word);
     bool wordExists(const std::string &word);
+
+    AngleMode angleMode() const;
+    void setAngleMode(AngleMode mode);
 
     /*
      * XXX-ELH- should the stack be public or private?
