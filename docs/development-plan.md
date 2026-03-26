@@ -74,12 +74,6 @@ source of most of these tasks.
 
 **Complexity:** M.
 
-### 3.4 Unit Conversions
-
-New `units-dict.cpp`. Conversion words for length, mass, temperature, pressure, volume, angle. Pure conversion words — no new type.
-
-**Complexity:** S.
-
 ---
 
 ## Phase 4 — Advanced Mathematics
@@ -93,13 +87,28 @@ New `units-dict.cpp`. Conversion words for length, mass, temperature, pressure, 
 
 ---
 
-## Phase 5 — Testing
+## Phase 5 — Units
 
-### 5.1 Structured Validator Tests
+Design TBD.  Key decisions to work through before implementation:
+
+- **`StUnit` type**: number + `UnitExpr` (map of unit-name → rational exponent).  All values stored against their own unit; SI is the canonical intermediate for conversions and dimensional checking.
+- **Unit database**: flat table of name → (dimension vector, SI scale factor).  Adding a unit is one table entry, not a new word.  No per-unit conversion words; no n² problem.
+- **Arithmetic**: `+`/`-` require compatible dimensions; `*`/`/` combine dimension vectors; `^` scales exponents; `SQRT` halves them.  Trig words require dimensionless or angle-unit input.
+- **Single conversion word**: `CONVERT` (or `->`) pops a target unit expression from TOS, converts through SI, pushes result in the target unit.
+- **Literal syntax**: TBD — something like `2[in]` or `2_in` to distinguish unit names from variable names and dictionary words.
+- **Compound / derived units**: `in²`, `m/s`, `kg·m/s²` fall out naturally from the dimension map — never stored explicitly in the database.
+
+**Complexity:** L.  Not blocking anything in Phases 3–4; design first.
+
+---
+
+## Phase 6 — Testing
+
+### 6.1 Structured Validator Tests
 
 `tests/validator-tests.h` has ~200 hand-written cases as a static map. Wrap into parameterized Catch2 `TEST_CASE`s with descriptions so failures are identifiable.
 
-### 5.2 Comprehensive Word Tests
+### 6.2 Comprehensive Word Tests
 
 TDD for all Phase 1 control flow (write tests before implementation). Test error paths. `DEPARSE` round-trip tests. Per-dict coverage.
 
