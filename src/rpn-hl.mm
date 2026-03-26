@@ -67,6 +67,24 @@
   }
   return si;
 }
+
+- (NSDictionary*) wordHelp:(NSString*)nsword {
+  auto h = _rpn->wordHelp([nsword UTF8String]);
+  NSMutableArray<NSString*> *effects = [[NSMutableArray<NSString*> alloc] init];
+  for (const auto &e : h.effects) [effects addObject:@(e.c_str())];
+  return @{
+    @"name":        @(h.name.c_str()),
+    @"description": @(h.description.c_str()),
+    @"category":    @(h.category.c_str()),
+    @"effects":     effects,
+  };
+}
+
+- (NSArray<NSString*>*) wordList {
+  NSMutableArray<NSString*> *list = [[NSMutableArray<NSString*> alloc] init];
+  for (const auto &w : _rpn->wordList()) [list addObject:@(w.c_str())];
+  return list;
+}
 @end
 
 /* end of QInc/Projects/RP42/rpn-lang/src/rpn-hl.mm */

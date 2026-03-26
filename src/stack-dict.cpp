@@ -64,6 +64,7 @@ static rpn::WordDefinition::Result STACK_OP(depth)(rpn::Interp &rpn, rpn::WordCo
 void
 rpn::Interp::addStackWords() {
   rpn::Interp &rpn(*this);
+  setWordCategory("stack");
 
   ADD_STACK_OP(rpn, "DROP", one, drop);
   ADD_STACK_OP(rpn, "CLEAR", zero, clear);
@@ -90,6 +91,29 @@ rpn::Interp::addStackWords() {
 : DUP2 OVER OVER ;
 : DROP2 DROP DROP ;
 )");
+
+  addWordMetadata("DROP",     "Discard TOS.");
+  addWordMetadata("CLEAR",    "Clear the entire stack.");
+  addWordMetadata("DEPTH",    "Push the current stack depth.");
+  addWordMetadata("SWAP",     "Exchange the top two items.");
+  addWordMetadata("ROLLU",    "Roll the whole stack up: TOS moves to the bottom.");
+  addWordMetadata("ROLLD",    "Roll the whole stack down: bottom item becomes TOS.");
+  addWordMetadata("OVER",     "Copy NOS (second item) to TOS.");
+  addWordMetadata("DUP",      "Duplicate TOS.");
+  addWordMetadata("ROTU",     "Rotate the top three items up.");
+  addWordMetadata("ROTD",     "Rotate the top three items down.");
+  addWordMetadata("DROPn",    "Drop the top n items. n is on TOS.");
+  addWordMetadata("DUPn",     "Duplicate the top n items. n is on TOS.");
+  addWordMetadata("NIPn",     "Remove the item at depth n. n is on TOS.");
+  addWordMetadata("PICK",     "Copy the item at depth n to TOS. n is on TOS.");
+  addWordMetadata("ROLLDn",   "Roll the top n items down. n is on TOS.");
+  addWordMetadata("ROLLUn",   "Roll the top n items up. n is on TOS.");
+  addWordMetadata("TUCKn",    "Tuck TOS under the n-th item. n is on TOS.");
+  addWordMetadata(".S",       "Print the stack contents to the debug sink.");
+  addWordMetadata("REVERSE",  "Reverse the entire stack.");
+  addWordMetadata("REVERSEn", "Reverse the top n items. n is on TOS.");
+  addWordMetadata("DUP2",     "Duplicate the top two items (equivalent to OVER OVER).");
+  addWordMetadata("DROP2",    "Drop the top two items (equivalent to DROP DROP).");
 
 }
 

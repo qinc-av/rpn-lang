@@ -131,6 +131,9 @@ namespace rpn {
   public:
     virtual bool operator()(const std::vector<size_t> &types, rpn::Stack &stack) const =0;
     const std::string to_string() const { return _name; }
+    // Human-readable input types for word help display, e.g. "double integer".
+    // Default returns the raw validator name; subclasses override for clean output.
+    virtual std::string input_types() const { return _name; }
   protected:
   StackValidator(const std::string &name) : _name(name) {};
   std::string _name;
@@ -192,6 +195,14 @@ namespace rpn {
   StrictTypeValidator(const std::vector<size_t> &types, const std::string name) : StackValidator(name),  _types(types) {}
     virtual bool operator()(const std::vector<size_t> &types, rpn::Stack &stack) const override;
     bool operator<(const StrictTypeValidator &rhs) const;
+    // "d2_double_integer" → "double integer"
+    virtual std::string input_types() const override {
+      auto p = _name.find('_');
+      if (p == std::string::npos) return _name;
+      std::string s = _name.substr(p + 1);
+      for (char &c : s) if (c == '_') c = ' ';
+      return s;
+    }
     //    std::string to_string() const override;
   private:
     const std::vector<size_t> _types;
@@ -207,12 +218,27 @@ namespace rpn {
 
   StackSizeValidator(size_t n) : StackValidator(std::string("StackSizeValidator") + ":" + std::to_string(n)), _n(n) {}
     virtual bool operator()(const std::vector<size_t> &types, rpn::Stack &stack) const override;
+    // n=2 → "any any"
+    virtual std::string input_types() const override {
+      std::string s;
+      for (size_t i = 0; i < _n; i++) { if (i) s += ' '; s += "any"; }
+      return s;
+    }
     //    std::string to_string() const override;
   private:
     size_t _n;
   };
 
   enum class AngleMode { degrees, radians, gradians };
+
+  // Assembled word documentation returned by Interp::wordHelp().
+  struct WordHelp {
+    std::string name;
+    std::string description;
+    std::string category;
+    std::vector<std::string> effects;  // one entry per overload; auto-derived from validator
+                                       // or "( inputs -- return_types )" when return_types is set
+  };
 
   struct WordDefinition {
     enum class Result {
@@ -224,10 +250,11 @@ namespace rpn {
       compile_error, // error in compiling
       implementation_error, // not implmemented or similar
     };
-    //    std::string description;
     const StackValidator &validator;
     std::function<Result(Interp &rpn, WordContext *ctx, std::string &rest)> eval;
     WordContext *context;
+    std::string return_types = ""; // output types, e.g. "double". Combined with
+                                   // validator.input_types() to form the effect string.
   };
 
   class Interp {
@@ -246,6 +273,15 @@ namespace rpn {
     bool addDefinition(const std::string &word, const WordDefinition &def);
     bool removeDefinition(const std::string &word);
     bool addCompiledWord(const std::string &word, const std::string &def, const StackValidator &v = StackSizeValidator::zero);
+
+    // Word introspection.  setWordCategory() sets the category stamped on all
+    // subsequent addDefinition() calls (use at the top of each addXxxWords()).
+    // addWordMetadata() sets the description for a word name.
+    void setWordCategory(const std::string &category);
+    void addWordMetadata(const std::string &word, const std::string &description);
+
+    WordHelp wordHelp(const std::string &word) const;
+    std::vector<std::string> wordList() const;
 
     // Set a callback for debug/trace output.  Pass nullptr to disable.
     // Output is only produced when tracing is enabled (TRUE TRACE).

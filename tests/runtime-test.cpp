@@ -1563,4 +1563,63 @@ TEST_CASE("angle mode DEG/RAD/GRAD", "trig") {
   g_rpn.setAngleMode(rpn::AngleMode::degrees);
 }
 
+TEST_CASE("word introspection", "API") {
+  // wordList returns a non-empty list without duplicates
+  {
+    auto wl = g_rpn.wordList();
+    REQUIRE( !wl.empty() );
+    // spot-check expected words are present
+    auto has = [&](const std::string &w) {
+      return std::find(wl.begin(), wl.end(), w) != wl.end();
+    };
+    REQUIRE( has("+") );
+    REQUIRE( has("STO") );
+    REQUIRE( has("CIRCLE") );
+    // no duplicates
+    std::vector<std::string> sorted = wl;
+    std::sort(sorted.begin(), sorted.end());
+    auto it = std::adjacent_find(sorted.begin(), sorted.end());
+    REQUIRE( it == sorted.end() );
+  }
+
+  // wordHelp: known word has name, category, and effects
+  {
+    auto h = g_rpn.wordHelp("+");
+    REQUIRE( h.name == "+" );
+    REQUIRE( !h.description.empty() );
+    REQUIRE( h.category == "math" );
+    REQUIRE( !h.effects.empty() );
+  }
+
+  // wordHelp: overloaded word has multiple effects entries
+  {
+    auto h = g_rpn.wordHelp("CIRCLE");
+    REQUIRE( h.name == "CIRCLE" );
+    REQUIRE( h.category == "geometry" );
+    REQUIRE( h.effects.size() == 2 );
+  }
+
+  // wordHelp: unknown word returns name only, empty fields
+  {
+    auto h = g_rpn.wordHelp("__NO_SUCH_WORD__");
+    REQUIRE( h.name == "__NO_SUCH_WORD__" );
+    REQUIRE( h.description.empty() );
+    REQUIRE( h.effects.empty() );
+  }
+
+  // Embedder-added word gets empty category (after constructor reset)
+  {
+    rpn::Interp local(false);
+    local.addDefinition("TEST-WORD", rpn::WordDefinition {
+      rpn::StackSizeValidator::zero,
+      [](rpn::Interp&, rpn::WordContext*, std::string&) { return rpn::WordDefinition::Result::ok; },
+      nullptr, ""
+    });
+    local.addWordMetadata("TEST-WORD", "A test word");
+    auto h = local.wordHelp("TEST-WORD");
+    REQUIRE( h.description == "A test word" );
+    REQUIRE( h.category.empty() );  // no setWordCategory was called
+  }
+}
+
 /* end of qinc/rpn-lang/tests/runtime-test.cpp */

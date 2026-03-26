@@ -289,6 +289,10 @@ struct rpn::Interp::Privates : public rpn::WordContext {
   rpn::AngleMode _angleMode = rpn::AngleMode::degrees; // trig mode
   int _binaryWordsize = 64;                            // binary operation wordsize (1–64)
 
+  struct WordMeta { std::string description; std::string category; };
+  std::map<std::string, WordMeta> _wordMetadata;       // per-name description + category
+  std::string _currentCategory;                        // stamped on addDefinition calls
+
   std::vector<Progn> _ctVprogn;
   std::vector<std::shared_ptr<var_dict_t>> _vlocals;
 
@@ -1014,6 +1018,38 @@ rpn::Interp::Privates::add_private_words() {
   _ctDictionary.emplace("ELSE",   rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, ct_ELSE),         this });
   _ctDictionary.emplace("END",    rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, ct_END),          this });
   _ctDictionary.emplace("STEP",   rpn::WordDefinition { rpn::StackSizeValidator::zero,     NATIVE_WORD_FN(private, ct_STEP),         this });
+
+  _rpn.setWordCategory("control");
+  _rpn.addWordMetadata(":",           "Begin a word definition.  `: name ... ;`");
+  _rpn.addWordMetadata("(",           "Comment.  `( text )` — ignored by the interpreter.");
+  _rpn.addWordMetadata(".\"",         "Print a string literal to the debug sink.");
+  _rpn.addWordMetadata("FOR",         "Counted loop.  `start end FOR var ... NEXT` (step 1) or `start end FOR var ... step STEP` (step from TOS each iteration).");
+  _rpn.addWordMetadata("NEXT",        "Close a FOR loop with fixed step 1.");
+  _rpn.addWordMetadata("STEP",        "Close a FOR loop; body leaves the step value on TOS each iteration.");
+  _rpn.addWordMetadata("IF",          "Conditional.  `cond IF ... THEN ... ELSE ... END`  — branches on boolean TOS.");
+  _rpn.addWordMetadata("THEN",        "Separate the true-branch from the false-branch of an IF.");
+  _rpn.addWordMetadata("ELSE",        "Begin the false-branch of an IF block.");
+  _rpn.addWordMetadata("END",         "Close an IF block.");
+  _rpn.addWordMetadata("BEGIN",       "Begin a WHILE or UNTIL loop.");
+  _rpn.addWordMetadata("WHILE",       "Close a BEGIN loop body; loop continues while condition on TOS is true.");
+  _rpn.addWordMetadata("UNTIL",       "Close a BEGIN loop body; loop continues until condition on TOS is true (at least one iteration).");
+  _rpn.addWordMetadata("REPEAT",      "Alias for WHILE.");
+  _rpn.addWordMetadata("<<",          "Begin a lambda literal.  `<< ... >>`");
+  _rpn.addWordMetadata("EXEC",        "Execute the lambda on TOS.");
+  _rpn.addWordMetadata("STO",         "Store a value into a named variable.  `value 'name' STO`");
+  _rpn.addWordMetadata("RCL",         "Recall a variable by name.  `'name' RCL`  — also triggered by bare name evaluation.");
+  _rpn.addWordMetadata("VARS",        "Push an array of all currently defined variable names.");
+  _rpn.addWordMetadata("PURGE",       "Delete the variable named by TOS.");
+  _rpn.addWordMetadata("DEPARSE",     "Push the RPN source string that recreates TOS.");
+  _rpn.addWordMetadata("EVAL",        "Evaluate TOS as an RPN string.");
+  _rpn.addWordMetadata("TRACE",       "Enable or disable execution tracing (boolean on TOS).");
+  _rpn.addWordMetadata("WORDLIST",    "Push an array of all defined word names.");
+  _rpn.addWordMetadata("TRUE",        "Push boolean true.");
+  _rpn.addWordMetadata("FALSE",       "Push boolean false.");
+  _rpn.addWordMetadata("->PRECISION", "Set the display decimal precision (number of significant digits).");
+  _rpn.addWordMetadata("PRECISION->", "Push the current display decimal precision.");
+  _rpn.addWordMetadata("->RADIX",     "Set the integer display radix (2, 8, 10, or 16).");
+  _rpn.addWordMetadata("RADIX->",     "Push the current integer display radix.");
 }
 
 rpn::WordDefinition::Result
@@ -1321,6 +1357,7 @@ rpn::Interp::Interp(bool async) {
   addFractionWords();
   addTimecodeWords();
   geometry::addWords(*this);
+  setWordCategory(""); // reset so embedder-added words don't inherit a built-in category
 }
 
 rpn::Interp::~Interp() {
@@ -1348,6 +1385,11 @@ rpn::Interp::status() const {
 bool
 rpn::Interp::addDefinition(const std::string &word, const WordDefinition &def) {
   m_p->_rtDictionary.emplace(word, def);
+  // Stamp current category on first registration of this word name
+  if (!m_p->_currentCategory.empty()) {
+    auto &meta = m_p->_wordMetadata[word];
+    if (meta.category.empty()) meta.category = m_p->_currentCategory;
+  }
   return true;
 }
 
@@ -1396,6 +1438,55 @@ rpn::Interp::validateWord(const std::string &word) {
 bool
 rpn::Interp::wordExists(const std::string &word) {
   return m_p->word_exists(word);
+}
+
+void
+rpn::Interp::setWordCategory(const std::string &category) {
+  m_p->_currentCategory = category;
+}
+
+void
+rpn::Interp::addWordMetadata(const std::string &word, const std::string &description) {
+  auto &meta = m_p->_wordMetadata[word];
+  meta.description = description;
+  if (meta.category.empty() && !m_p->_currentCategory.empty())
+    meta.category = m_p->_currentCategory;
+}
+
+rpn::WordHelp
+rpn::Interp::wordHelp(const std::string &word) const {
+  rpn::WordHelp h;
+  h.name = word;
+  auto mit = m_p->_wordMetadata.find(word);
+  if (mit != m_p->_wordMetadata.end()) {
+    h.description = mit->second.description;
+    h.category    = mit->second.category;
+  }
+  auto range = m_p->_rtDictionary.equal_range(word);
+  for (auto wi = range.first; wi != range.second; ++wi) {
+    const auto &def = wi->second;
+    std::string input = def.validator.input_types();
+    std::string effect;
+    if (!def.return_types.empty()) {
+      effect = input.empty() ? "( -- " + def.return_types + " )"
+                             : "( " + input + " -- " + def.return_types + " )";
+    } else {
+      effect = input.empty() ? "()" : "( " + input + " )";
+    }
+    if (std::find(h.effects.begin(), h.effects.end(), effect) == h.effects.end())
+      h.effects.push_back(effect);
+  }
+  return h;
+}
+
+std::vector<std::string>
+rpn::Interp::wordList() const {
+  std::vector<std::string> result;
+  std::string prev;
+  for (const auto &kv : m_p->_rtDictionary) {
+    if (kv.first != prev) { result.push_back(kv.first); prev = kv.first; }
+  }
+  return result;
 }
 
 void

@@ -17,6 +17,7 @@
 #include <string>
 #include <vector>
 #include <functional>
+#include "rpn.h"  // for rpn::WordHelp
 
 namespace rpn {
   class Interp;
@@ -46,6 +47,10 @@ typedef NS_ENUM(NSInteger, RpnResult) {
 - (NSString*) status;
 - (NSArray<NSString*>*) displayStack;
 - (rpn::Interp &) rpnInterp;
+
+// Word introspection
+- (NSDictionary*) wordHelp:(NSString*)word;   // keys: name, description, category, effects (NSArray<NSString*>)
+- (NSArray<NSString*>*) wordList;
 @end
 
 #else // ! __OBJC__
@@ -75,6 +80,9 @@ public:
 
   std::string status();
   std::vector<std::string> displayStack();
+
+  rpn::WordHelp wordHelp(const std::string &word) const;
+  std::vector<std::string> wordList() const;
 
 private:
   rpn::Interp *_interp;

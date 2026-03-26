@@ -244,6 +244,7 @@ const rpn::StrictTypeValidator frac_validator::d5_double_double_double_double_fr
 void
 rpn::Interp::addFractionWords() {
   rpn::Interp &rpn = *this; // in case we want to move this out someday
+  setWordCategory("fraction");
 
   rpn.addDefinition("->FRAC", NATIVE_WORD_WDEF(fraction, rpn::StrictTypeValidator::d2_integer_integer, to_frac_ii, nullptr));
   rpn.addDefinition("->FRAC", NATIVE_WORD_WDEF(fraction, rpn::StrictTypeValidator::d1_double, to_frac_d, nullptr));
@@ -260,6 +261,15 @@ rpn::Interp::addFractionWords() {
   ADD_FRAC_NUM_WORD(rpn, "*", mult);
   ADD_FRAC_NUM_WORD(rpn, "/", divide);
   ADD_FRAC_NUM_WORD(rpn, "^", pow);
+
+  addWordMetadata("->FRAC",   "Create a fraction from integer numerator and denominator, or approximate a double as a fraction.");
+  addWordMetadata("->FLOAT",  "Convert a fraction to double.");
+  addWordMetadata("OBJ->",    "Explode a fraction to its integer numerator and denominator.");
+  addWordMetadata("EVAL",     "Evaluate a fraction to its double value.");
+  addWordMetadata("INV",      "Reciprocal of a fraction.");
+  addWordMetadata("NEG",      "Negate a fraction.");
+  addWordMetadata("SQ",       "Square a fraction.");
+  addWordMetadata("SQRT",     "Square root of a fraction (returns a fraction approximation).");
 }
 
 /* end of QInc/Projects/color-calc/src/libs/rpn-lang/src/fraction-dict.cpp */

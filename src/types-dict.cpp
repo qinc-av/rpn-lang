@@ -328,6 +328,7 @@ NATIVE_WORD_DECL(t_array, reverse) {
 
 void
 rpn::Interp::addTypeWords() {
+  setWordCategory("types");
   addDefinition("->INT", NATIVE_WORD_WDEF(types, rpn::StrictTypeValidator::d1_double, to_int, nullptr));
   addDefinition("->FLOAT", NATIVE_WORD_WDEF(types, rpn::StrictTypeValidator::d1_integer, to_float, nullptr));
   addDefinition("->STRING", NATIVE_WORD_WDEF(types, rpn::StackSizeValidator::one, to_string, nullptr));
@@ -378,6 +379,21 @@ rpn::Interp::addTypeWords() {
   auto st = sync_eval(": VEC3->{xy} ( <v3> <v3'> ) VEC3-> DROP ->VEC3y SWAP ->VEC3x + ;");
   st = sync_eval(": ->{xy} ( x y --  <v3'> ) ->VEC3x SWAP ->VEC3y + ;");
   printf("->{xy} : %s\n", status().c_str());
+
+  addWordMetadata("->INT",    "Convert TOS to integer (rounded to nearest).");
+  addWordMetadata("->FLOAT",  "Convert TOS to double.");
+  addWordMetadata("->STRING", "Convert TOS to its string representation.");
+  addWordMetadata("->OBJ",    "Create a single-field object.  `value \"key\" ->OBJ`");
+  addWordMetadata("OBJ->",    "Explode an object, array, complex, fraction, or vec3 to its components.");
+  addWordMetadata("->ARRAY",  "Collect the top n items into an array. n is on TOS.");
+  addWordMetadata("ARREV",    "Reverse an array in-place.");
+  addWordMetadata("+",        "Add, append, or merge: numbers, vec3 components, array + element, or object + field.");
+  addWordMetadata("-",        "Subtract: numbers or vec3 components.");
+  addWordMetadata("->VEC3",   "Create a 3D vector from three numbers (x, y, z).");
+  addWordMetadata("->VEC3x",  "Create a VEC3 with only the X component set (Y and Z are NaN).");
+  addWordMetadata("->VEC3y",  "Create a VEC3 with only the Y component set (X and Z are NaN).");
+  addWordMetadata("->VEC3z",  "Create a VEC3 with only the Z component set (X and Y are NaN).");
+  addWordMetadata("VEC3->",   "Explode a VEC3 to x, y, z doubles.");
 }
 
 /* end of qinc/rpn-lang/src/types-dict.cpp */

@@ -213,10 +213,15 @@ NATIVE_WORD_DECL(timecode, framerate) {
 void
 rpn::Interp::addTimecodeWords() {
   rpn::Interp &rpn = *this; // in case we want to move this out someday
+  setWordCategory("timecode");
   rpn.addDefinition("->TC", NATIVE_WORD_WDEF(timecode, frac_validator::d2_double_frac, to_tc_df, nullptr));
   rpn.addDefinition("->TC", NATIVE_WORD_WDEF(timecode, frac_validator::d5_double_double_double_double_frac, to_tc_ddddf, nullptr));
   rpn.addDefinition("FR", NATIVE_WORD_WDEF(timecode, timecode_validator::d1_tc, framerate, nullptr));
   rpn.addDefinition("->FRAMES", NATIVE_WORD_WDEF(timecode, timecode_validator::d1_tc, to_frames, nullptr));
+
+  addWordMetadata("->TC",      "Create a timecode from (frames, framerate) or (h, m, s, frames, framerate).");
+  addWordMetadata("FR",        "Extract the frame rate (as a fraction) from a timecode.");
+  addWordMetadata("->FRAMES",  "Convert a timecode to an absolute frame count.");
 }
 
 const rpn::StrictTypeValidator timecode_validator::d1_tc({typeid(stack::Timecode).hash_code()}, "d1_tc");

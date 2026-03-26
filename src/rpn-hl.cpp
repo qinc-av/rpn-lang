@@ -63,4 +63,14 @@ RpnInterp::displayStack() {
   return rv;
 }
 
+rpn::WordHelp
+RpnInterp::wordHelp(const std::string &word) const {
+  return _interp->wordHelp(word);
+}
+
+std::vector<std::string>
+RpnInterp::wordList() const {
+  return _interp->wordList();
+}
+
 /* end of QInc/Projects/RP42/rpn-lang/src/rpn-hl.cpp */

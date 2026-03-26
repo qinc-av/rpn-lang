@@ -335,6 +335,7 @@ MATH_UNARY_INTEGER_FUNC(ichange_sign);
 void
 rpn::Interp::addMathWords() {
   rpn::Interp &rpn(*this);
+  setWordCategory("math");
 
   ADD_MATH_BINARY_NUMBER_WDEF(rpn, "+", add, iadd);
   ADD_MATH_BINARY_NUMBER_WDEF(rpn, "-", subtract, isubtract);
@@ -412,6 +413,45 @@ rpn::Interp::addMathWords() {
 
   // LSHIFT / RSHIFT are registered in logic-dict.cpp alongside the other binary words.
 
+  addWordMetadata("+",          "Add two values.");
+  addWordMetadata("-",          "Subtract TOS from NOS.");
+  addWordMetadata("*",          "Multiply two values.");
+  addWordMetadata("/",          "Divide NOS by TOS.");
+  addWordMetadata("^",          "Raise NOS to the power of TOS.");
+  addWordMetadata("HYPOT",      "Euclidean distance: sqrt(a² + b²).");
+  addWordMetadata("ATAN2",      "Four-quadrant arctangent of (x, y). TOS=y, NOS=x. Result in current angle mode.");
+  addWordMetadata("MIN",        "Return the smaller of two values.");
+  addWordMetadata("MAX",        "Return the larger of two values.");
+  addWordMetadata("INV",        "Reciprocal: 1 / TOS.");
+  addWordMetadata("SQ",         "Square: TOS².");
+  addWordMetadata("SQRT",       "Square root. Returns a complex number if TOS < 0.");
+  addWordMetadata("COS",        "Cosine. Angle interpreted in current mode (DEG / RAD / GRAD).");
+  addWordMetadata("SIN",        "Sine. Angle interpreted in current mode (DEG / RAD / GRAD).");
+  addWordMetadata("TAN",        "Tangent. Angle interpreted in current mode (DEG / RAD / GRAD).");
+  addWordMetadata("ACOS",       "Arccosine. Result in current angle mode.");
+  addWordMetadata("ASIN",       "Arcsine. Result in current angle mode.");
+  addWordMetadata("ATAN",       "Arctangent. Result in current angle mode.");
+  addWordMetadata("EXP",        "e raised to the power of TOS.");
+  addWordMetadata("LN",         "Natural logarithm (base e).");
+  addWordMetadata("LN2",        "Logarithm base 2.");
+  addWordMetadata("LOG",        "Logarithm base 10.");
+  addWordMetadata("CHS",        "Change sign: negate TOS.");
+  addWordMetadata("D->R",       "Convert degrees to radians.");
+  addWordMetadata("R->D",       "Convert radians to degrees.");
+  addWordMetadata("ROUND",      "Round to nearest integer value (result is double).");
+  addWordMetadata("CEIL",       "Round up to nearest integer value (result is double).");
+  addWordMetadata("FLOOR",      "Round down to nearest integer value (result is double).");
+  addWordMetadata("QUAD",       "Solve quadratic a·x²+b·x+c=0. Pops a, b, c; pushes two roots (real or complex).");
+  addWordMetadata("->COMPLEX",  "Create a complex number from real (NOS) and imaginary (TOS) parts.");
+  addWordMetadata("OBJ->",      "Explode a complex number to real and imaginary doubles.");
+  addWordMetadata("k_PI",       "Push π ≈ 3.14159265358979…");
+  addWordMetadata("k_E",        "Push e ≈ 2.71828182845905…");
+  addWordMetadata("RAND",       "Push a random integer (stdlib rand).");
+  addWordMetadata("DRAND",      "Push a random double in [0, 1).");
+  addWordMetadata("->DEG",      "Set angle mode to degrees.");
+  addWordMetadata("->RAD",      "Set angle mode to radians.");
+  addWordMetadata("->GRAD",     "Set angle mode to gradians.");
+  addWordMetadata("ANGLEMODE",  "Push current angle mode as a string: \"DEG\", \"RAD\", or \"GRAD\".");
 }
 
 /* end of qinc/rpn-lang/src/math-dict.cpp */

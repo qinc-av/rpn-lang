@@ -151,6 +151,7 @@ NATIVE_WORD_DECL(logic, push_false) {
 
 void
 rpn::Interp::addLogicWords() {
+  setWordCategory("logic");
   //    IF
   //    IFTE
   //    EQ?
@@ -192,6 +193,24 @@ rpn::Interp::addLogicWords() {
   addDefinition("<true>",  NATIVE_WORD_WDEF(logic, rpn::StackSizeValidator::zero, push_true,  nullptr));
   addDefinition("<false>", NATIVE_WORD_WDEF(logic, rpn::StackSizeValidator::zero, push_false, nullptr));
 
+  addWordMetadata("IFTE",       "Inline conditional: `cond true-val false-val IFTE`. Leaves the chosen value on the stack.");
+  addWordMetadata("==",         "Push true if TOS equals NOS.");
+  addWordMetadata(">",          "Push true if NOS > TOS.");
+  addWordMetadata(">=",         "Push true if NOS >= TOS.");
+  addWordMetadata("<",          "Push true if NOS < TOS.");
+  addWordMetadata("<=",         "Push true if NOS <= TOS.");
+  addWordMetadata("!=",         "Push true if TOS does not equal NOS.");
+  addWordMetadata("NOT",        "Boolean NOT.");
+  addWordMetadata("AND",        "Boolean AND (two booleans) or bitwise AND (two integers), masked to current wordsize.");
+  addWordMetadata("OR",         "Boolean OR (two booleans) or bitwise OR (two integers), masked to current wordsize.");
+  addWordMetadata("NEG",        "Bitwise NOT of integer, masked to current wordsize.");
+  addWordMetadata("XOR",        "Bitwise XOR of two integers, masked to current wordsize.");
+  addWordMetadata("LSHIFT",     "Logical left shift. `value shift LSHIFT`. Result masked to wordsize.");
+  addWordMetadata("RSHIFT",     "Logical right shift. `value shift RSHIFT`. Result masked to wordsize.");
+  addWordMetadata("->WORDSIZE", "Set binary operation wordsize (1–64). Default 64 = no masking.");
+  addWordMetadata("WORDSIZE->", "Push the current binary wordsize.");
+  addWordMetadata("<true>",     "Push boolean true.");
+  addWordMetadata("<false>",    "Push boolean false.");
 }
 
 
