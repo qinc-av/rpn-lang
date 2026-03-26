@@ -69,13 +69,13 @@ Remove the `TODO Phase 2.2` globals once display flows properly through the inte
 
 **Complexity:** M.
 
-### 2.3 Compiled Word Validation
+### 2.3 Compiled Word Validation *(deferred)*
 
 Currently all user-defined words get `StackSizeValidator::zero`, bypassing type checking.  Allow validator specification, either:
 - Parse `( stack-effect )` comment to generate a validator.
 - Or explicit validator in `addCompiledWord`.
 
-**Complexity:** M.
+**Complexity:** M.  Low priority — deferred to possible future work.
 
 ### 2.4 Threading / Embedding Review
 

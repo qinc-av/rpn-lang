@@ -18,7 +18,7 @@ set_target_properties(stack-test PROPERTIES
           CXX_EXTENSIONS OFF
           )
 
-target_include_directories(stack-test PRIVATE ${RPN_LANG_DIR})
+target_include_directories(stack-test PRIVATE ${RPN_LANG_DIR} ${RPN_LANG_DIR}/third_party)
 target_link_libraries(stack-test PRIVATE Catch2::Catch2WithMain)
 
 add_executable(runtime-test ${RPN_LANG_SRCS} runtime-test.cpp )
@@ -28,7 +28,7 @@ set_target_properties(runtime-test PROPERTIES
           CXX_EXTENSIONS OFF
           )
 
-target_include_directories(runtime-test PRIVATE ${RPN_LANG_DIR})
+target_include_directories(runtime-test PRIVATE ${RPN_LANG_DIR} ${RPN_LANG_DIR}/third_party)
 target_compile_definitions(runtime-test PRIVATE TESTS_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
 target_link_libraries(runtime-test PRIVATE Catch2::Catch2WithMain)
 

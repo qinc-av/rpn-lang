@@ -68,11 +68,13 @@ public:
              "0d" + std::to_string(_frameRate._numerator) + " " +
              "0d" + std::to_string(_frameRate._denominator) + " ->FRAC ->TC";
     }
+    virtual nlohmann::json to_json() const override {
+      return {{"type","timecode"},{"display",(std::string)(*this)},{"deparse",deparse()},
+              {"data",{{"frames",to_frames()},
+                       {"frame_rate",{{"numerator",_frameRate._numerator},
+                                      {"denominator",_frameRate._denominator}}}}}};
+    }
     // default to_latex()
-    //  virtual std::string to_latex() const {
-    //	std::string rv = "\\text{" + (std::string)(*this) + "}";
-    //	return rv;
-    //  }
   };
 } // namespace stack
 

@@ -1844,4 +1844,182 @@ TEST_CASE("word introspection", "API") {
   }
 }
 
+TEST_CASE("json type and words", "types") {
+  rpn::Interp rpn(false);
+
+  // ->JSON on a double produces a StJson containing the number
+  {
+    rpn.sync_eval("3.14 ->JSON");
+    REQUIRE( rpn.stack.depth() == 1 );
+    auto jobj = rpn.stack.pop();
+    auto *j = dynamic_cast<StJson *>(jobj.get());
+    REQUIRE( j != nullptr );
+    REQUIRE( j->is_number_float() );
+    REQUIRE_THAT( j->get<double>(), Catch::Matchers::WithinAbs(3.14, 1e-10) );
+  }
+
+  // ->JSON on an integer produces a StJson containing the integer
+  {
+    rpn.sync_eval("0d42 ->JSON");
+    REQUIRE( rpn.stack.depth() == 1 );
+    auto jobj = rpn.stack.pop();
+    auto *j = dynamic_cast<StJson *>(jobj.get());
+    REQUIRE( j != nullptr );
+    REQUIRE( j->is_number_integer() );
+    REQUIRE( j->get<int64_t>() == 42 );
+  }
+
+  // ->JSON on a boolean produces a StJson boolean
+  {
+    rpn.sync_eval("TRUE ->JSON");
+    REQUIRE( rpn.stack.depth() == 1 );
+    auto jobj = rpn.stack.pop();
+    auto *j = dynamic_cast<StJson *>(jobj.get());
+    REQUIRE( j != nullptr );
+    REQUIRE( j->is_boolean() );
+    REQUIRE( j->get<bool>() == true );
+  }
+
+  // ->JSON on a string produces a StJson string
+  {
+    rpn.stack.push_string("hello");
+    rpn.sync_eval("->JSON");
+    REQUIRE( rpn.stack.depth() == 1 );
+    auto jobj = rpn.stack.pop();
+    auto *j = dynamic_cast<StJson *>(jobj.get());
+    REQUIRE( j != nullptr );
+    REQUIRE( j->is_string() );
+    REQUIRE( j->get<std::string>() == "hello" );
+  }
+
+  // JSON-> on a scalar float unpacks to native double
+  {
+    rpn.stack.push(StJson(nlohmann::json(2.718)));
+    rpn.sync_eval("JSON->");
+    REQUIRE( rpn.stack.depth() == 1 );
+    REQUIRE_THAT( rpn.stack.peek_as_double(1).value(), Catch::Matchers::WithinAbs(2.718, 1e-10) );
+    rpn.stack.drop();
+  }
+
+  // JSON-> on a scalar integer unpacks to native integer
+  {
+    rpn.stack.push(StJson(nlohmann::json(int64_t(99))));
+    rpn.sync_eval("JSON->");
+    REQUIRE( rpn.stack.depth() == 1 );
+    REQUIRE( rpn.stack.peek_integer(1) == 99 );
+    rpn.stack.drop();
+  }
+
+  // JSON-> on a scalar bool unpacks to native boolean
+  {
+    rpn.stack.push(StJson(nlohmann::json(false)));
+    rpn.sync_eval("JSON->");
+    REQUIRE( rpn.stack.depth() == 1 );
+    REQUIRE( rpn.stack.peek_boolean(1) == false );
+    rpn.stack.drop();
+  }
+
+  // JSON-> on a scalar string unpacks to native string
+  {
+    rpn.stack.push(StJson(nlohmann::json(std::string("world"))));
+    rpn.sync_eval("JSON->");
+    REQUIRE( rpn.stack.depth() == 1 );
+    REQUIRE( rpn.stack.peek_string(1) == "world" );
+    rpn.stack.drop();
+  }
+
+  // JSON-> on a JSON array unpacks elements (as StJson) plus integer count.
+  // [10, 20, 30] → stack (bottom→top): 30, 20, 10, count=3
+  // TOS = count; first element of original array is just below count.
+  {
+    nlohmann::json arr = nlohmann::json::array({10, 20, 30});
+    rpn.stack.push(StJson(arr));
+    rpn.sync_eval("JSON->");
+    REQUIRE( rpn.stack.depth() == 4 );
+    REQUIRE( rpn.stack.peek_integer(1) == 3 );  // TOS = count
+    rpn.stack.drop();  // drop count
+    // Now TOS = first element (10), then 20, then 30 (bottom)
+    auto jobj = rpn.stack.pop();
+    REQUIRE( dynamic_cast<StJson *>(jobj.get())->get<int>() == 10 );  // first element on TOS
+    rpn.stack.clear();
+  }
+
+  // JSON-> on a JSON object unpacks (value, key) pairs plus count.
+  // {"a":42} → stack (bottom→top): value(StJson=42), key("a"), count=1
+  {
+    nlohmann::json obj = {{"a", 42}};
+    rpn.stack.push(StJson(obj));
+    rpn.sync_eval("JSON->");
+    // depth = 3: value(StJson), key(StString), count(StInteger)
+    REQUIRE( rpn.stack.depth() == 3 );
+    REQUIRE( rpn.stack.peek_integer(1) == 1 );   // TOS = count
+    REQUIRE( rpn.stack.peek_string(2) == "a" );  // NOS = key
+    rpn.stack.drop();  // drop count
+    rpn.stack.drop();  // drop key
+    auto vobj = rpn.stack.pop();
+    REQUIRE( dynamic_cast<StJson *>(vobj.get())->get<int>() == 42 );
+    rpn.stack.clear();
+  }
+
+  // to_json() descriptor: type, display, deparse, data fields present for double
+  {
+    rpn.stack.push_double(1.5);
+    auto j = rpn.stack.peek(1).to_json();
+    REQUIRE( j["type"] == "double" );
+    REQUIRE( j.contains("display") );
+    REQUIRE( j.contains("deparse") );
+    REQUIRE( j.contains("data") );
+    REQUIRE_THAT( j["data"].get<double>(), Catch::Matchers::WithinAbs(1.5, 1e-10) );
+    rpn.stack.drop();
+  }
+
+  // to_json() for integer
+  {
+    rpn.stack.push_integer(7);
+    auto j = rpn.stack.peek(1).to_json();
+    REQUIRE( j["type"] == "integer" );
+    REQUIRE( j["data"].get<int64_t>() == 7 );
+    rpn.stack.drop();
+  }
+
+  // to_json() for string
+  {
+    rpn.stack.push_string("abc");
+    auto j = rpn.stack.peek(1).to_json();
+    REQUIRE( j["type"] == "string" );
+    REQUIRE( j["data"].get<std::string>() == "abc" );
+    rpn.stack.drop();
+  }
+
+  // to_json() for boolean
+  {
+    rpn.stack.push_boolean(true);
+    auto j = rpn.stack.peek(1).to_json();
+    REQUIRE( j["type"] == "boolean" );
+    REQUIRE( j["data"].get<bool>() == true );
+    rpn.stack.drop();
+  }
+
+  // to_json() for vec3
+  {
+    rpn.sync_eval("1. 2. 3. ->VEC3");
+    auto j = rpn.stack.peek(1).to_json();
+    REQUIRE( j["type"] == "vec3" );
+    REQUIRE_THAT( j["data"]["x"].get<double>(), Catch::Matchers::WithinAbs(1.0, 1e-10) );
+    REQUIRE_THAT( j["data"]["y"].get<double>(), Catch::Matchers::WithinAbs(2.0, 1e-10) );
+    REQUIRE_THAT( j["data"]["z"].get<double>(), Catch::Matchers::WithinAbs(3.0, 1e-10) );
+    rpn.stack.drop();
+  }
+
+  // to_json() for fraction
+  {
+    rpn.sync_eval("0d3 0d4 ->FRAC");
+    auto j = rpn.stack.peek(1).to_json();
+    REQUIRE( j["type"] == "fraction" );
+    REQUIRE( j["data"]["numerator"].get<int64_t>() == 3 );
+    REQUIRE( j["data"]["denominator"].get<int64_t>() == 4 );
+    rpn.stack.drop();
+  }
+}
+
 /* end of qinc/rpn-lang/tests/runtime-test.cpp */

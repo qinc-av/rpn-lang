@@ -63,6 +63,16 @@ RpnInterp::displayStack() {
   return rv;
 }
 
+nlohmann::json
+RpnInterp::describeStack() {
+  nlohmann::json arr = nlohmann::json::array();
+  size_t n = _interp->stack.depth();
+  for (size_t i = 0; i < n; i++) {
+    arr.push_back(_interp->stack.peek((int)(i + 1)).to_json());
+  }
+  return arr;
+}
+
 rpn::WordHelp
 RpnInterp::wordHelp(const std::string &word) const {
   return _interp->wordHelp(word);

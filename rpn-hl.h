@@ -17,7 +17,7 @@
 #include <string>
 #include <vector>
 #include <functional>
-#include "rpn.h"  // for rpn::WordHelp
+#include "rpn.h"  // for rpn::WordHelp, nlohmann::json (transitively)
 
 namespace rpn {
   class Interp;
@@ -47,6 +47,9 @@ typedef NS_ENUM(NSInteger, RpnResult) {
 - (BOOL) wordExists:(NSString *)word;
 - (NSString*) status;
 - (NSArray<NSString*>*) displayStack;
+// Returns an NSArray of NSDictionary, one per stack item (TOS first).
+// Keys: "type" (NSString), "display" (NSString), "deparse" (NSString), "data" (NSObject — NSNumber/NSString/NSArray/NSDictionary/NSNull).
+- (NSArray<NSDictionary*>*) describeStack;
 - (rpn::Interp &) rpnInterp;
 
 // Word introspection
@@ -91,6 +94,8 @@ public:
 
   std::string status();
   std::vector<std::string> displayStack();
+  // Returns a JSON array; each element is the to_json() descriptor for one stack item (TOS first).
+  nlohmann::json describeStack();
 
   rpn::WordHelp wordHelp(const std::string &word) const;
   std::vector<std::string> wordList() const;

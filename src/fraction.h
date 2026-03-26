@@ -129,6 +129,10 @@ namespace stack {
       rv += "}";
       return rv;
     }
+    virtual nlohmann::json to_json() const override {
+      return {{"type","fraction"},{"display",(std::string)(*this)},{"deparse",deparse()},
+              {"data",{{"numerator",_numerator},{"denominator",_denominator}}}};
+    }
   private:
 };
 

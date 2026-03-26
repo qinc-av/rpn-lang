@@ -15,6 +15,27 @@
 #include "../rpn.h"
 #include "../rpn-hl.h"
 
+// Convert a nlohmann::json value to the nearest NSObject equivalent.
+static id json_to_ns(const nlohmann::json &j) {
+  if (j.is_null())            return [NSNull null];
+  if (j.is_boolean())         return @(j.get<bool>());
+  if (j.is_number_integer())  return @(j.get<int64_t>());
+  if (j.is_number_float())    return @(j.get<double>());
+  if (j.is_string())          return @(j.get<std::string>().c_str());
+  if (j.is_array()) {
+    NSMutableArray *a = [NSMutableArray array];
+    for (const auto &e : j) [a addObject:json_to_ns(e)];
+    return a;
+  }
+  if (j.is_object()) {
+    NSMutableDictionary *d = [NSMutableDictionary dictionary];
+    for (auto it = j.begin(); it != j.end(); ++it)
+      d[@(it.key().c_str())] = json_to_ns(it.value());
+    return d;
+  }
+  return [NSNull null];
+}
+
 @implementation RpnInterp {
   rpn::Interp *_rpn;
 }
@@ -66,6 +87,21 @@
     [si addObject:@(disp.c_str())];
   }
   return si;
+}
+
+- (NSArray<NSDictionary*>*) describeStack {
+  NSMutableArray<NSDictionary*> *result = [[NSMutableArray alloc] init];
+  auto descriptors = _rpn->describeStack();
+  for (const auto &d : descriptors) {
+    NSDictionary *entry = @{
+      @"type":    @(d["type"].get<std::string>().c_str()),
+      @"display": @(d["display"].get<std::string>().c_str()),
+      @"deparse": @(d["deparse"].get<std::string>().c_str()),
+      @"data":    json_to_ns(d["data"]),
+    };
+    [result addObject:entry];
+  }
+  return result;
 }
 
 - (NSDictionary*) wordHelp:(NSString*)nsword {

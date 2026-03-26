@@ -338,6 +338,54 @@ NATIVE_WORD_DECL(t_array, reverse) {
   return rv;
 }
 
+/***************************************************
+ * JSON
+ */
+NATIVE_WORD_DECL(types, to_json) {
+  // ->JSON: pop any value, call to_json(), push StJson containing the "data" field.
+  auto obj = rpn.stack.pop();
+  auto descriptor = obj->to_json();
+  rpn.stack.push(StJson(descriptor["data"]));
+  return rpn::WordDefinition::Result::ok;
+}
+
+NATIVE_WORD_DECL(types, json_to) {
+  // JSON->: unpack a StJson value onto the stack, analogous to ARRAY-> and OBJ->.
+  // - JSON array  → elements pushed bottom-to-top as StJson, then integer count
+  // - JSON object → (value StJson, key StString) pairs in iteration order, then integer count
+  // - JSON scalar → push as native type (StDouble/StInteger/StBoolean/StString)
+  // - JSON null   → push StJson(null) unchanged
+  // Note: this is a pure unpack; no round-trip with ->JSON is implied.
+  auto obj = rpn.stack.pop();
+  auto *jp = dynamic_cast<StJson *>(obj.get());
+  if (!jp) {
+    rpn.stack.push(*obj);
+    return rpn::WordDefinition::Result::param_error;
+  }
+  const auto &j = *jp;
+  if (j.is_array()) {
+    for (auto it = j.rbegin(); it != j.rend(); ++it) rpn.stack.push(StJson(*it));
+    rpn.stack.push_integer((int64_t)j.size());
+  } else if (j.is_object()) {
+    for (auto it = j.begin(); it != j.end(); ++it) {
+      rpn.stack.push(StJson(it.value()));
+      rpn.stack.push_string(it.key());
+    }
+    rpn.stack.push_integer((int64_t)j.size());
+  } else if (j.is_number_integer()) {
+    rpn.stack.push_integer(j.get<int64_t>());
+  } else if (j.is_number_float()) {
+    rpn.stack.push_double(j.get<double>());
+  } else if (j.is_boolean()) {
+    rpn.stack.push_boolean(j.get<bool>());
+  } else if (j.is_string()) {
+    rpn.stack.push_string(j.get<std::string>());
+  } else {
+    rpn.stack.push(j);  // null or unrecognised — push as-is
+  }
+  return rpn::WordDefinition::Result::ok;
+}
+
 void
 rpn::Interp::addTypeWords() {
   setWordCategory("types");
@@ -410,6 +458,11 @@ rpn::Interp::addTypeWords() {
   addWordMetadata("->VEC3y",  "Create a VEC3 with only the Y component set (X and Z are NaN).");
   addWordMetadata("->VEC3z",  "Create a VEC3 with only the Z component set (X and Y are NaN).");
   addWordMetadata("VEC3->",   "Explode a VEC3 to x, y, z doubles.");
+
+  addDefinition("->JSON", NATIVE_WORD_WDEF(types, rpn::StackSizeValidator::one, to_json, nullptr));
+  addDefinition("JSON->", NATIVE_WORD_WDEF(types, rpn::StackSizeValidator::one, json_to, nullptr));
+  addWordMetadata("->JSON", "Convert TOS to a JSON value (StJson), using the type's data encoding.");
+  addWordMetadata("JSON->", "Unpack a JSON value: array→elements+count, object→(val,key) pairs+count, scalar→native type.");
 }
 
 /* end of qinc/rpn-lang/src/types-dict.cpp */

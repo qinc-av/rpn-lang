@@ -25,6 +25,7 @@
 #include <format>
 #include <stdexcept>
 #include <functional>
+#include <nlohmann/json.hpp>
 
 namespace rpn {
   std::string to_string(const double &dv);
@@ -55,6 +56,11 @@ namespace rpn {
       virtual std::string to_latex() const {
 	std::string rv = "\\text{" + (std::string)(*this) + "}";
 	return rv;
+      }
+      // Returns a JSON descriptor: { "type": "...", "display": "...", "deparse": "...", "data": <json-value> }
+      // Subclasses override to provide type-specific data encoding.
+      virtual nlohmann::json to_json() const {
+        return {{"type","unknown"},{"display",(std::string)(*this)},{"deparse",deparse()},{"data",nullptr}};
       }
     };
 
@@ -387,6 +393,9 @@ class Double : public rpn::Stack::Object {
   virtual std::string to_latex() const override {
     return rpn::to_string(_v);
   }
+  virtual nlohmann::json to_json() const override {
+    return {{"type","double"},{"display",(std::string)(*this)},{"deparse",deparse()},{"data",_v}};
+  }
 
  private:
   double _v;
@@ -421,6 +430,9 @@ Integer(const int64_t &v) : _v(v) {}
     if (rpn::int_radix() == 10) return digits;
     return digits + "_{" + std::to_string(rpn::int_radix()) + "}";
   }
+  virtual nlohmann::json to_json() const override {
+    return {{"type","integer"},{"display",(std::string)(*this)},{"deparse",deparse()},{"data",_v}};
+  }
  private:
   int64_t _v;
 };
@@ -447,11 +459,10 @@ class Boolean : public rpn::Stack::Object {
   virtual std::string deparse() const override {
     return _v ? "TRUE" : "FALSE";
   }
+  virtual nlohmann::json to_json() const override {
+    return {{"type","boolean"},{"display",(std::string)(*this)},{"deparse",deparse()},{"data",_v}};
+  }
   // default to_latex()
-  //  virtual std::string to_latex() const override {
-  //	std::string rv = "\\text{" + std::string(*this) + "}";
-  //	return rv;
-  //      }
  private:
   bool _v;
 };
@@ -479,6 +490,9 @@ class String : public rpn::Stack::Object {
   // default to_text()
   virtual std::string to_latex() const override {
     return std::string("\"") + _v + "\"";
+  }
+  virtual nlohmann::json to_json() const override {
+    return {{"type","string"},{"display",_v},{"deparse",deparse()},{"data",_v}};
   }
 
  private:
@@ -554,11 +568,11 @@ public:
     return rv;
   }
   const auto &val() const { return _v; };
-  // default to_latex()
-  //  virtual std::string to_latex() const override {
-  //	std::string rv = "\\text{" + std::string(*this) + "}";
-  //	return rv;
-  //  }
+  virtual nlohmann::json to_json() const override {
+    nlohmann::json data = nlohmann::json::object();
+    for (const auto &m : _v) data[m.first] = m.second->to_json()["data"];
+    return {{"type","object"},{"display",(std::string)(*this)},{"deparse",deparse()},{"data",data}};
+  }
 protected:
   std::map<std::string,std::unique_ptr<rpn::Stack::Object>> _v;
 };
@@ -620,6 +634,11 @@ public:
   virtual std::string to_latex() const override {
     return (std::string)(*this);
   }
+  virtual nlohmann::json to_json() const override {
+    nlohmann::json data = nlohmann::json::array();
+    for (const auto &e : _v) data.push_back(e->to_json()["data"]);
+    return {{"type","array"},{"display",(std::string)(*this)},{"deparse",deparse()},{"data",data}};
+  }
  protected:
   std::vector<std::unique_ptr<rpn::Stack::Object>> _v;
 };
@@ -647,8 +666,36 @@ public:
   }
   virtual std::string deparse() const override { return "'" + _v + "'"; }
   virtual std::string to_latex() const override { return "'" + _v + "'"; }
+  virtual nlohmann::json to_json() const override {
+    return {{"type","name"},{"display",_v},{"deparse",deparse()},{"data",_v}};
+  }
 private:
   std::string _v;
+};
+
+// Json — a JSON value on the stack. Uses MI: IS-A nlohmann::json and IS-A Stack::Object.
+// Created by ->JSON (extracts "data" from any object's to_json() descriptor) or
+// by JSON-> converting back to a native type.
+class Json : public rpn::Stack::Object, public nlohmann::json {
+public:
+  Json() : nlohmann::json() {}
+  explicit Json(const nlohmann::json &j) : nlohmann::json(j) {}
+  virtual operator std::string() const override { return nlohmann::json::dump(); }
+  virtual std::unique_ptr<rpn::Stack::Object> deep_copy() const override {
+    return std::make_unique<Json>(*this);
+  }
+  virtual bool operator==(const rpn::Stack::Object &orhs) const override {
+    const auto &rhs = PEEK_CAST(const Json, orhs);
+    return nlohmann::json::operator==(static_cast<const nlohmann::json &>(rhs));
+  }
+  virtual std::string deparse() const override {
+    // JSON string itself is not valid RPN — must be pushed via JSON word or eval.
+    // For round-trip we emit the raw dump; JSON-> reconstructs.
+    return nlohmann::json::dump();
+  }
+  virtual nlohmann::json to_json() const override {
+    return {{"type","json"},{"display",dump()},{"deparse",deparse()},{"data",static_cast<const nlohmann::json &>(*this)}};
+  }
 };
 } // namespace stack
 
@@ -659,6 +706,7 @@ using StString = stack::String;
 using StName = stack::Name;
 using StObject = stack::Object;
 using StArray = stack::Array;
+using StJson = stack::Json;
 
 class StVec3 : public rpn::Stack::Object {
 public:
@@ -716,6 +764,10 @@ public:
     }
     rv += "]";
     return rv;
+  }
+  virtual nlohmann::json to_json() const override {
+    return {{"type","vec3"},{"display",(std::string)(*this)},{"deparse",deparse()},
+            {"data",{{"x",_x},{"y",_y},{"z",_z}}}};
   }
 
 public:

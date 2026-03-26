@@ -66,6 +66,10 @@ namespace stack {
     virtual std::string to_latex() const override {
       return (std::string)(*this);
     }
+    virtual nlohmann::json to_json() const override {
+      return {{"type","complex"},{"display",(std::string)(*this)},{"deparse",deparse()},
+              {"data",{{"re",this->real()},{"im",this->imag()}}}};
+    }
   private:
   };
 
