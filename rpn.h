@@ -291,6 +291,9 @@ namespace rpn {
     // addWordMetadata() sets the description for a word name.
     void setWordCategory(const std::string &category);
     void addWordMetadata(const std::string &word, const std::string &description);
+    // Register a type name → typeid hash mapping for stack-effect comment parsing.
+    // Called by each addXxxWords() for types not defined in rpn.h.
+    void registerType(const std::string &name, size_t hash);
 
     WordHelp wordHelp(const std::string &word) const;
     std::vector<std::string> wordList() const;

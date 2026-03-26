@@ -343,6 +343,7 @@ void
 rpn::Interp::addMathWords() {
   rpn::Interp &rpn(*this);
   setWordCategory("math");
+  registerType("complex", typeid(stack::Complex).hash_code());
 
   ADD_MATH_BINARY_NUMBER_WDEF(rpn, "+", add, iadd);
   ADD_MATH_BINARY_NUMBER_WDEF(rpn, "-", subtract, isubtract);

@@ -245,6 +245,7 @@ void
 rpn::Interp::addFractionWords() {
   rpn::Interp &rpn = *this; // in case we want to move this out someday
   setWordCategory("fraction");
+  registerType("fraction", typeid(stack::Fraction).hash_code());
 
   rpn.addDefinition("->FRAC", NATIVE_WORD_WDEF(fraction, rpn::StrictTypeValidator::d2_integer_integer, to_frac_ii, nullptr));
   rpn.addDefinition("->FRAC", NATIVE_WORD_WDEF(fraction, rpn::StrictTypeValidator::d1_double, to_frac_d, nullptr));

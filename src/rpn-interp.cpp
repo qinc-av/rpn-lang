@@ -19,6 +19,7 @@
 #include <future>
 #include <mutex>
 #include <set>
+#include <sstream>
 
 #include <cmath>
 #include <limits>
@@ -120,7 +121,7 @@ enum CompileType {
 struct Progn : public rpn::WordContext, public rpn::Stack::Object {
 public:
   Progn(rpn::Interp::Privates &p, CompileType t) : _p(p), _type(t) { _locals = std::make_shared<var_dict_t>(); };
-  Progn(const Progn &other) : _p(other._p), _wordlist(other._wordlist), _type(other._type), _ident(other._ident), _step(other._step) {
+  Progn(const Progn &other) : _p(other._p), _wordlist(other._wordlist), _type(other._type), _ident(other._ident), _step(other._step), _effect_comment(other._effect_comment) {
     _locals = std::make_shared<var_dict_t>();
     for(auto const &v : *other._locals) {
       _locals->emplace(v.first, v.second->deep_copy());
@@ -191,8 +192,9 @@ public:
   std::vector<std::string> _wordlist;
   std::shared_ptr<var_dict_t> _locals;
   CompileType _type;
-  std::string _ident; // value and usage depends on type
-  double _step = 1.0; // FOR loop step (default 1, set by STEP word)
+  std::string _ident;          // value and usage depends on type
+  std::string _effect_comment; // raw text of first ( comment ) in a ct_worddef; used by ct_SEMICOLON
+  double _step = 1.0;          // FOR loop step (default 1, set by STEP word)
 };
 
 #include <chrono>
@@ -297,6 +299,27 @@ struct rpn::Interp::Privates : public rpn::WordContext {
 
   std::vector<Progn> _ctVprogn;
   std::vector<std::shared_ptr<var_dict_t>> _vlocals;
+
+  // Type name → typeid hash, for stack-effect comment parsing (Phase 2.3).
+  std::map<std::string, size_t> _typeRegistry;
+  // Owns validators created dynamically from stack-effect comments.
+  std::vector<std::unique_ptr<rpn::StrictTypeValidator>> _dynamicValidators;
+
+  // Parse the input-types side of a stack-effect string (before "--").
+  // Returns an empty vector if there are no inputs or an unknown type name is found.
+  std::vector<size_t> parse_input_types(const std::string &effect) {
+    auto dash = effect.find("--");
+    std::string inputs = (dash != std::string::npos) ? effect.substr(0, dash) : "";
+    std::vector<size_t> types;
+    std::istringstream ss(inputs);
+    std::string token;
+    while (ss >> token) {
+      auto it = _typeRegistry.find(token);
+      if (it == _typeRegistry.end()) return {}; // unknown type — fall back to StackSizeValidator
+      types.push_back(it->second);
+    }
+    return types;
+  }
 
   bool _needIdent;
   bool _tracing;
@@ -529,8 +552,19 @@ NATIVE_WORD_DECL(private, ct_SEMICOLON) {
 
     p->_trace("adding '" + progp->_ident + "' to the dictionary");
 
+    // Build a typed validator from the stack-effect comment if one was captured.
+    const rpn::StackValidator *validator = &rpn::StackSizeValidator::zero;
+    if (!progp->_effect_comment.empty()) {
+      auto types = p->parse_input_types(progp->_effect_comment);
+      if (!types.empty()) {
+        p->_dynamicValidators.push_back(
+          std::make_unique<rpn::StrictTypeValidator>(types, progp->_ident));
+        validator = p->_dynamicValidators.back().get();
+      }
+    }
+
     p->_rtDictionary.emplace(progp->_ident, rpn::WordDefinition {
-	rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, COMPILED_EVAL), progp });
+      *validator, NATIVE_WORD_FN(private, COMPILED_EVAL), progp });
 
   } else {
 
@@ -613,12 +647,18 @@ NATIVE_WORD_DECL(private, to_radix) {
 NATIVE_WORD_DECL(private, OPAREN) {
   // (rpn::Interp &rpn, rpn::WordContext *ctx, std::string &rest)
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
-  // rpn::Interp::Privates *p = dynamic_cast<rpn::Interp::Privates*>(ctx);
+  rpn::Interp::Privates *p = dynamic_cast<rpn::Interp::Privates*>(ctx);
   std::string comment;
   auto cp = nextWord(comment, rest, ")");
   if (cp == std::string::npos) {
     rest = comment; // reset the buffer for future error message
     rv = rpn::WordDefinition::Result::parse_error;
+  } else if (p &&
+             !p->_ctVprogn.empty() &&
+             p->_ctVprogn.back()._type == ct_worddef &&
+             p->_ctVprogn.back()._effect_comment.empty()) {
+    // First ( comment ) inside a word definition — store as the stack-effect comment.
+    p->_ctVprogn.back()._effect_comment = comment;
   }
   return rv;
 }
@@ -985,6 +1025,20 @@ NATIVE_WORD_DECL(private, PURGE) {
 
 void
 rpn::Interp::Privates::add_private_words() {
+  // Populate the type registry for all types defined in rpn.h.
+  // Extended types (complex, fraction, timecode) are registered by their
+  // respective addXxxWords() via rpn::Interp::registerType().
+  _typeRegistry["any"]     = rpn::StrictTypeValidator::v_anytype;
+  _typeRegistry["double"]  = typeid(StDouble).hash_code();
+  _typeRegistry["integer"] = typeid(StInteger).hash_code();
+  _typeRegistry["boolean"] = typeid(StBoolean).hash_code();
+  _typeRegistry["string"]  = typeid(StString).hash_code();
+  _typeRegistry["name"]    = typeid(StName).hash_code();
+  _typeRegistry["object"]  = typeid(StObject).hash_code();
+  _typeRegistry["array"]   = typeid(StArray).hash_code();
+  _typeRegistry["json"]    = typeid(StJson).hash_code();
+  _typeRegistry["vec3"]    = typeid(StVec3).hash_code();
+
   _rtDictionary.emplace(":", rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, COLON), this });
   _rtDictionary.emplace("(", rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, OPAREN), this });
   _rtDictionary.emplace(".\"", rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, DQUOTE), this });
@@ -1408,11 +1462,18 @@ rpn::Interp::removeDefinition(const std::string &word) {
   return true;
 }
 
+void
+rpn::Interp::registerType(const std::string &name, size_t hash) {
+  m_p->_typeRegistry[name] = hash;
+}
+
 bool
 rpn::Interp::addCompiledWord(const std::string &word, const std::string &def, const StackValidator &/*v*/) {
   // Compile and register 'word' by evaluating a colon definition.
-  // The custom validator 'v' is not yet applied; all compiled words currently
-  // use StackSizeValidator::zero.  TODO(Phase 2.3): apply 'v' post-registration.
+  // If 'def' begins with a ( stack-effect ) comment, ct_SEMICOLON will parse it
+  // and register the word with a typed StrictTypeValidator automatically.
+  // The explicit 'v' parameter is retained for API compatibility but unused;
+  // embed the effect comment in 'def' instead.
   auto rv = sync_eval(": " + word + " " + def + " ;");
   return rv == rpn::WordDefinition::Result::ok;
 }

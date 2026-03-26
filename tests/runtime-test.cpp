@@ -2022,4 +2022,55 @@ TEST_CASE("json type and words", "types") {
   }
 }
 
+TEST_CASE("compiled word validation (Phase 2.3)", "types") {
+  rpn::Interp rpn(false);
+
+  // Word with ( double -- double ) effect: only accepts a double on TOS.
+  rpn.sync_eval(": DOUBLE2 ( double -- double ) 2. * ;");
+
+  // Correct type — should succeed.
+  rpn.sync_eval("3.");
+  REQUIRE( rpn.stack.depth() == 1 );
+  auto rv = rpn.sync_eval("DOUBLE2");
+  REQUIRE( rv == rpn::WordDefinition::Result::ok );
+  REQUIRE( rpn.stack.depth() == 1 );
+  REQUIRE_THAT( rpn.stack.peek_double(1), Catch::Matchers::WithinAbs(6.0, 1e-10) );
+  rpn.stack.drop();
+
+  // Wrong type (integer) — validator should reject with param_error (word exists, type mismatch).
+  rpn.sync_eval("0d3");
+  REQUIRE( rpn.stack.depth() == 1 );
+  rv = rpn.sync_eval("DOUBLE2");
+  REQUIRE( rv == rpn::WordDefinition::Result::param_error );
+  rpn.stack.drop();
+
+  // Word with two inputs: ( double double -- double ).
+  rpn.sync_eval(": MYAVG ( double double -- double ) + 2. / ;");
+  rpn.sync_eval("4. 6.");
+  rv = rpn.sync_eval("MYAVG");
+  REQUIRE( rv == rpn::WordDefinition::Result::ok );
+  REQUIRE( rpn.stack.depth() == 1 );
+  REQUIRE_THAT( rpn.stack.peek_double(1), Catch::Matchers::WithinAbs(5.0, 1e-10) );
+  rpn.stack.drop();
+
+  // Word with ( any -- any ): accepts any type.
+  rpn.sync_eval(": MYDUP ( any -- any ) DUP ;");
+  rpn.sync_eval("7.");
+  rv = rpn.sync_eval("MYDUP");
+  REQUIRE( rv == rpn::WordDefinition::Result::ok );
+  REQUIRE( rpn.stack.depth() == 2 );
+  rpn.stack.drop(); rpn.stack.drop();
+
+  rpn.sync_eval("\"hello\"");
+  rv = rpn.sync_eval("MYDUP");
+  REQUIRE( rv == rpn::WordDefinition::Result::ok );
+  REQUIRE( rpn.stack.depth() == 2 );
+  rpn.stack.drop(); rpn.stack.drop();
+
+  // Word without effect comment: behaves as StackSizeValidator::zero (always matches).
+  rpn.sync_eval(": NOOP << >> ;");
+  rv = rpn.sync_eval("NOOP");
+  REQUIRE( rv == rpn::WordDefinition::Result::ok );
+}
+
 /* end of qinc/rpn-lang/tests/runtime-test.cpp */

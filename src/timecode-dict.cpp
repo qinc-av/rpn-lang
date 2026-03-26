@@ -214,6 +214,7 @@ void
 rpn::Interp::addTimecodeWords() {
   rpn::Interp &rpn = *this; // in case we want to move this out someday
   setWordCategory("timecode");
+  registerType("timecode", typeid(stack::Timecode).hash_code());
   rpn.addDefinition("->TC", NATIVE_WORD_WDEF(timecode, frac_validator::d2_double_frac, to_tc_df, nullptr));
   rpn.addDefinition("->TC", NATIVE_WORD_WDEF(timecode, frac_validator::d5_double_double_double_double_frac, to_tc_ddddf, nullptr));
   rpn.addDefinition("FR", NATIVE_WORD_WDEF(timecode, timecode_validator::d1_tc, framerate, nullptr));
