@@ -2,7 +2,7 @@
 
 ## Status
 
-Phase 0 complete. Starting Phase 1.
+Phase 0 complete. Phase 1 complete. Starting Phase 2.
 
 ---
 
@@ -26,99 +26,17 @@ source of most of these tasks.
 
 ---
 
-## Phase 1 — Control Flow and Variables
+## Phase 1 — Control Flow and Variables (Complete)
 
-### 1.1 PROGN / anonymous executable on stack
-`<< ... >>` syntax and `EXEC` were implemented in Phase 0.4.  Complete.
-
-### 1.2 IF / THEN / ELSE
-
-**Pattern to follow:** `ct_NEXT` in `rpn-interp.cpp`.
-
-HP48 / Forth syntax:
-```
-IF <condition> THEN <true-branch> END
-IF <condition> THEN <true-branch> ELSE <false-branch> END
-```
-
-Steps:
-1. Add `ct_ifblock` to `CompileType` enum.
-2. Register `IF` in `_ctDictionary`: calls `start_compile(ct_ifblock, false)`.
-3. Register `THEN` in `_ctDictionary`: ends the condition capture (not needed if condition is evaluated before IF — see note below), starts true-branch compile.
-4. Register `ELSE` in `_ctDictionary`: ends true-branch, starts false-branch.
-5. Register `END` in `_ctDictionary`: finalizes.  At top level, evaluates the if-block immediately; when nested, stores in parent `_locals` with address key.
-
-**Design note:** In HP48/Forth, `IF` consumes a boolean already on the stack (the condition is evaluated before `IF` is reached). `IF` itself just branches. So the compile structure is: collect true-branch words, optionally collect false-branch words, at runtime pop a boolean and dispatch.
-
-Implementation approach: an if-block Progn stores two sub-Progns in its `_locals` under canonical keys `"__true"` and `"__false"`.  Its `eval()` case pops a boolean, evaluates the appropriate branch.
-
-**Dependencies:** 0.4 (lambda/Progn infrastructure).
-**Complexity:** M.
-
-### 1.3 WHILE / UNTIL Loops
-
-Syntax:
-```
-BEGIN <body> <condition> WHILE REPEAT    ( loop while true )
-BEGIN <body> UNTIL                       ( loop until true )
-```
-
-`ct_whileloop` enum value and `eval_whileloop` stub already exist. Implement `eval_whileloop` and `eval_untilloop`.
-
-**Dependencies:** 1.2 (pattern clarified by IF work).
-**Complexity:** M.
-
-### 1.4 Global Variables — STO / RCL
-
-1. Add `var_dict_t _globalVars` to `Interp::Privates`.
-2. Implement `STO`: pop a string (name) and a value, store in `_globalVars`.
-3. Implement `RCL`: pop a string (name), push stored value.
-4. In `runtime_eval`, check `_globalVars` after dictionary lookup fails.
-5. Implement `VARS`: push Array of all variable names.
-6. Implement `PURGE`: remove a named variable.
-
-**Design decision:** HP48 convention — variables shadow dictionary words (look up variables before dictionary). Forth convention is the reverse. Decision: **HP48 convention** (variables shadow words).
-
-**Dependencies:** 0.1 (Privates owns state).
-**Complexity:** S.
-
-### 1.5 FOR Loop — STEP Support
-
-`ct_STEP` and `NATIVE_WORD_DECL(private, ct_STEP)` exist but are `#ifdef notyet`.
-
-1. Uncomment and enable `ct_STEP`.
-2. Add `_step` field to `Progn` (default 1.0).
-3. `ct_STEP` at compile time: store the step value in `_step`.
-4. `eval_forloop`: use `_step` in the loop condition and increment; support negative step for countdown loops.
-
-**Dependencies:** None (isolated change).
-**Complexity:** S.
-
-### 1.6 Trig Mode — DEG / RAD / GRAD
-
-1. Add `enum class AngleMode { degrees, radians, gradians }` to `Privates`.
-2. Add `AngleMode _angleMode = AngleMode::degrees` to `Privates`.
-3. Register `->DEG`, `->RAD`, `->GRAD` words that set the mode.
-4. Register `DEG->`, `RAD->`, `GRAD->` words that push the current mode as a string.
-5. Refactor all trig functions in `math-dict.cpp` to read `_angleMode` from the interpreter context.
-
-**Open question:** trig words currently take no `ctx` with an `Interp::Privates*`.  Options:
-- Pass the interpreter reference (already available as `rpn`) and downcast `rpn.m_p`.
-- Keep a module-level pointer to current `Privates` (fragile).
-- Recommended: access via `rpn.m_p->_angleMode` directly in each trig word — `m_p` is accessible since it's public on `Interp`.
-
-**Dependencies:** 0.1.
-**Complexity:** M (mechanical but touches all trig functions).
-
-### 1.7 Binary Wordsize Mode
-
-1. Add `int _binaryWordsize = 64` to `Privates`.
-2. Register `->WORDSIZE` / `WORDSIZE->` words.
-3. Apply a bitmask on integer results in binary operations (`AND`, `OR`, `XOR`, `NEG`).
-4. Implement `LSHIFT` and `RSHIFT` (stubs commented out in `math-dict.cpp`).
-
-**Dependencies:** 0.1.
-**Complexity:** S.
+| # | Task | Status |
+|---|---|---|
+| 1.1 | `<< ... >>` lambda syntax and `EXEC` — implemented in Phase 0.4. | Done |
+| 1.2 | `IF <cond> THEN <true> [ELSE <false>] END`. HP48-style: condition already on stack, IF branches. True/false branches stored in `_locals` under `__true`/`__false`. | Done |
+| 1.3 | `BEGIN <body> <cond> WHILE REPEAT` and `BEGIN <body> UNTIL`. Single-block design; `__until` key in `_locals` distinguishes the two forms. | Done |
+| 1.4 | `STO` / `RCL` / `VARS` / `PURGE`. HP48 convention: variables shadow dictionary words. Added `StName` type (`'identifier'` literal syntax) and `"string"` literal syntax with parser-level grouping. `is_valid_name()` prevents shadowing operators or numeric literals. | Done |
+| 1.5 | `FOR ... NEXT` (fixed step 1) and `FOR ... n STEP` (runtime step from TOS each iteration). Negative step for countdown loops. `_step = NaN` sentinel marks step-from-stack mode. | Done |
+| 1.6 | `AngleMode` enum (`degrees`/`radians`/`gradians`) in `rpn.h`. Public `angleMode()`/`setAngleMode()` on `Interp`. `->DEG` / `->RAD` / `->GRAD` set mode; `ANGLEMODE` queries it. All trig words (`SIN` `COS` `TAN` `ASIN` `ACOS` `ATAN` `ATAN2`) rewritten as mode-aware `NATIVE_WORD_DECL`s using `to_radians()`/`from_radians()` helpers. | Done |
+| 1.7 | `binaryWordsize()` / `setBinaryWordsize()` (clamped 1–64) on `Interp`. `AND` `OR` `XOR` `NEG` apply wordsize bitmask. `LSHIFT` / `RSHIFT` (logical unsigned, masked). `->WORDSIZE` / `WORDSIZE->`. Default wordsize 64 = no-op mask. | Done |
 
 ---
 
@@ -258,12 +176,15 @@ The word reference section will be substantially auto-generated once Phase 2.1 (
 |---|---|
 | C++ macros vs templates | Keep macros. They serve their purpose; a hybrid would require two mental models simultaneously with no net gain. |
 | `TStackObject<T>` retention | Keep. It is the documented extension path for embedder custom types; removing it would break the public API. |
-| STO/RCL lookup precedence | HP48 convention: variables shadow dictionary words. |
-| Trig mode propagation | Access via `rpn.m_p->_angleMode` in math words (m_p is public on Interp). |
+| STO/RCL lookup precedence | HP48 convention: variables shadow dictionary words. Implemented. |
+| Trig mode propagation | `AngleMode` enum in `rpn.h`; public `angleMode()`/`setAngleMode()` on `Interp`; math words call `rpn.angleMode()`. Implemented. |
 | JSON type vs JSON words | Words-only approach on existing Array/Object. No new type. |
 | Double → Number rename | Low urgency; no strong reason to rename. Leave as-is. |
 | CAS library | Research phase. Evaluate SymEngine and GiNaC before any implementation. |
-| WHILE loop variable precedence | `while` checks TOS boolean, does not pop it before body — to be confirmed against HP48 semantics. |
+| WHILE loop design | Single-block: all body+condition before WHILE/UNTIL; `__until` key distinguishes WHILE (exit when false) from UNTIL (exit when true). At-least-one-iteration semantics for UNTIL. Implemented. |
+| FOR STEP design | `FOR ... n STEP` — body leaves step on TOS each iteration; STEP pops it. `_step = NaN` sentinel marks step-from-stack mode. NEXT = fixed step 1. Implemented. |
+| StName vs StString for variables | `StName` (`'identifier'` literal) for variable names; `StString` (`"content"` literal) for data. `is_valid_name()` prevents shadowing. Implemented. |
+| Runaway / deadlocked interpreter | Deferred to Phase 2.4. Embedder has no interrupt mechanism yet; see Phase 2.4 notes. |
 
 ---
 
@@ -274,7 +195,7 @@ These live in the RP-42 SwiftUI project and Machina Nexum, not in rpn-lang itsel
 **RP-42:**
 - Per-type stack views (needs Phase 2.2 display contract)
 - Long-press word documentation (needs Phase 2.1 introspection API)
-- State indicators for DEG/RAD/GRAD, binary wordsize, radix (needs Phase 1.6, 1.7, 0.1)
+- State indicators for DEG/RAD/GRAD, binary wordsize, radix (Phase 1.6, 1.7, 0.1 complete — library-side ready)
 - Drag-and-drop stack manipulation
 - Object editing vs object viewing modes
 - Emacs-calc keybinding feel
