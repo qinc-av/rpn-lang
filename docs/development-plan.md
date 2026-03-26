@@ -2,7 +2,7 @@
 
 ## Status
 
-Phase 0 complete. Phase 1 complete. Starting Phase 2.
+Phase 0 complete. Phase 1 complete. Phase 2 complete. Starting Phase 3.
 
 ---
 
@@ -40,81 +40,27 @@ source of most of these tasks.
 
 ---
 
-## Phase 2 — API Completeness and Embedding Quality
+## Phase 2 — API Completeness and Embedding Quality (Complete)
 
-### 2.1 Word Introspection / Documentation API
-
-Add to `WordDefinition`:
-- `std::string description`
-- `std::string stack_effect`  (Forth-style: `( n1 n2 -- n3 )`)
-- `std::string category`
-
-Add words: `WORD-HELP`, `WORD-EFFECT`.
-Expand `rpn-hl.h` to expose word help via the high-level interface.
-
-This enables RP-42 long-press documentation and the word reference in this developer guide.
-
-**Complexity:** L (mechanical — every word registration needs touching).
-
-### 2.2 Display vs. Deparse Contract
-
-Formalize and enforce:
-- `operator string()` = human display string
-- `deparse()` = lossless RPN that round-trips through `EVAL`
-- `to_text()` = plain text (defaults to `operator string()`)
-- `to_latex()` = LaTeX math mode
-
-Verify `DEPARSE` → `EVAL` round-trips for all built-in types.
-Remove the `TODO Phase 2.2` globals once display flows properly through the interpreter.
-
-**Complexity:** M.
-
-### 2.3 Compiled Word Validation *(deferred)*
-
-Currently all user-defined words get `StackSizeValidator::zero`, bypassing type checking.  Allow validator specification, either:
-- Parse `( stack-effect )` comment to generate a validator.
-- Or explicit validator in `addCompiledWord`.
-
-**Complexity:** M.  Low priority — deferred to possible future work.
-
-### 2.4 Threading / Embedding Review
-
-- Document the threading contract.
-- Add `cancelAll()` to drain the queue.
-- Design a long-running word progress callback (required for CNC probing in Machina Nexum).
-
-**Deadlocked / runaway interpreter** — all loop constructs (`eval_forloop`, `eval_whileloop`)
-are unbounded by design; protection is the embedder's responsibility.  Currently the embedder
-has no way to interrupt a running evaluation from another thread.  Address holistically here:
-
-1. `std::atomic<bool> _cancelRequested` in `Privates`, checked at the top of each loop
-   iteration.  Public API: `Interp::cancel()` sets the flag; `parse()` clears it on entry.
-2. `cancelAll()`: set cancel flag AND drain the pending request queue so no further
-   work starts.
-3. Long-running word progress / heartbeat callback — required for CNC probing; also lets
-   the embedder implement its own timeout strategy without a hard-coded limit.
-4. Consider debug helpers: iteration counter accessible via callback, last-executed-word
-   in `_status`, or a watchdog-friendly `ping()` that returns only when the interpreter
-   is idle.
-
-**Complexity:** M (design decision first).
-
-### 2.5 High-Level Interface Completeness
-
-- Expand `RpnInterp` HL layer to expose stack peek and word introspection
-  (prerequisite for 2.1 metadata reaching Swift/ObjC callers).
-
-**Complexity:** S–M.
+| # | Task | Status |
+|---|---|---|
+| 2.1 | Word introspection / documentation API — `setWordCategory`, `addWordMetadata`, `wordHelp`, `wordList`; `effects` auto-derived from validators; exposed through C++ and ObjC HL. | Done |
+| 2.2 | Display / deparse contract — formalized 4-way contract (`operator string`, `deparse`, `to_text`, `to_latex`); full-precision deparse on all built-in types; `thread_local` display globals; `TRUE`/`FALSE` words; DEPARSE round-trip tests. | Done |
+| 2.3 | Compiled word validation | Deferred (low priority) |
+| 2.4 | Threading / cancel / progress — `std::atomic<bool> _cancelRequested` checked at each word boundary and loop iteration; `cancel()`, `cancelAll()` (drains queue), `isCancelled()`; `setProgressHandler` / `reportProgress`; `Result::cancelled`; full C++ and ObjC HL exposure. | Done |
+| 2.5 | HL interface completeness — `displayStack`, `wordHelp`, `wordList`, `describeStack` (returns full `to_json()` descriptor array) in both C++ and ObjC HL layers. | Done |
 
 ---
 
 ## Phase 3 — Extended Types and Operations
 
-### 3.1 JSON Words
+### 3.1 JSON Words (Complete)
 
-Add `->JSON` (serialize TOS to JSON string) and `JSON->` (parse JSON string into Array/Object/primitives). Use existing Array/Object types — no new type needed.
+`StJson` type (`class stack::Json : public rpn::Stack::Object, public nlohmann::json`) — a JSON value as a first-class stack type.  `to_json()` virtual method on `Stack::Object` returns a `{type, display, deparse, data}` descriptor; implemented on all built-in types including StFraction, StTimecode, StComplex.  nlohmann/json v3.11.3 vendored under `third_party/`.
 
-**Complexity:** S–M.
+- `->JSON` — pops any value, pushes `StJson` holding the `data` field of its descriptor.
+- `JSON->` — unpacks a `StJson`: array → elements (as StJson) + count; object → (value, key) pairs + count; scalar → native type.  Analogous to `ARRAY->` / `OBJ->`.
+- `describeStack()` on HL layer — returns full descriptor array for UI consumption.
 
 ### 3.2 General Vector / Matrix
 
@@ -188,13 +134,13 @@ Items considered but not scheduled.  Revisit if requirements emerge.
 | `TStackObject<T>` retention | Removed. MI (inherit `rpn::Stack::Object` + domain class) is the extension path. Documented in developer guide §9. |
 | STO/RCL lookup precedence | HP48 convention: variables shadow dictionary words. Implemented. |
 | Trig mode propagation | `AngleMode` enum in `rpn.h`; public `angleMode()`/`setAngleMode()` on `Interp`; math words call `rpn.angleMode()`. Implemented. |
-| JSON type vs JSON words | Words-only approach on existing Array/Object. No new type. |
+| JSON type vs JSON words | `StJson` (MI: `Stack::Object + nlohmann::json`) as first-class type. `to_json()` returns full `{type,display,deparse,data}` descriptor on all types; `->JSON` / `JSON->` for stack interop. |
 | Double → Number rename | Low urgency; no strong reason to rename. Leave as-is. |
 | CAS library | Research phase. Evaluate SymEngine and GiNaC before any implementation. |
 | WHILE loop design | Single-block: all body+condition before WHILE/UNTIL; `__until` key distinguishes WHILE (exit when false) from UNTIL (exit when true). At-least-one-iteration semantics for UNTIL. Implemented. |
 | FOR STEP design | `FOR ... n STEP` — body leaves step on TOS each iteration; STEP pops it. `_step = NaN` sentinel marks step-from-stack mode. NEXT = fixed step 1. Implemented. |
 | StName vs StString for variables | `StName` (`'identifier'` literal) for variable names; `StString` (`"content"` literal) for data. `is_valid_name()` prevents shadowing. Implemented. |
-| Runaway / deadlocked interpreter | Deferred to Phase 2.4. Embedder has no interrupt mechanism yet; see Phase 2.4 notes. |
+| Runaway / deadlocked interpreter | Addressed in Phase 2.4. `cancel()` / `cancelAll()` interrupt running evals; `isCancelled()` for native long-running words. Watchdog / iteration-counter debug helpers not implemented — low priority. |
 
 ---
 
