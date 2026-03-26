@@ -68,8 +68,9 @@ public:
              "0d" + std::to_string(_frameRate._numerator) + " " +
              "0d" + std::to_string(_frameRate._denominator) + " ->FRAC ->TC";
     }
+    virtual std::string type_name() const override { return "timecode"; }
     virtual nlohmann::json to_json() const override {
-      return {{"type","timecode"},{"display",(std::string)(*this)},{"deparse",deparse()},
+      return {{"type",type_name()},{"display",(std::string)(*this)},{"deparse",deparse()},
               {"data",{{"frames",to_frames()},
                        {"frame_rate",{{"numerator",_frameRate._numerator},
                                       {"denominator",_frameRate._denominator}}}}}};

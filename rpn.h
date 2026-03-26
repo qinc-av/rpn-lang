@@ -57,10 +57,14 @@ namespace rpn {
 	std::string rv = "\\text{" + (std::string)(*this) + "}";
 	return rv;
       }
+      // Canonical type name string for this object.  Used by to_json() and the
+      // type registry for Phase 2.3 compiled-word validation.
+      virtual std::string type_name() const { return "any"; }
+
       // Returns a JSON descriptor: { "type": "...", "display": "...", "deparse": "...", "data": <json-value> }
       // Subclasses override to provide type-specific data encoding.
       virtual nlohmann::json to_json() const {
-        return {{"type","unknown"},{"display",(std::string)(*this)},{"deparse",deparse()},{"data",nullptr}};
+        return {{"type",type_name()},{"display",(std::string)(*this)},{"deparse",deparse()},{"data",nullptr}};
       }
     };
 
@@ -393,8 +397,9 @@ class Double : public rpn::Stack::Object {
   virtual std::string to_latex() const override {
     return rpn::to_string(_v);
   }
+  virtual std::string type_name() const override { return "double"; }
   virtual nlohmann::json to_json() const override {
-    return {{"type","double"},{"display",(std::string)(*this)},{"deparse",deparse()},{"data",_v}};
+    return {{"type",type_name()},{"display",(std::string)(*this)},{"deparse",deparse()},{"data",_v}};
   }
 
  private:
@@ -430,8 +435,9 @@ Integer(const int64_t &v) : _v(v) {}
     if (rpn::int_radix() == 10) return digits;
     return digits + "_{" + std::to_string(rpn::int_radix()) + "}";
   }
+  virtual std::string type_name() const override { return "integer"; }
   virtual nlohmann::json to_json() const override {
-    return {{"type","integer"},{"display",(std::string)(*this)},{"deparse",deparse()},{"data",_v}};
+    return {{"type",type_name()},{"display",(std::string)(*this)},{"deparse",deparse()},{"data",_v}};
   }
  private:
   int64_t _v;
@@ -459,8 +465,9 @@ class Boolean : public rpn::Stack::Object {
   virtual std::string deparse() const override {
     return _v ? "TRUE" : "FALSE";
   }
+  virtual std::string type_name() const override { return "boolean"; }
   virtual nlohmann::json to_json() const override {
-    return {{"type","boolean"},{"display",(std::string)(*this)},{"deparse",deparse()},{"data",_v}};
+    return {{"type",type_name()},{"display",(std::string)(*this)},{"deparse",deparse()},{"data",_v}};
   }
   // default to_latex()
  private:
@@ -491,8 +498,9 @@ class String : public rpn::Stack::Object {
   virtual std::string to_latex() const override {
     return std::string("\"") + _v + "\"";
   }
+  virtual std::string type_name() const override { return "string"; }
   virtual nlohmann::json to_json() const override {
-    return {{"type","string"},{"display",_v},{"deparse",deparse()},{"data",_v}};
+    return {{"type",type_name()},{"display",_v},{"deparse",deparse()},{"data",_v}};
   }
 
  private:
@@ -568,10 +576,11 @@ public:
     return rv;
   }
   const auto &val() const { return _v; };
+  virtual std::string type_name() const override { return "object"; }
   virtual nlohmann::json to_json() const override {
     nlohmann::json data = nlohmann::json::object();
     for (const auto &m : _v) data[m.first] = m.second->to_json()["data"];
-    return {{"type","object"},{"display",(std::string)(*this)},{"deparse",deparse()},{"data",data}};
+    return {{"type",type_name()},{"display",(std::string)(*this)},{"deparse",deparse()},{"data",data}};
   }
 protected:
   std::map<std::string,std::unique_ptr<rpn::Stack::Object>> _v;
@@ -634,10 +643,11 @@ public:
   virtual std::string to_latex() const override {
     return (std::string)(*this);
   }
+  virtual std::string type_name() const override { return "array"; }
   virtual nlohmann::json to_json() const override {
     nlohmann::json data = nlohmann::json::array();
     for (const auto &e : _v) data.push_back(e->to_json()["data"]);
-    return {{"type","array"},{"display",(std::string)(*this)},{"deparse",deparse()},{"data",data}};
+    return {{"type",type_name()},{"display",(std::string)(*this)},{"deparse",deparse()},{"data",data}};
   }
  protected:
   std::vector<std::unique_ptr<rpn::Stack::Object>> _v;
@@ -666,8 +676,9 @@ public:
   }
   virtual std::string deparse() const override { return "'" + _v + "'"; }
   virtual std::string to_latex() const override { return "'" + _v + "'"; }
+  virtual std::string type_name() const override { return "name"; }
   virtual nlohmann::json to_json() const override {
-    return {{"type","name"},{"display",_v},{"deparse",deparse()},{"data",_v}};
+    return {{"type",type_name()},{"display",_v},{"deparse",deparse()},{"data",_v}};
   }
 private:
   std::string _v;
@@ -693,8 +704,9 @@ public:
     // For round-trip we emit the raw dump; JSON-> reconstructs.
     return nlohmann::json::dump();
   }
+  virtual std::string type_name() const override { return "json"; }
   virtual nlohmann::json to_json() const override {
-    return {{"type","json"},{"display",dump()},{"deparse",deparse()},{"data",static_cast<const nlohmann::json &>(*this)}};
+    return {{"type",type_name()},{"display",dump()},{"deparse",deparse()},{"data",static_cast<const nlohmann::json &>(*this)}};
   }
 };
 } // namespace stack
@@ -765,8 +777,9 @@ public:
     rv += "]";
     return rv;
   }
+  virtual std::string type_name() const override { return "vec3"; }
   virtual nlohmann::json to_json() const override {
-    return {{"type","vec3"},{"display",(std::string)(*this)},{"deparse",deparse()},
+    return {{"type",type_name()},{"display",(std::string)(*this)},{"deparse",deparse()},
             {"data",{{"x",_x},{"y",_y},{"z",_z}}}};
   }
 
