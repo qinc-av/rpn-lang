@@ -12,6 +12,7 @@
  *
  */
 
+#include <atomic>
 #include <fstream>
 #include <iostream>
 #include <queue>
@@ -248,6 +249,7 @@ struct rpn::Interp::Privates : public rpn::WordContext {
   rpn::WordDefinition::Result parse(std::string &line) {
     rpn::WordDefinition::Result rv=rpn::WordDefinition::Result::ok;
     for(; rv==rpn::WordDefinition::Result::ok && line.size()>0;) {
+      if (_cancelRequested.load()) return rpn::WordDefinition::Result::cancelled;
       std::string word;
       /*auto p1 = */ nextWord(word,line);
       rv = eval(word, line);
@@ -299,6 +301,9 @@ struct rpn::Interp::Privates : public rpn::WordContext {
   bool _needIdent;
   bool _tracing;
 
+  std::atomic<bool> _cancelRequested{false};
+  std::function<void(const std::string &, double)> _progressHandler;
+
   std::mutex _qmx;
   std::condition_variable _qcv;
 
@@ -326,6 +331,7 @@ struct rpn::Interp::Privates : public rpn::WordContext {
 	auto req = _queue.front();
 	_queue.pop();
 
+	_cancelRequested.store(false); // clear for each new request
 	if(req.cmd=="eval") {
 	  req.completionHandler(parse(req.param));
 	} else if (req.cmd == "parseFile") {
@@ -350,6 +356,7 @@ Progn::eval_forloop(rpn::Interp &rpn) {
     double current = start;
     double step = 1.0; // sentinel; overwritten after first body execution
     do {
+      if (_p._cancelRequested.load()) { rv = rpn::WordDefinition::Result::cancelled; break; }
       (*_locals)[_ident] = std::make_unique<StDouble>(current);
       rv = eval_lambda(rpn);
       if (rv != rpn::WordDefinition::Result::ok) break;
@@ -362,6 +369,7 @@ Progn::eval_forloop(rpn::Interp &rpn) {
     double step = _step;
     auto loop_cond = [&]() { return step > 0 ? start < end : start > end; };
     for(; rv==rpn::WordDefinition::Result::ok && loop_cond(); start += step) {
+      if (_p._cancelRequested.load()) { rv = rpn::WordDefinition::Result::cancelled; break; }
       (*_locals)[_ident] = std::make_unique<StDouble>(start);
       rv = eval_lambda(rpn);
     }
@@ -375,6 +383,7 @@ Progn::eval_whileloop(rpn::Interp &rpn) {
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
   bool until_style = (_locals->find("__until") != _locals->end());
   while (rv == rpn::WordDefinition::Result::ok) {
+    if (_p._cancelRequested.load()) { rv = rpn::WordDefinition::Result::cancelled; break; }
     rv = eval_lambda(rpn);
     if (rv != rpn::WordDefinition::Result::ok) break;
     bool cond = rpn.stack.pop_as_boolean();
@@ -1490,6 +1499,40 @@ rpn::Interp::wordList() const {
 }
 
 void
+rpn::Interp::cancel() {
+  m_p->_cancelRequested.store(true);
+}
+
+void
+rpn::Interp::cancelAll() {
+  m_p->_cancelRequested.store(true);
+  std::queue<Privates::Request> drain;
+  {
+    std::lock_guard lg(m_p->_qmx);
+    std::swap(drain, m_p->_queue);
+  }
+  while (!drain.empty()) {
+    drain.front().completionHandler(rpn::WordDefinition::Result::cancelled);
+    drain.pop();
+  }
+}
+
+bool
+rpn::Interp::isCancelled() const {
+  return m_p->_cancelRequested.load();
+}
+
+void
+rpn::Interp::setProgressHandler(std::function<void(const std::string &, double)> handler) {
+  m_p->_progressHandler = std::move(handler);
+}
+
+void
+rpn::Interp::reportProgress(const std::string &message, double fraction) {
+  if (m_p->_progressHandler) m_p->_progressHandler(message, fraction);
+}
+
+void
 rpn::Interp::eval(std::string line, std::function<void(rpn::WordDefinition::Result)>completionHandler) {
   //  rpn::WordDefinition::Result rv = m_p->parse(line);
   //  completionHandler(rv);
@@ -1498,6 +1541,7 @@ rpn::Interp::eval(std::string line, std::function<void(rpn::WordDefinition::Resu
 
 rpn::WordDefinition::Result
 rpn::Interp::sync_eval(std::string line) {
+  m_p->_cancelRequested.store(false);
   return m_p->parse(line);
 }
 

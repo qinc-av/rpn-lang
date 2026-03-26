@@ -15,6 +15,11 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
 
+#include <atomic>
+#include <chrono>
+#include <mutex>
+#include <thread>
+
 #include "rpn.h"
 #include "src/fraction.h"
 #include "src/timecode.h"
@@ -1698,6 +1703,85 @@ TEST_CASE("deparse round-trips", "display") {
     g_rpn.stack.clear();
     g_rpn.sync_eval("3.14159265358979. DEPARSE EVAL");
     REQUIRE( g_rpn.stack.peek_double(1) == 3.14159265358979 );
+  }
+}
+
+TEST_CASE("cancel and progress", "threading") {
+  // cancel() from another thread interrupts a long FOR loop running in sync_eval.
+  // Uses a local interpreter so g_rpn state is unaffected.
+  {
+    rpn::Interp interp(false);
+    std::thread canceller([&]{
+      std::this_thread::sleep_for(std::chrono::milliseconds(5));
+      interp.cancel();
+    });
+    auto rv = interp.sync_eval("0. 10000000. FOR i << >> NEXT");
+    canceller.join();
+    REQUIRE( rv == rpn::WordDefinition::Result::cancelled );
+    // isCancelled() is false after sync_eval clears the flag at start
+    // of subsequent call
+    rv = interp.sync_eval("2. 3. +");
+    REQUIRE( rv == rpn::WordDefinition::Result::ok );
+    REQUIRE( interp.stack.peek_double(1) == 5.0 );
+  }
+
+  // cancel() also stops an infinite BEGIN...WHILE...REPEAT loop
+  {
+    rpn::Interp interp(false);
+    std::thread canceller([&]{
+      std::this_thread::sleep_for(std::chrono::milliseconds(5));
+      interp.cancel();
+    });
+    // BEGIN TRUE WHILE REPEAT: loops forever (condition always true)
+    auto rv = interp.sync_eval("BEGIN TRUE WHILE REPEAT");
+    canceller.join();
+    REQUIRE( rv == rpn::WordDefinition::Result::cancelled );
+  }
+
+  // cancelAll() ensures all pending completion handlers are called.
+  // Queue several requests then immediately cancelAll; every handler must fire.
+  {
+    rpn::Interp interp(true);  // async
+    const int N = 20;
+    std::atomic<int> count{0};
+    std::mutex mx;
+    std::condition_variable cv;
+    for (int i = 0; i < N; i++) {
+      interp.eval("1. 2. +", [&](rpn::WordDefinition::Result) {
+        count.fetch_add(1);
+        cv.notify_one();
+      });
+    }
+    interp.cancelAll();
+    // All N handlers must fire within a reasonable window
+    std::unique_lock ul(mx);
+    cv.wait_for(ul, std::chrono::milliseconds(500), [&]{ return count.load() == N; });
+    REQUIRE( count.load() == N );
+  }
+
+  // Progress callback is invoked by reportProgress(); nullptr clears it
+  {
+    std::vector<std::pair<std::string,double>> events;
+    g_rpn.setProgressHandler([&](const std::string &msg, double frac) {
+      events.push_back({msg, frac});
+    });
+    g_rpn.reportProgress("step1", 0.0);
+    g_rpn.reportProgress("step2", 0.5);
+    g_rpn.reportProgress("done",  1.0);
+    g_rpn.setProgressHandler(nullptr);
+    REQUIRE( events.size() == 3 );
+    REQUIRE( events[0].first == "step1" );
+    REQUIRE( events[1].second == 0.5 );
+    REQUIRE( events[2].second == 1.0 );
+    g_rpn.reportProgress("ignored", 0.0);  // no-op after clear
+    REQUIRE( events.size() == 3 );
+  }
+
+  // isCancelled() is false on a freshly used interpreter
+  {
+    rpn::Interp interp(false);
+    interp.sync_eval("1. 1. +");
+    REQUIRE( !interp.isCancelled() );
   }
 }
 

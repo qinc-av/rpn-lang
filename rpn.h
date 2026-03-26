@@ -250,6 +250,7 @@ namespace rpn {
       eval_error, // eval went awry
       compile_error, // error in compiling
       implementation_error, // not implmemented or similar
+      cancelled, // execution was cancelled via Interp::cancel()
     };
     const StackValidator &validator;
     std::function<Result(Interp &rpn, WordContext *ctx, std::string &rest)> eval;
@@ -287,6 +288,21 @@ namespace rpn {
     // Set a callback for debug/trace output.  Pass nullptr to disable.
     // Output is only produced when tracing is enabled (TRUE TRACE).
     void setDebugSink(std::function<void(const std::string &)> sink);
+
+    // Cancel / progress.
+    // cancel() requests cancellation of the currently running eval; the running
+    // word returns Result::cancelled at the next word boundary or loop iteration.
+    // cancelAll() additionally drains the pending request queue, calling each
+    // completion handler with Result::cancelled.
+    // isCancelled() may be polled by native words that implement long operations.
+    // setProgressHandler() registers a sink called by reportProgress(); fraction
+    // is in [0,1] or -1 for indeterminate.  The callback is invoked on whichever
+    // thread the eval runs on — embedders should dispatch to the UI thread as needed.
+    void cancel();
+    void cancelAll();
+    bool isCancelled() const;
+    void setProgressHandler(std::function<void(const std::string &message, double fraction)> handler);
+    void reportProgress(const std::string &message, double fraction = -1.0);
 
     bool validateWord(const std::string &word);
     bool wordExists(const std::string &word);

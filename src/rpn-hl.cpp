@@ -73,4 +73,18 @@ RpnInterp::wordList() const {
   return _interp->wordList();
 }
 
+void RpnInterp::cancel()                { _interp->cancel(); }
+void RpnInterp::cancelAll()             { _interp->cancelAll(); }
+bool RpnInterp::isCancelled() const     { return _interp->isCancelled(); }
+
+void
+RpnInterp::setProgressHandler(std::function<void(const std::string &, double)> handler) {
+  _interp->setProgressHandler(std::move(handler));
+}
+
+void
+RpnInterp::reportProgress(const std::string &message, double fraction) {
+  _interp->reportProgress(message, fraction);
+}
+
 /* end of QInc/Projects/RP42/rpn-lang/src/rpn-hl.cpp */

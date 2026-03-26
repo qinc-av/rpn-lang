@@ -85,6 +85,25 @@
   for (const auto &w : _rpn->wordList()) [list addObject:@(w.c_str())];
   return list;
 }
+
+- (void) cancel    { _rpn->cancel(); }
+- (void) cancelAll { _rpn->cancelAll(); }
+- (BOOL) isCancelled { return _rpn->isCancelled() ? YES : NO; }
+
+- (void) setProgressHandler:(void(^)(NSString *, double))handler {
+  if (handler) {
+    _rpn->setProgressHandler([handler](const std::string &msg, double fraction) {
+      NSString *nsmsg = @(msg.c_str());
+      dispatch_async(dispatch_get_main_queue(), ^{ handler(nsmsg, fraction); });
+    });
+  } else {
+    _rpn->setProgressHandler(nullptr);
+  }
+}
+
+- (void) reportProgress:(NSString *)message fraction:(double)fraction {
+  _rpn->reportProgress([message UTF8String], fraction);
+}
 @end
 
 /* end of QInc/Projects/RP42/rpn-lang/src/rpn-hl.mm */

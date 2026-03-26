@@ -35,6 +35,7 @@ typedef NS_ENUM(NSInteger, RpnResult) {
   rpn_eval_error, // eval went awry
   rpn_compile_error, // error in compiling
   rpn_implementation_error, // not implmemented or similar
+  rpn_cancelled, // execution was cancelled via -cancel
 };
 
 @interface RpnInterp : NSObject
@@ -51,6 +52,15 @@ typedef NS_ENUM(NSInteger, RpnResult) {
 // Word introspection
 - (NSDictionary*) wordHelp:(NSString*)word;   // keys: name, description, category, effects (NSArray<NSString*>)
 - (NSArray<NSString*>*) wordList;
+
+// Cancel / progress
+- (void) cancel;
+- (void) cancelAll;
+- (BOOL) isCancelled;
+// progressHandler block receives (message, fraction); fraction is in [0,1] or -1 for indeterminate.
+// The block is dispatched to the main queue automatically.
+- (void) setProgressHandler:(void(^)(NSString *message, double fraction))handler;
+- (void) reportProgress:(NSString *)message fraction:(double)fraction;
 @end
 
 #else // ! __OBJC__
@@ -66,6 +76,7 @@ public:
       eval_error, // eval went awry
       compile_error, // error in compiling
       implementation_error, // not implmemented or similar
+      cancelled, // execution was cancelled via cancel()
       };
   RpnInterp(bool async);
   ~RpnInterp();
@@ -83,6 +94,12 @@ public:
 
   rpn::WordHelp wordHelp(const std::string &word) const;
   std::vector<std::string> wordList() const;
+
+  void cancel();
+  void cancelAll();
+  bool isCancelled() const;
+  void setProgressHandler(std::function<void(const std::string &message, double fraction)> handler);
+  void reportProgress(const std::string &message, double fraction = -1.0);
 
 private:
   rpn::Interp *_interp;
