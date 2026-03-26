@@ -99,13 +99,12 @@ has no way to interrupt a running evaluation from another thread.  Address holis
 
 **Complexity:** M (design decision first).
 
-### 2.5 Foreign Language / C ABI
+### 2.5 High-Level Interface Completeness
 
-- Expand `RpnInterp` HL layer to expose stack peek and word introspection.
-- Plan a C ABI wrapper (`rpn_c.h`) for non-C++ bindings.
-- WASM deferred to Phase 4.
+- Expand `RpnInterp` HL layer to expose stack peek and word introspection
+  (prerequisite for 2.1 metadata reaching Swift/ObjC callers).
 
-**Complexity:** M.
+**Complexity:** S–M.
 
 ---
 
@@ -167,6 +166,17 @@ One pre-existing failure in `runtime-test.cpp` test case 17: the `tests.rpn` par
 See `docs/developer-guide.md`.
 
 The word reference section will be substantially auto-generated once Phase 2.1 (word introspection API) is complete.
+
+---
+
+## Possible Future Work
+
+Items considered but not scheduled.  Revisit if requirements emerge.
+
+| Item | Notes |
+|---|---|
+| WASM build target | Technically feasible; no current use case. |
+| C ABI wrapper (`rpn_c.h`) | Would enable non-C++ bindings; no active requirement. |
 
 ---
 
