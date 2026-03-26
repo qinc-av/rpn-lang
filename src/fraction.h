@@ -116,12 +116,8 @@ namespace stack {
       return q::Fraction::operator double();
     }
     virtual std::string deparse() const override {
-      std::string rv;
-      rv += std::to_string(_numerator);
-      rv += " ";
-      rv += std::to_string(_denominator);
-      rv += " ->FRAC";
-      return rv;
+      // ->FRAC expects d2_integer_integer; use 0d prefix to force integer parsing
+      return "0d" + std::to_string(_numerator) + " 0d" + std::to_string(_denominator) + " ->FRAC";
     }
 
   // default to_text()

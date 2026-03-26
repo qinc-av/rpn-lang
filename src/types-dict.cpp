@@ -17,6 +17,18 @@
 #include <cmath>
 
 /***************************************************
+ * Boolean literals
+ */
+NATIVE_WORD_DECL(types, push_true) {
+  rpn.stack.push_boolean(true);
+  return rpn::WordDefinition::Result::ok;
+}
+NATIVE_WORD_DECL(types, push_false) {
+  rpn.stack.push_boolean(false);
+  return rpn::WordDefinition::Result::ok;
+}
+
+/***************************************************
  * Integer
  */
 // to_integer
@@ -329,6 +341,8 @@ NATIVE_WORD_DECL(t_array, reverse) {
 void
 rpn::Interp::addTypeWords() {
   setWordCategory("types");
+  addDefinition("TRUE",  NATIVE_WORD_WDEF(types, rpn::StackSizeValidator::zero, push_true,  nullptr));
+  addDefinition("FALSE", NATIVE_WORD_WDEF(types, rpn::StackSizeValidator::zero, push_false, nullptr));
   addDefinition("->INT", NATIVE_WORD_WDEF(types, rpn::StrictTypeValidator::d1_double, to_int, nullptr));
   addDefinition("->FLOAT", NATIVE_WORD_WDEF(types, rpn::StrictTypeValidator::d1_integer, to_float, nullptr));
   addDefinition("->STRING", NATIVE_WORD_WDEF(types, rpn::StackSizeValidator::one, to_string, nullptr));
@@ -380,6 +394,8 @@ rpn::Interp::addTypeWords() {
   st = sync_eval(": ->{xy} ( x y --  <v3'> ) ->VEC3x SWAP ->VEC3y + ;");
   printf("->{xy} : %s\n", status().c_str());
 
+  addWordMetadata("TRUE",     "Push boolean true.");
+  addWordMetadata("FALSE",    "Push boolean false.");
   addWordMetadata("->INT",    "Convert TOS to integer (rounded to nearest).");
   addWordMetadata("->FLOAT",  "Convert TOS to double.");
   addWordMetadata("->STRING", "Convert TOS to its string representation.");

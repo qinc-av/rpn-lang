@@ -55,10 +55,12 @@ namespace stack {
       return rv;
     }
     virtual std::string deparse() const override {
-      std::string rv;
-      rv += std::to_string(this->real()) + " ";
-      rv += std::to_string(this->imag()) + " ->COMPLEX";
-      return rv;
+      auto dp = [](double v) {
+        auto s = std::format("{:.17g}", v);
+        if (s.find_first_not_of("-0123456789") == std::string::npos) s += ".";
+        return s;
+      };
+      return dp(this->real()) + " " + dp(this->imag()) + " ->COMPLEX";
     }
   // default to_text()
     virtual std::string to_latex() const override {

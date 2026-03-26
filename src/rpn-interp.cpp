@@ -27,14 +27,14 @@
 #include "../rpn.h"
 #include "geometry.h"
 
-// These globals back the rpn::to_string() free functions used by stack type
-// operator string() methods, which have no interpreter context.  The canonical
-// per-instance state lives in Interp::Privates; these are kept in sync by the
-// ->PRECISION and ->RADIX words.  TODO(Phase 2.2): remove once display is
-// refactored to flow through the interpreter.
-static int sk_double_decimals = 10;
-static double sk_double_precision = 10000000000.0;
-static int _sk_int_radix = 10;
+// Thread-local display context for rpn::to_string() free functions used by stack
+// type operator string() / to_latex() methods (which have no interpreter context).
+// The canonical per-instance state lives in Interp::Privates; these are kept in
+// sync by the ->PRECISION and ->RADIX words.  Thread-local prevents cross-thread
+// interference when multiple interpreters run concurrently.
+thread_local int sk_double_decimals = 10;
+thread_local double sk_double_precision = 10000000000.0;
+thread_local int _sk_int_radix = 10;
 
 std::string
 rpn::to_string(const double &dv) {

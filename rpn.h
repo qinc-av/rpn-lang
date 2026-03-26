@@ -22,6 +22,7 @@
 #include <deque>
 #include <map>
 #include <cmath>
+#include <format>
 #include <stdexcept>
 #include <functional>
 
@@ -360,7 +361,11 @@ class Double : public rpn::Stack::Object {
     return (_v < rhs._v);
   }
   virtual std::string deparse() const override {
-    return std::to_string(_v);
+    // 17 significant digits guarantees exact round-trip for IEEE 754 double.
+    // Append '.' when the result looks like an integer so the parser treats it as a double.
+    auto s = std::format("{:.17g}", _v);
+    if (s.find_first_not_of("-0123456789") == std::string::npos) s += ".";
+    return s;
   }
   // default to_text()
   virtual std::string to_latex() const override {
@@ -424,7 +429,7 @@ class Boolean : public rpn::Stack::Object {
     return (_v < rhs._v);
   }
   virtual std::string deparse() const override {
-    return std::string(*this);
+    return _v ? "TRUE" : "FALSE";
   }
   // default to_latex()
   //  virtual std::string to_latex() const override {
@@ -525,7 +530,7 @@ public:
     bool first = true;
     for (const auto &m : _v) {
       rv += m.second->deparse();
-      rv += " .\" " + m.first + "\"";
+      rv += " \"" + m.first + "\"";
       rv += first ? " ->OBJ" : " +";
       rv += " ";
       first = false;
@@ -671,11 +676,12 @@ public:
   }
   virtual std::unique_ptr<Object> deep_copy() const override { return std::make_unique<StVec3>(*this); }
   virtual std::string deparse() const override {
-    std::string rv;
-    rv += std::to_string(_x) + " ";
-    rv += std::to_string(_y) + " ";
-    rv += std::to_string(_z) + " ->VEC3";
-    return rv;
+    auto dp = [](double v) {
+      auto s = std::format("{:.17g}", v);
+      if (s.find_first_not_of("-0123456789") == std::string::npos) s += ".";
+      return s;
+    };
+    return dp(_x) + " " + dp(_y) + " " + dp(_z) + " ->VEC3";
   }
   // default to_text()
   virtual std::string to_latex() const override {

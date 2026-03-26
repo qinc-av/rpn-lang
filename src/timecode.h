@@ -62,11 +62,11 @@ public:
       return q::Timecode::to_string();
     }
     virtual std::string deparse() const override {
-      std::string rv;
-      rv += std::to_string(to_frames()) + " ";
-      rv += std::to_string(_frameRate._numerator) + " ";
-      rv += std::to_string(_frameRate._denominator) + " ->FRAC ->TC";
-      return rv;
+      // ->TC expects d2_double_frac: frame count as double, frame rate as Fraction.
+      // ->FRAC expects d2_integer_integer; use 0d prefix to force integer parsing.
+      return std::to_string(to_frames()) + ". " +
+             "0d" + std::to_string(_frameRate._numerator) + " " +
+             "0d" + std::to_string(_frameRate._denominator) + " ->FRAC ->TC";
     }
     // default to_latex()
     //  virtual std::string to_latex() const {
