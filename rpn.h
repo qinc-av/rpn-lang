@@ -257,6 +257,9 @@ namespace rpn {
     AngleMode angleMode() const;
     void setAngleMode(AngleMode mode);
 
+    int binaryWordsize() const;
+    void setBinaryWordsize(int bits);  // valid range 1–64; clamped silently
+
     /*
      * XXX-ELH- should the stack be public or private?
      *

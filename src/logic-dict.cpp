@@ -92,27 +92,50 @@ NATIVE_WORD_DECL(logic, l_or) {
   return rpn::WordDefinition::Result::ok;
 }
 
+// Returns a bitmask for the current wordsize.  Wordsize 64 → all bits set (no-op mask).
+static int64_t wordsize_mask(int ws) {
+  if (ws >= 64) return -1LL;
+  return (int64_t)((1ULL << ws) - 1);
+}
+
 NATIVE_WORD_DECL(logic, b_or) {
   auto s1 = rpn.stack.pop_integer();
   auto s2 = rpn.stack.pop_integer();
-  rpn.stack.push_integer(s1 | s2);
+  rpn.stack.push_integer((s1 | s2) & wordsize_mask(rpn.binaryWordsize()));
   return rpn::WordDefinition::Result::ok;
 }
 NATIVE_WORD_DECL(logic, b_and) {
   auto s1 = rpn.stack.pop_integer();
   auto s2 = rpn.stack.pop_integer();
-  rpn.stack.push_integer(s1 & s2);
+  rpn.stack.push_integer((s1 & s2) & wordsize_mask(rpn.binaryWordsize()));
   return rpn::WordDefinition::Result::ok;
 }
 NATIVE_WORD_DECL(logic, b_xor) {
   auto s1 = rpn.stack.pop_integer();
   auto s2 = rpn.stack.pop_integer();
-  rpn.stack.push_integer(s1 ^ s2);
+  rpn.stack.push_integer((s1 ^ s2) & wordsize_mask(rpn.binaryWordsize()));
   return rpn::WordDefinition::Result::ok;
 }
 NATIVE_WORD_DECL(logic, b_neg) {
   auto s1 = rpn.stack.pop_integer();
-  rpn.stack.push_integer(~s1);
+  rpn.stack.push_integer(~s1 & wordsize_mask(rpn.binaryWordsize()));
+  return rpn::WordDefinition::Result::ok;
+}
+
+// Logical (unsigned) left shift; result masked to wordsize.
+NATIVE_WORD_DECL(logic, b_lshift) {
+  auto shift = rpn.stack.pop_as_integer();
+  auto value = rpn.stack.pop_as_integer();
+  int64_t mask = wordsize_mask(rpn.binaryWordsize());
+  rpn.stack.push_integer((int64_t)((uint64_t)value << shift) & mask);
+  return rpn::WordDefinition::Result::ok;
+}
+// Logical (unsigned) right shift on the masked value.
+NATIVE_WORD_DECL(logic, b_rshift) {
+  auto shift = rpn.stack.pop_as_integer();
+  auto value = rpn.stack.pop_as_integer();
+  uint64_t mask = (uint64_t)wordsize_mask(rpn.binaryWordsize());
+  rpn.stack.push_integer((int64_t)(((uint64_t)value & mask) >> shift));
   return rpn::WordDefinition::Result::ok;
 }
 
@@ -143,12 +166,30 @@ rpn::Interp::addLogicWords() {
   addDefinition("AND", NATIVE_WORD_WDEF(logic, rpn::StrictTypeValidator::d2_boolean_boolean, l_and, nullptr));
   addDefinition("OR", NATIVE_WORD_WDEF(logic, rpn::StrictTypeValidator::d2_boolean_boolean, l_or, nullptr));
 
-  addDefinition("NEG", NATIVE_WORD_WDEF(logic, rpn::StrictTypeValidator::d1_integer, b_neg, nullptr));
-  addDefinition("AND", NATIVE_WORD_WDEF(logic, rpn::StrictTypeValidator::d2_integer_integer, b_and, nullptr));
-  addDefinition("OR", NATIVE_WORD_WDEF(logic, rpn::StrictTypeValidator::d2_integer_integer, b_or, nullptr));
-  addDefinition("XOR", NATIVE_WORD_WDEF(logic, rpn::StrictTypeValidator::d2_integer_integer, b_xor, nullptr));
+  addDefinition("NEG",    NATIVE_WORD_WDEF(logic, rpn::StrictTypeValidator::d1_integer,     b_neg,    nullptr));
+  addDefinition("AND",    NATIVE_WORD_WDEF(logic, rpn::StrictTypeValidator::d2_integer_integer, b_and, nullptr));
+  addDefinition("OR",     NATIVE_WORD_WDEF(logic, rpn::StrictTypeValidator::d2_integer_integer, b_or,  nullptr));
+  addDefinition("XOR",    NATIVE_WORD_WDEF(logic, rpn::StrictTypeValidator::d2_integer_integer, b_xor, nullptr));
+  // LSHIFT/RSHIFT: value must be integer; shift count may be integer or double (4 vs 0x04).
+  // LSHIFT/RSHIFT: value must be integer (TOS-1); shift count may be integer or double (TOS).
+  addDefinition("LSHIFT", NATIVE_WORD_WDEF(logic, rpn::StrictTypeValidator::d2_integer_integer, b_lshift, nullptr));
+  addDefinition("LSHIFT", NATIVE_WORD_WDEF(logic, rpn::StrictTypeValidator::d2_double_integer,  b_lshift, nullptr));
+  addDefinition("RSHIFT", NATIVE_WORD_WDEF(logic, rpn::StrictTypeValidator::d2_integer_integer, b_rshift, nullptr));
+  addDefinition("RSHIFT", NATIVE_WORD_WDEF(logic, rpn::StrictTypeValidator::d2_double_integer,  b_rshift, nullptr));
 
-  addDefinition("<true>", NATIVE_WORD_WDEF(logic, rpn::StackSizeValidator::zero, push_true, nullptr));
+  // Binary wordsize: ->WORDSIZE sets (TOS integer, 1–64); WORDSIZE-> queries.
+  addDefinition("->WORDSIZE", { rpn::StrictTypeValidator::d1_integer,
+    [](rpn::Interp &rpn, rpn::WordContext *, std::string &) {
+      rpn.setBinaryWordsize((int)rpn.stack.pop_integer());
+      return rpn::WordDefinition::Result::ok;
+    }, nullptr });
+  addDefinition("WORDSIZE->", { rpn::StackSizeValidator::zero,
+    [](rpn::Interp &rpn, rpn::WordContext *, std::string &) {
+      rpn.stack.push_integer(rpn.binaryWordsize());
+      return rpn::WordDefinition::Result::ok;
+    }, nullptr });
+
+  addDefinition("<true>",  NATIVE_WORD_WDEF(logic, rpn::StackSizeValidator::zero, push_true,  nullptr));
   addDefinition("<false>", NATIVE_WORD_WDEF(logic, rpn::StackSizeValidator::zero, push_false, nullptr));
 
 }

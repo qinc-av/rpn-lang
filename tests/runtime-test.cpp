@@ -490,6 +490,79 @@ TEST_CASE( "AND OR NOT XOR" " binary logic" ) {
 
 }
 
+TEST_CASE("binary wordsize", "binary logic") {
+  // Reset state at start of test case
+  g_rpn.stack.clear();
+  g_rpn.setBinaryWordsize(64);
+
+  // WORDSIZE-> query
+  {
+    g_rpn.stack.clear();
+    g_rpn.sync_eval("WORDSIZE->");
+    REQUIRE( g_rpn.stack.peek_as_integer(1) == 64 );
+  }
+
+  // ->WORDSIZE set via stack word
+  {
+    g_rpn.stack.clear();
+    g_rpn.sync_eval("8 ->WORDSIZE WORDSIZE->");
+    REQUIRE( g_rpn.stack.peek_as_integer(1) == 8 );
+    g_rpn.setBinaryWordsize(64);
+  }
+
+  // NEG (bitwise NOT) masked to 8 bits: ~0x05 & 0xFF = 0xFA
+  {
+    g_rpn.setBinaryWordsize(8);
+    g_rpn.stack.clear();
+    g_rpn.sync_eval("0x05 NEG");
+    REQUIRE( g_rpn.stack.peek_as_integer(1) == 0xFA );
+    g_rpn.setBinaryWordsize(64);
+  }
+
+  // AND masked to 8 bits
+  {
+    g_rpn.setBinaryWordsize(8);
+    g_rpn.stack.clear();
+    g_rpn.sync_eval("0x1FF 0xFF AND");
+    REQUIRE( g_rpn.stack.peek_as_integer(1) == 0xFF );
+    g_rpn.setBinaryWordsize(64);
+  }
+
+  // LSHIFT: 1 shifted left 4 bits = 16, with wordsize 8
+  {
+    g_rpn.setBinaryWordsize(8);
+    g_rpn.stack.clear();
+    g_rpn.sync_eval("0x01 4 LSHIFT");
+    REQUIRE( g_rpn.stack.peek_as_integer(1) == 0x10 );
+  }
+
+  // LSHIFT overflow masked: 0x01 << 8 = 0x100, masked to 8 bits = 0x00
+  {
+    g_rpn.stack.clear();
+    g_rpn.sync_eval("0x01 8 LSHIFT");
+    REQUIRE( g_rpn.stack.peek_as_integer(1) == 0x00 );
+    g_rpn.setBinaryWordsize(64);
+  }
+
+  // RSHIFT: 0x80 >> 3 = 0x10 (logical, unsigned)
+  {
+    g_rpn.setBinaryWordsize(8);
+    g_rpn.stack.clear();
+    g_rpn.sync_eval("0x80 3 RSHIFT");
+    REQUIRE( g_rpn.stack.peek_as_integer(1) == 0x10 );
+    g_rpn.setBinaryWordsize(64);
+  }
+
+  // Clamping: wordsize < 1 → clamped to 1; > 64 → clamped to 64
+  {
+    g_rpn.setBinaryWordsize(0);
+    REQUIRE( g_rpn.binaryWordsize() == 1 );
+    g_rpn.setBinaryWordsize(100);
+    REQUIRE( g_rpn.binaryWordsize() == 64 );
+    g_rpn.setBinaryWordsize(64);
+  }
+}
+
 TEST_CASE( "file tests.rpn", "parsing" ) {
   std::string line;
   {

@@ -165,6 +165,20 @@ Currently all user-defined words get `StackSizeValidator::zero`, bypassing type 
 - Add `cancelAll()` to drain the queue.
 - Design a long-running word progress callback (required for CNC probing in Machina Nexum).
 
+**Deadlocked / runaway interpreter** — all loop constructs (`eval_forloop`, `eval_whileloop`)
+are unbounded by design; protection is the embedder's responsibility.  Currently the embedder
+has no way to interrupt a running evaluation from another thread.  Address holistically here:
+
+1. `std::atomic<bool> _cancelRequested` in `Privates`, checked at the top of each loop
+   iteration.  Public API: `Interp::cancel()` sets the flag; `parse()` clears it on entry.
+2. `cancelAll()`: set cancel flag AND drain the pending request queue so no further
+   work starts.
+3. Long-running word progress / heartbeat callback — required for CNC probing; also lets
+   the embedder implement its own timeout strategy without a hard-coded limit.
+4. Consider debug helpers: iteration counter accessible via callback, last-executed-word
+   in `_status`, or a watchdog-friendly `ping()` that returns only when the interpreter
+   is idle.
+
 **Complexity:** M (design decision first).
 
 ### 2.5 Foreign Language / C ABI

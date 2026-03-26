@@ -410,8 +410,7 @@ rpn::Interp::addMathWords() {
     return rpn::WordDefinition::Result::ok;
   }, nullptr });
 
-  //  rpn.addDefinition("LSHIFT", MATH_BINARY_DEF(lshift)); // integer
-  //  rpn.addDefinition("RSHIFT", MATH_BINARY_DEF(rshift)); // integer
+  // LSHIFT / RSHIFT are registered in logic-dict.cpp alongside the other binary words.
 
 }
 

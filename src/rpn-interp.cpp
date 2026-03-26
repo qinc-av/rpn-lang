@@ -287,6 +287,7 @@ struct rpn::Interp::Privates : public rpn::WordContext {
 
   var_dict_t _globalVars;                              // STO/RCL global variables
   rpn::AngleMode _angleMode = rpn::AngleMode::degrees; // trig mode
+  int _binaryWordsize = 64;                            // binary operation wordsize (1–64)
 
   std::vector<Progn> _ctVprogn;
   std::vector<std::shared_ptr<var_dict_t>> _vlocals;
@@ -1328,6 +1329,11 @@ rpn::Interp::~Interp() {
 
 rpn::AngleMode rpn::Interp::angleMode() const { return m_p->_angleMode; }
 void rpn::Interp::setAngleMode(rpn::AngleMode mode) { m_p->_angleMode = mode; }
+
+int rpn::Interp::binaryWordsize() const { return m_p->_binaryWordsize; }
+void rpn::Interp::setBinaryWordsize(int bits) {
+  m_p->_binaryWordsize = std::max(1, std::min(64, bits));
+}
 
 void
 rpn::Interp::setDebugSink(std::function<void(const std::string &)> sink) {
