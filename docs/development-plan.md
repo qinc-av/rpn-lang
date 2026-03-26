@@ -2,7 +2,7 @@
 
 ## Status
 
-Phase 0 complete. Phase 1 complete. Phase 2 complete. Starting Phase 3.
+Phase 0 complete. Phase 1 complete. Phase 2 complete. Phase 3 complete. Starting Phase 4.
 
 ---
 
@@ -52,7 +52,7 @@ source of most of these tasks.
 
 ---
 
-## Phase 3 — Extended Types and Operations
+## Phase 3 — Extended Types and Operations (Complete)
 
 ### 3.1 JSON Words (Complete)
 
@@ -62,28 +62,17 @@ source of most of these tasks.
 - `JSON->` — unpacks a `StJson`: array → elements (as StJson) + count; object → (value, key) pairs + count; scalar → native type.  Analogous to `ARRAY->` / `OBJ->`.
 - `describeStack()` on HL layer — returns full descriptor array for UI consumption.
 
-### 3.2 General Vector / Matrix
-
-`stack::Matrix` type (NxM). `->MATRIX` word. Connect to `StVec3`. Basic operations: `+`, `-`, `*`, determinant, transpose, inverse.
-
-**Complexity:** L. Prerequisite for Phase 4 statistics and linear algebra.
-
-### 3.3 Algebraic Entry Integration
-
-`shunting-yard.cpp` already exists but is disconnected. Wire it into `eval_mathexpr` and register an infix delimiter in the CT dictionary.
-
-**Complexity:** M.
-
 ---
 
 ## Phase 4 — Advanced Mathematics
 
 | # | Task | Complexity | Notes |
 |---|---|---|---|
+| 4.0 | Matrix type: `stack::Matrix` (NxM), `->MATRIX`, `+`, `-`, `*`, determinant, transpose, inverse. Connect to `StVec3`. | L | Moved from 3.2; prerequisite for 4.2 |
 | 4.1 | Statistics: MEAN, VARIANCE, STDDEV, LINFIT, CORRELATION on Array | M | No new type |
-| 4.2 | Linear Algebra: DET, INV, TRANS, EIGENVAL on Matrix | L | Requires 3.2 |
+| 4.2 | Linear Algebra: DET, INV, TRANS, EIGENVAL on Matrix | L | Requires 4.0 |
 | 4.3 | Binary ops enhancement: RLEFT, RRIGHT (rotate), STWS | S | Builds on 1.7 |
-| 4.4 | CAS: symbolic differentiation, integration, simplification | XL | Research; evaluate SymEngine/GiNaC first |
+| 4.4 | CAS: symbolic differentiation, integration, simplification. Evaluate SymEngine/GiNaC. Algebraic entry (`'expr'` literal syntax, implied multiplication, function calls) is a thin wrapper over the CAS parser — implement here, not separately. Remove `src/shunting-yard.cpp`. | XL | Research first |
 
 ---
 
