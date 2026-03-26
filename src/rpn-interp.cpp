@@ -18,6 +18,7 @@
 #include <queue>
 #include <future>
 #include <mutex>
+#include <optional>
 #include <set>
 #include <sstream>
 
@@ -306,16 +307,19 @@ struct rpn::Interp::Privates : public rpn::WordContext {
   std::vector<std::unique_ptr<rpn::StrictTypeValidator>> _dynamicValidators;
 
   // Parse the input-types side of a stack-effect string (before "--").
-  // Returns an empty vector if there are no inputs or an unknown type name is found.
-  std::vector<size_t> parse_input_types(const std::string &effect) {
+  // Returns nullopt if there is no "--" separator or an unrecognised type name is found
+  // (caller should treat this as a compile error).
+  // Returns an empty vector for a valid zero-input effect like "( -- double )".
+  std::optional<std::vector<size_t>> parse_input_types(const std::string &effect) {
     auto dash = effect.find("--");
-    std::string inputs = (dash != std::string::npos) ? effect.substr(0, dash) : "";
+    if (dash == std::string::npos) return std::nullopt; // no "--" → not a stack-effect comment
+    std::string inputs = effect.substr(0, dash);
     std::vector<size_t> types;
     std::istringstream ss(inputs);
     std::string token;
     while (ss >> token) {
       auto it = _typeRegistry.find(token);
-      if (it == _typeRegistry.end()) return {}; // unknown type — fall back to StackSizeValidator
+      if (it == _typeRegistry.end()) return std::nullopt; // unknown type name
       types.push_back(it->second);
     }
     return types;
@@ -553,18 +557,26 @@ NATIVE_WORD_DECL(private, ct_SEMICOLON) {
     p->_trace("adding '" + progp->_ident + "' to the dictionary");
 
     // Build a typed validator from the stack-effect comment if one was captured.
+    // _effect_comment is only set when the comment contains "--".
+    // If all input type tokens are registered type names → build a StrictTypeValidator.
+    // If any token is unrecognised (e.g. HP48-style variable name like "n" or "diam") →
+    // treat the comment as pure documentation and fall back to StackSizeValidator::zero.
     const rpn::StackValidator *validator = &rpn::StackSizeValidator::zero;
     if (!progp->_effect_comment.empty()) {
       auto types = p->parse_input_types(progp->_effect_comment);
-      if (!types.empty()) {
+      if (types.has_value() && !types->empty()) {
+        // All input tokens were recognised type names — build a StrictTypeValidator.
         p->_dynamicValidators.push_back(
-          std::make_unique<rpn::StrictTypeValidator>(types, progp->_ident));
+          std::make_unique<rpn::StrictTypeValidator>(*types, progp->_ident));
         validator = p->_dynamicValidators.back().get();
       }
+      // nullopt (unknown type name) or Some({}) (zero inputs) → StackSizeValidator::zero.
     }
 
-    p->_rtDictionary.emplace(progp->_ident, rpn::WordDefinition {
-      *validator, NATIVE_WORD_FN(private, COMPILED_EVAL), progp });
+    if (rv == rpn::WordDefinition::Result::ok) {
+      p->_rtDictionary.emplace(progp->_ident, rpn::WordDefinition {
+        *validator, NATIVE_WORD_FN(private, COMPILED_EVAL), progp });
+    }
 
   } else {
 
@@ -656,8 +668,10 @@ NATIVE_WORD_DECL(private, OPAREN) {
   } else if (p &&
              !p->_ctVprogn.empty() &&
              p->_ctVprogn.back()._type == ct_worddef &&
-             p->_ctVprogn.back()._effect_comment.empty()) {
-    // First ( comment ) inside a word definition — store as the stack-effect comment.
+             p->_ctVprogn.back()._effect_comment.empty() &&
+             comment.find("--") != std::string::npos) {
+    // First ( comment ) inside a word definition that contains "--" is a
+    // stack-effect declaration; store it.  Plain comments without "--" are ignored.
     p->_ctVprogn.back()._effect_comment = comment;
   }
   return rv;

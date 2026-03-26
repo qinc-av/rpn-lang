@@ -2068,9 +2068,29 @@ TEST_CASE("compiled word validation (Phase 2.3)", "types") {
   rpn.stack.drop(); rpn.stack.drop();
 
   // Word without effect comment: behaves as StackSizeValidator::zero (always matches).
-  rpn.sync_eval(": NOOP << >> ;");
+  rpn.sync_eval(": NOOP ;");
   rv = rpn.sync_eval("NOOP");
   REQUIRE( rv == rpn::WordDefinition::Result::ok );
+  REQUIRE( rpn.stack.depth() == 0 );
+
+  // Unknown type name in effect comment → HP48-style doc comment; silently becomes untyped.
+  // The word still compiles and runs; it just won't have a typed validator.
+  rv = rpn.sync_eval(": BADWORD ( doulbe -- double ) 2. * ;");
+  REQUIRE( rv == rpn::WordDefinition::Result::ok );
+  REQUIRE( rpn.wordExists("BADWORD") );
+  rpn.sync_eval("3.");
+  rv = rpn.sync_eval("BADWORD");
+  REQUIRE( rv == rpn::WordDefinition::Result::ok );
+  REQUIRE_THAT( rpn.stack.peek_double(1), Catch::Matchers::WithinAbs(6.0, 1e-10) );
+  rpn.stack.drop();
+
+  // Valid zero-input effect ( -- double ) → StackSizeValidator::zero, always matches.
+  rpn.sync_eval(": PUSHPI ( -- double ) 3.14159 ;");
+  rv = rpn.sync_eval("PUSHPI");
+  REQUIRE( rv == rpn::WordDefinition::Result::ok );
+  REQUIRE( rpn.stack.depth() == 1 );
+  REQUIRE_THAT( rpn.stack.peek_double(1), Catch::Matchers::WithinAbs(3.14159, 1e-5) );
+  rpn.stack.drop();
 }
 
 /* end of qinc/rpn-lang/tests/runtime-test.cpp */
