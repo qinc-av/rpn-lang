@@ -430,30 +430,100 @@ Validators use `typeid(MyType).hash_code()`.  `stack.types()` returns a
 
 ## 9. Adding a New Stack Type
 
-1. **Define the class** — either in `rpn.h` (for built-in types) or in your
-   dict source file (for domain types like `stack::Complex`, `stack::Timecode`).
+The preferred pattern is **multiple inheritance**: inherit from both
+`rpn::Stack::Object` and your existing domain class.  This means the stack
+object *is* the domain object — no wrapping, no unwrapping.
 
-2. **Implement the interface** — `deep_copy`, `operator string`, `deparse`,
-   `operator==`, `to_latex`.
+### The MI extension pattern
+
+Suppose you have an existing domain class:
+
+```cpp
+// Your existing domain type — no changes required
+class Widget {
+public:
+  Widget(const std::string &name, double value) : _name(name), _value(value) {}
+  const std::string &name()  const { return _name; }
+  double             value() const { return _value; }
+  bool operator==(const Widget &rhs) const {
+    return _name == rhs._name && _value == rhs._value;
+  }
+private:
+  std::string _name;
+  double      _value;
+};
+```
+
+The stack adapter uses MI to make it a first-class stack object:
+
+```cpp
+// In your dict header or .cpp file:
+namespace stack {
+
+class Widget : public rpn::Stack::Object, public ::Widget {
+public:
+  Widget(const std::string &name, double value) : ::Widget(name, value) {}
+  Widget(const ::Widget &w) : ::Widget(w) {}
+
+  // Required interface:
+  virtual std::unique_ptr<rpn::Stack::Object> deep_copy() const override {
+    return std::make_unique<Widget>(*this);
+  }
+  virtual operator std::string() const override {
+    return "Widget{" + name() + ":" + std::to_string(value()) + "}";
+  }
+  virtual std::string deparse() const override {
+    // RPN that recreates this object — adjust to match your ->WIDGET word
+    return std::to_string(value()) + " \"" + name() + "\" ->WIDGET";
+  }
+  virtual bool operator==(const rpn::Stack::Object &orhs) const override {
+    const auto &rhs = PEEK_CAST(const Widget, orhs);
+    return ::Widget::operator==(rhs);
+  }
+};
+
+} // namespace stack
+```
+
+The key benefit: any word that receives a `stack::Widget` from the stack can
+pass it directly to any API that accepts a `::Widget &` — no cast or unwrap
+needed because the object already IS-A `::Widget`.
+
+### Step-by-step checklist
+
+1. **Define the adapter class** — in your dict header or `.cpp` file, not in
+   `rpn.h`.  Inherit `rpn::Stack::Object` first, then your domain type.
+
+2. **Implement the required interface** — `deep_copy`, `operator string`,
+   `deparse`, `operator==`.  Add `operator>` / `operator<` if the type will
+   be compared or sorted.
 
 3. **Add a validator** if the type needs to appear in word signatures:
 
    ```cpp
    namespace mydict_validator {
-     extern const rpn::StrictTypeValidator d1_mytype;
+     extern const rpn::StrictTypeValidator d1_widget;
    }
-   const rpn::StrictTypeValidator mydict_validator::d1_mytype(
-     {typeid(stack::MyType).hash_code()}, "d1_mytype");
+   const rpn::StrictTypeValidator mydict_validator::d1_widget(
+     {typeid(stack::Widget).hash_code()}, "d1_widget");
    ```
 
-4. **Add conversion words** — `->MYTYPE` to create from stack, `MYTYPE->`
-   (or `OBJ->`) to explode.
+4. **Add conversion words** — `->WIDGET` to construct from stack items,
+   `WIDGET->` to explode back to primitives.
 
-5. **Add type alias** if widely used:
+5. **Add a type alias** if widely used:
 
    ```cpp
-   using StMyType = stack::MyType;
+   using StWidget = stack::Widget;
    ```
+
+### Real-world example
+
+`stack::Complex` in `src/math-dict.cpp` uses this exact pattern, inheriting
+both `rpn::Stack::Object` and `std::complex<double>`.  The color-math
+extension in `etc/colorcalc-rpn.h` shows it at scale: `stack::Rgb`,
+`stack::XYZ`, `stack::Lab`, etc., each inheriting their CIE/RGB domain class
+alongside `rpn::Stack::Object`.
 
 ---
 

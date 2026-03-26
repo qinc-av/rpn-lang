@@ -175,7 +175,7 @@ The word reference section will be substantially auto-generated once Phase 2.1 (
 | Topic | Decision / Status |
 |---|---|
 | C++ macros vs templates | Keep macros. They serve their purpose; a hybrid would require two mental models simultaneously with no net gain. |
-| `TStackObject<T>` retention | Keep. It is the documented extension path for embedder custom types; removing it would break the public API. |
+| `TStackObject<T>` retention | Removed. MI (inherit `rpn::Stack::Object` + domain class) is the extension path. Documented in developer guide §9. |
 | STO/RCL lookup precedence | HP48 convention: variables shadow dictionary words. Implemented. |
 | Trig mode propagation | `AngleMode` enum in `rpn.h`; public `angleMode()`/`setAngleMode()` on `Interp`; math words call `rpn.angleMode()`. Implemented. |
 | JSON type vs JSON words | Words-only approach on existing Array/Object. No new type. |

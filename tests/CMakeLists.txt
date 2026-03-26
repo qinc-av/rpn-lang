@@ -29,6 +29,7 @@ set_target_properties(runtime-test PROPERTIES
           )
 
 target_include_directories(runtime-test PRIVATE ${RPN_LANG_DIR})
+target_compile_definitions(runtime-test PRIVATE TESTS_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
 target_link_libraries(runtime-test PRIVATE Catch2::Catch2WithMain)
 
 else()

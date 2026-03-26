@@ -585,8 +585,7 @@ TEST_CASE( "file tests.rpn", "parsing" ) {
 
   {
     g_rpn.stack.clear();
-    //    std::string file = "/Users/eric/work/qinc/rpn-lang/tests/tests.rpn";
-    std::string file = "tests.rpn";
+    std::string file = TESTS_DIR "/tests.rpn";
     auto st = g_rpn.sync_parseFile(file);
     g_rpn.stack.print("tests.rpn");
 

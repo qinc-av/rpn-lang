@@ -303,34 +303,6 @@ namespace rpn {
 #define POP_CAST(obtype,ob)  dynamic_cast<obtype&>(*ob.get())
 #define OBJECTP_CAST(obtype)  dynamic_cast<obtype*>
 
-template<typename T>
-class TStackObject : public rpn::Stack::Object {
- public:
-  TStackObject() = default; //: _v(v) {}
-  TStackObject(const T &v) : _v(v) {}
-  virtual bool operator==(const Object &orhs) const override {
-    auto *rhs = OBJECTP_CAST(const TStackObject<T>)(&orhs);
-    return (rhs !=nullptr && _v == rhs->_v);
-  }
-  virtual bool operator>(const Object &orhs) const override {
-    auto &rhs = PEEK_CAST(const TStackObject<T>,orhs);
-    return (_v > rhs._v);
-  }
-  virtual bool operator<(const Object &orhs) const override {
-    auto &rhs = PEEK_CAST(const TStackObject<T>,orhs);
-    return (_v < rhs._v);
-  }
-  virtual ~TStackObject() {}
-  virtual std::unique_ptr<rpn::Stack::Object> deep_copy() const override { return std::make_unique<TStackObject<T>>(*this); };
-  virtual operator std::string() const override { return (std::string)_v; };
-  auto val() const { return _v; };
-  auto &inner() { return _v; };
-  virtual std::string deparse() const override {
-    return "not-yet";
-  }
- private:
-  T _v;
-};
 
 namespace stack {
 class Double : public rpn::Stack::Object {

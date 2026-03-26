@@ -55,25 +55,6 @@ private:
   std::vector<std::unique_ptr<rpn::Stack::Object>> _v;
 };
 
-class CustomObject {
- public:
-  CustomObject(const std::string &v) : _v(v) {};
-  virtual operator std::string() const { return std::string("CustomObject: <") + _v + ">"; };
-  auto val() const { return _v; }
-  bool operator==(const CustomObject &rhs) const {
-    return _v == rhs._v;
-  }
-  bool operator>(const CustomObject &rhs) const {
-    return _v > rhs._v;
-  }
-  bool operator<(const CustomObject &rhs) const {
-    return _v < rhs._v;
-  }
-private:
-  std::string _v;
-};
-
-using StCustomObject = TStackObject<CustomObject>;
 
 static int stackCount = 0;
 static rpn::Stack g_stack;
@@ -439,9 +420,6 @@ rpn_main(int ac, char **av) {
     printf("peeked [%s]\n", g_stack.peek_string(1).c_str());
     g_stack.print();
   }
-
-  g_stack.push(StCustomObject(std::string("yyz"))); stackCount++;
-  assert (g_stack.depth() == stackCount);
 
   g_stack.push_boolean(true); stackCount++;
 
