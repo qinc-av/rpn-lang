@@ -121,7 +121,7 @@ namespace stack {
     }
 
   // default to_text()
-    virtual std::string to_latex() const {
+    virtual std::string to_latex() const override {
       std::string rv = "\\frac{";
       rv += std::to_string(_numerator);
       rv += "}{";
