@@ -305,6 +305,7 @@ struct rpn::Interp::Privates : public rpn::WordContext {
   std::map<std::string, size_t> _typeRegistry;
   // Owns validators created dynamically from stack-effect comments.
   std::vector<std::unique_ptr<rpn::StrictTypeValidator>> _dynamicValidators;
+  std::vector<std::unique_ptr<rpn::StackSizeValidator>> _dynamicSizeValidators;
 
   // Parse the input-types side of a stack-effect string (before "--").
   // Returns nullopt if there is no "--" separator or an unrecognised type name is found
@@ -565,12 +566,25 @@ NATIVE_WORD_DECL(private, ct_SEMICOLON) {
     if (!progp->_effect_comment.empty()) {
       auto types = p->parse_input_types(progp->_effect_comment);
       if (types.has_value() && !types->empty()) {
-        // All input tokens were recognised type names — build a StrictTypeValidator.
+        // All input tokens are registered type names — build a StrictTypeValidator.
         p->_dynamicValidators.push_back(
           std::make_unique<rpn::StrictTypeValidator>(*types, progp->_ident));
         validator = p->_dynamicValidators.back().get();
+      } else if (!types.has_value()) {
+        // Some type names unrecognised (e.g. HP48-style "n diam") — count tokens
+        // on the input side and use a size-only validator so arity is still checked.
+        auto dash = progp->_effect_comment.find("--");
+        std::string inputs = progp->_effect_comment.substr(0, dash);
+        std::istringstream ss(inputs);
+        std::string tok;
+        size_t n = 0;
+        while (ss >> tok) n++;
+        if (n > 0) {
+          p->_dynamicSizeValidators.push_back(std::make_unique<rpn::StackSizeValidator>(n));
+          validator = p->_dynamicSizeValidators.back().get();
+        }
       }
-      // nullopt (unknown type name) or Some({}) (zero inputs) → StackSizeValidator::zero.
+      // types == Some({}) (zero inputs) → StackSizeValidator::zero.
     }
 
     if (rv == rpn::WordDefinition::Result::ok) {

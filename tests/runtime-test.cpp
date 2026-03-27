@@ -2073,15 +2073,21 @@ TEST_CASE("compiled word validation (Phase 2.3)", "types") {
   REQUIRE( rv == rpn::WordDefinition::Result::ok );
   REQUIRE( rpn.stack.depth() == 0 );
 
-  // Unknown type name in effect comment → HP48-style doc comment; silently becomes untyped.
-  // The word still compiles and runs; it just won't have a typed validator.
-  rv = rpn.sync_eval(": BADWORD ( doulbe -- double ) 2. * ;");
+  // HP48-style variable names in effect → arity validation (size only, no type check).
+  // ( n diam -- result ) doesn't know types but knows 2 inputs are required.
+  rpn.sync_eval(": MYADD2 ( n diam -- result ) + ;");
+  REQUIRE( rpn.wordExists("MYADD2") );
+
+  rpn.sync_eval("3. 4.");
+  rv = rpn.sync_eval("MYADD2");
   REQUIRE( rv == rpn::WordDefinition::Result::ok );
-  REQUIRE( rpn.wordExists("BADWORD") );
+  REQUIRE_THAT( rpn.stack.peek_double(1), Catch::Matchers::WithinAbs(7.0, 1e-10) );
+  rpn.stack.drop();
+
+  // Stack too small → param_error (arity check fails).
   rpn.sync_eval("3.");
-  rv = rpn.sync_eval("BADWORD");
-  REQUIRE( rv == rpn::WordDefinition::Result::ok );
-  REQUIRE_THAT( rpn.stack.peek_double(1), Catch::Matchers::WithinAbs(6.0, 1e-10) );
+  rv = rpn.sync_eval("MYADD2");
+  REQUIRE( rv == rpn::WordDefinition::Result::param_error );
   rpn.stack.drop();
 
   // Valid zero-input effect ( -- double ) → StackSizeValidator::zero, always matches.
