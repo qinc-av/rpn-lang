@@ -10,6 +10,7 @@ set(RPN_LANG_SRCS
   fraction-dict.cpp
   fraction.cpp
   timecode-dict.cpp
+  matrix-dict.cpp
   geometry.cpp
   geometry-dict.cpp
   keypad-dict.cpp
