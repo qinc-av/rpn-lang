@@ -348,6 +348,7 @@ namespace rpn {
     void addTypeWords();
     void addFractionWords();
     void addTimecodeWords();
+    void addStdlibWords();
   };
 
 

@@ -13,6 +13,7 @@ set(RPN_LANG_SRCS
   geometry.cpp
   geometry-dict.cpp
   keypad-dict.cpp
+  rpn-stdlib.cpp
   rpn-hl.cpp
 )
 

@@ -187,15 +187,6 @@ static double inverse(double a) {
 }
 MATH_UNARY_FUNC(inverse);
 
-static double square(double a) {
-  return a*a;
-}
-static int64_t isquare(int64_t a) {
-  return a*a;
-}
-MATH_UNARY_FUNC(square);
-MATH_UNARY_INTEGER_FUNC(isquare);
-
 MATH_BINARY_FUNC(pow);
 static int64_t ipow(int64_t a, int64_t b) {
   return (int64_t)pow(a,b);
@@ -260,7 +251,6 @@ MATH_BINARY_FUNC(fmax);
 MATH_BINARY_INTEGER_FUNC(imin);
 MATH_BINARY_INTEGER_FUNC(imax);
 
-MATH_BINARY_FUNC(hypot);
 MATH_UNARY_FUNC(round);
 MATH_UNARY_FUNC(exp);
 MATH_UNARY_FUNC(ceil);
@@ -274,6 +264,7 @@ MATH_UNARY_FUNC(rad_to_deg);
 MATH_GENERATE(pi, M_PI);
 MATH_GENERATE(e, M_E);
 MATH_GENERATE(rand, rand());
+MATH_GENERATE(nan_val, std::numeric_limits<double>::quiet_NaN());
 
 NATIVE_WORD_DECL(math,quadratic) {
   double c = rpn.stack.pop_as_double();
@@ -339,6 +330,19 @@ static int64_t ichange_sign(int64_t x) {
 }
 MATH_UNARY_INTEGER_FUNC(ichange_sign);
 
+static double dmod(double a, double b) { return std::fmod(a, b); }
+static int64_t imod(int64_t a, int64_t b) { return (b != 0) ? (a % b) : 0; }
+MATH_BINARY_FUNC(dmod);
+MATH_BINARY_INTEGER_FUNC(imod);
+
+static double dabs(double x) { return std::fabs(x); }
+static int64_t iabs(int64_t x) { return std::abs(x); }
+MATH_UNARY_FUNC(dabs);
+MATH_UNARY_INTEGER_FUNC(iabs);
+
+MATH_UNARY_FUNC(tgamma);
+MATH_UNARY_FUNC(lgamma);
+
 void
 rpn::Interp::addMathWords() {
   rpn::Interp &rpn(*this);
@@ -350,7 +354,6 @@ rpn::Interp::addMathWords() {
   ADD_MATH_BINARY_NUMBER_WDEF(rpn, "*", multiply, imultiply);
   ADD_MATH_BINARY_NUMBER_WDEF(rpn, "/", divide, idivide);
   ADD_MATH_BINARY_NUMBER_WDEF(rpn, "^", pow, ipow);
-  ADD_MATH_BINARY_NUMBER_WDEF(rpn, "HYPOT", hypot, hypot);
   // ATAN2 accepts any two numeric types; both paths use the mode-aware body.
   rpn.addDefinition("ATAN2", { rpn::StrictTypeValidator::d2_double_double,   NATIVE_WORD_FN(math, trig_atan2), nullptr });
   rpn.addDefinition("ATAN2", { rpn::StrictTypeValidator::d2_double_integer,  NATIVE_WORD_FN(math, trig_atan2), nullptr });
@@ -358,9 +361,10 @@ rpn::Interp::addMathWords() {
   rpn.addDefinition("ATAN2", { rpn::StrictTypeValidator::d2_integer_integer, NATIVE_WORD_FN(math, trig_atan2), nullptr });
   ADD_MATH_BINARY_NUMBER_WDEF(rpn, "MIN", fmin, imin);
   ADD_MATH_BINARY_NUMBER_WDEF(rpn, "MAX", fmax, imax);
+  ADD_MATH_BINARY_NUMBER_WDEF(rpn, "MOD", dmod, imod);
+  ADD_MATH_UNARY_NUMBER_WDEF(rpn, "ABS", dabs, iabs);
 
   ADD_MATH_UNARY_NUMBER_WDEF(rpn, "INV", inverse, inverse);
-  ADD_MATH_UNARY_NUMBER_WDEF(rpn, "SQ", square, isquare);
   ADD_MATH_UNARY_NUMBER_WDEF(rpn, "SQRT", sqrt, sqrt);
   // Mode-aware trig words: both double and integer inputs accepted (pop_as_double handles cast).
 #define ADD_TRIG_WDEF(sym, fn) \
@@ -384,18 +388,21 @@ rpn::Interp::addMathWords() {
 
   // these don't really make sense on Integers, but maybe we should
   // allow it anyway?
-  addDefinition("ROUND", MATH_WORD_WDEF(rpn::StrictTypeValidator::d1_double, round));
-  addDefinition("CEIL", MATH_WORD_WDEF(rpn::StrictTypeValidator::d1_double, ceil));
-  addDefinition("FLOOR", MATH_WORD_WDEF(rpn::StrictTypeValidator::d1_double, floor));
+  addDefinition("ROUND",  MATH_WORD_WDEF(rpn::StrictTypeValidator::d1_double, round));
+  addDefinition("CEIL",   MATH_WORD_WDEF(rpn::StrictTypeValidator::d1_double, ceil));
+  addDefinition("FLOOR",  MATH_WORD_WDEF(rpn::StrictTypeValidator::d1_double, floor));
+  addDefinition("GAMMA",  MATH_WORD_WDEF(rpn::StrictTypeValidator::d1_double, tgamma));
+  addDefinition("LGAMMA", MATH_WORD_WDEF(rpn::StrictTypeValidator::d1_double, lgamma));
 
   ADD_NATIVE_3_NUMBER_WDEF(math, rpn, "QUAD", quadratic, quadratic, nullptr);
   ADD_NATIVE_2_NUMBER_WDEF(math, rpn, "->COMPLEX", to_complex, to_complex, nullptr);
   addDefinition("OBJ->", MATH_WORD_WDEF(math_validator::d1_complex, complex_to));
 
   addDefinition("k_PI", MATH_CONSTANT_WDEF(pi));
-  addDefinition("k_E", MATH_CONSTANT_WDEF(e));
+  addDefinition("k_E",  MATH_CONSTANT_WDEF(e));
   addDefinition("RAND", MATH_CONSTANT_WDEF(rand));
-  addDefinition("DRAND", MATH_CONSTANT_WDEF(drand));
+  addDefinition("DRAND",MATH_CONSTANT_WDEF(drand));
+  addDefinition("NaN",  MATH_CONSTANT_WDEF(nan_val));
 
   // Angle mode: ->DEG / ->RAD / ->GRAD set the mode; ANGLEMODE queries it.
   rpn.addDefinition("->DEG",  { rpn::StackSizeValidator::zero, [](rpn::Interp &rpn, rpn::WordContext *, std::string &) {
@@ -426,12 +433,12 @@ rpn::Interp::addMathWords() {
   addWordMetadata("*",          "Multiply two values.");
   addWordMetadata("/",          "Divide NOS by TOS.");
   addWordMetadata("^",          "Raise NOS to the power of TOS.");
-  addWordMetadata("HYPOT",      "Euclidean distance: sqrt(a² + b²).");
   addWordMetadata("ATAN2",      "Four-quadrant arctangent of (x, y). TOS=y, NOS=x. Result in current angle mode.");
   addWordMetadata("MIN",        "Return the smaller of two values.");
   addWordMetadata("MAX",        "Return the larger of two values.");
+  addWordMetadata("MOD",        "Modulo: NOS mod TOS. Integer or double.");
+  addWordMetadata("ABS",        "Absolute value.");
   addWordMetadata("INV",        "Reciprocal: 1 / TOS.");
-  addWordMetadata("SQ",         "Square: TOS².");
   addWordMetadata("SQRT",       "Square root. Returns a complex number if TOS < 0.");
   addWordMetadata("COS",        "Cosine. Angle interpreted in current mode (DEG / RAD / GRAD).");
   addWordMetadata("SIN",        "Sine. Angle interpreted in current mode (DEG / RAD / GRAD).");
@@ -449,6 +456,8 @@ rpn::Interp::addMathWords() {
   addWordMetadata("ROUND",      "Round to nearest integer value (result is double).");
   addWordMetadata("CEIL",       "Round up to nearest integer value (result is double).");
   addWordMetadata("FLOOR",      "Round down to nearest integer value (result is double).");
+  addWordMetadata("GAMMA",      "Gamma function Γ(x). Generalizes factorial: n! = GAMMA(n+1).");
+  addWordMetadata("LGAMMA",     "Natural logarithm of the gamma function ln Γ(x). Useful for large arguments.");
   addWordMetadata("QUAD",       "Solve quadratic a·x²+b·x+c=0. Pops a, b, c; pushes two roots (real or complex).");
   addWordMetadata("->COMPLEX",  "Create a complex number from real (NOS) and imaginary (TOS) parts.");
   addWordMetadata("OBJ->",      "Explode a complex number to real and imaginary doubles.");
@@ -456,6 +465,7 @@ rpn::Interp::addMathWords() {
   addWordMetadata("k_E",        "Push e ≈ 2.71828182845905…");
   addWordMetadata("RAND",       "Push a random integer (stdlib rand).");
   addWordMetadata("DRAND",      "Push a random double in [0, 1).");
+  addWordMetadata("NaN",        "Push IEEE 754 quiet Not-a-Number.");
   addWordMetadata("->DEG",      "Set angle mode to degrees.");
   addWordMetadata("->RAD",      "Set angle mode to radians.");
   addWordMetadata("->GRAD",     "Set angle mode to gradians.");

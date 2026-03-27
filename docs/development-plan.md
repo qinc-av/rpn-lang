@@ -84,7 +84,7 @@ Hybrid architecture: C++ primitives + compiled RPL words.  The stdlib is a raw-s
 | `ASINH` | `( double -- double )` | `DUP DUP * 1. + SQRT + LN` |
 | `ACOSH` | `( double -- double )` | `DUP DUP * 1. - SQRT + LN` |
 | `ATANH` | `( double -- double )` | `DUP 1. + SWAP NEG 1. + / LN 2. /` |
-| `GCD` | `( integer integer -- integer )` | Euclidean via BEGIN/UNTIL |
+| `GCD` | `( integer integer -- integer )` | Euclidean via BEGIN/UNTIL (requires `MOD`) |
 | `LCM` | `( integer integer -- integer )` | `OVER OVER GCD / *` |
 | `!` | `( integer -- integer )` | factorial via FOR loop |
 | `nCr` | `( n r -- integer )` | `OVER ! OVER ! ROT ROT - ! * /` |

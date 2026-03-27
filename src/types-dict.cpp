@@ -432,16 +432,6 @@ rpn::Interp::addTypeWords() {
   addDefinition("VEC3->", NATIVE_WORD_WDEF(vec3, rpn::StrictTypeValidator::d1_vec3, vec3_to, nullptr));
   addDefinition("OBJ->", NATIVE_WORD_WDEF(vec3, rpn::StrictTypeValidator::d1_vec3, vec3_to, nullptr));
 
-  //  std:: string line = ": VEC3->{xy} ( <v3> <v3'> ) VEC3-> DROP ->{y} SWAP ->{x} + ;";
-  //  line = ": VEC3->{xy} ( <v3> -- <v3'> ) VEC3-> DROP ->{y} SWAP ->{x} + ;";
-  //  auto st = parse(line);
-  //  line = ": ->{xy} ( x y --  <v3'> ) ->{x} SWAP ->{y} + ;";
-  //   st = parse(line);
-
-  auto st = sync_eval(": VEC3->{xy} ( <v3> <v3'> ) VEC3-> DROP ->VEC3y SWAP ->VEC3x + ;");
-  st = sync_eval(": ->{xy} ( x y --  <v3'> ) ->VEC3x SWAP ->VEC3y + ;");
-  printf("->{xy} : %s\n", status().c_str());
-
   addWordMetadata("TRUE",     "Push boolean true.");
   addWordMetadata("FALSE",    "Push boolean false.");
   addWordMetadata("->INT",    "Convert TOS to integer (rounded to nearest).");

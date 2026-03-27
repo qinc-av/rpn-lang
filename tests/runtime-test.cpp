@@ -2099,4 +2099,133 @@ TEST_CASE("compiled word validation (Phase 2.3)", "types") {
   rpn.stack.drop();
 }
 
+TEST_CASE("stdlib migrated words", "stdlib") {
+  rpn::Interp rpn(false);
+  using Catch::Matchers::WithinAbs;
+  auto ev = [&](const std::string &s) { return rpn.sync_eval(s); };
+  constexpr double eps = 1e-10;
+
+  // NaN
+  REQUIRE( ev("NaN") == rpn::WordDefinition::Result::ok );
+  REQUIRE( std::isnan(rpn.stack.peek_double(1)) );
+  rpn.stack.drop();
+
+  // DUP2 / DROP2
+  REQUIRE( ev("1. 2. DUP2") == rpn::WordDefinition::Result::ok );
+  REQUIRE( rpn.stack.depth() == 4 );
+  REQUIRE_THAT( rpn.stack.peek_double(1), WithinAbs(2., eps) );
+  REQUIRE_THAT( rpn.stack.peek_double(2), WithinAbs(1., eps) );
+  REQUIRE( ev("DROP2") == rpn::WordDefinition::Result::ok );
+  REQUIRE( rpn.stack.depth() == 2 );
+  REQUIRE( ev("DROP2") == rpn::WordDefinition::Result::ok );
+  REQUIRE( rpn.stack.depth() == 0 );
+
+  // SQ — double
+  REQUIRE( ev("3. SQ") == rpn::WordDefinition::Result::ok );
+  REQUIRE_THAT( rpn.stack.peek_double(1), WithinAbs(9., eps) );
+  rpn.stack.drop();
+
+  // HYPOT
+  REQUIRE( ev("3. 4. HYPOT") == rpn::WordDefinition::Result::ok );
+  REQUIRE_THAT( rpn.stack.peek_double(1), WithinAbs(5., eps) );
+  rpn.stack.drop();
+}
+
+TEST_CASE("RPL stdlib", "stdlib") {
+  rpn::Interp rpn(false);
+  using Catch::Matchers::WithinAbs;
+  auto ev = [&](const std::string &s) { return rpn.sync_eval(s); };
+  constexpr double eps = 1e-10;
+
+  // GAMMA: n! = GAMMA(n+1)
+  REQUIRE( ev("5. GAMMA") == rpn::WordDefinition::Result::ok );
+  REQUIRE_THAT( rpn.stack.peek_double(1), WithinAbs(std::tgamma(5.), eps) ); // 24
+  rpn.stack.drop();
+
+  // LGAMMA
+  REQUIRE( ev("5. LGAMMA") == rpn::WordDefinition::Result::ok );
+  REQUIRE_THAT( rpn.stack.peek_double(1), WithinAbs(std::lgamma(5.), eps) );
+  rpn.stack.drop();
+
+  // Hyperbolic trig against std:: functions
+  for (double x : {-1.5, 0., 0.5, 1.5}) {
+    REQUIRE( ev(std::to_string(x) + " SINH") == rpn::WordDefinition::Result::ok );
+    REQUIRE_THAT( rpn.stack.peek_double(1), WithinAbs(std::sinh(x), 1e-9) );
+    rpn.stack.drop();
+
+    REQUIRE( ev(std::to_string(x) + " COSH") == rpn::WordDefinition::Result::ok );
+    REQUIRE_THAT( rpn.stack.peek_double(1), WithinAbs(std::cosh(x), 1e-9) );
+    rpn.stack.drop();
+
+    REQUIRE( ev(std::to_string(x) + " TANH") == rpn::WordDefinition::Result::ok );
+    REQUIRE_THAT( rpn.stack.peek_double(1), WithinAbs(std::tanh(x), 1e-9) );
+    rpn.stack.drop();
+  }
+
+  // Inverse hyperbolic trig
+  for (double x : {0., 0.5, 1.5}) {
+    REQUIRE( ev(std::to_string(x) + " ASINH") == rpn::WordDefinition::Result::ok );
+    REQUIRE_THAT( rpn.stack.peek_double(1), WithinAbs(std::asinh(x), 1e-9) );
+    rpn.stack.drop();
+  }
+  for (double x : {1.0, 2.0, 3.5}) {
+    REQUIRE( ev(std::to_string(x) + " ACOSH") == rpn::WordDefinition::Result::ok );
+    REQUIRE_THAT( rpn.stack.peek_double(1), WithinAbs(std::acosh(x), 1e-9) );
+    rpn.stack.drop();
+  }
+  for (double x : {-0.9, 0., 0.9}) {
+    REQUIRE( ev(std::to_string(x) + " ATANH") == rpn::WordDefinition::Result::ok );
+    REQUIRE_THAT( rpn.stack.peek_double(1), WithinAbs(std::atanh(x), 1e-9) );
+    rpn.stack.drop();
+  }
+
+  // Factorial: n! = GAMMA(n+1)
+  for (double n : {0., 1., 2., 3., 5., 10.}) {
+    REQUIRE( ev(std::to_string(n) + " !") == rpn::WordDefinition::Result::ok );
+    REQUIRE_THAT( rpn.stack.peek_double(1), WithinAbs(std::tgamma(n + 1.), eps) );
+    rpn.stack.drop();
+  }
+
+  // nCr: C(5,2) = 10, C(6,3) = 20
+  REQUIRE( ev("5. 2. nCr") == rpn::WordDefinition::Result::ok );
+  REQUIRE_THAT( rpn.stack.peek_double(1), WithinAbs(10., eps) );
+  rpn.stack.drop();
+
+  REQUIRE( ev("6. 3. nCr") == rpn::WordDefinition::Result::ok );
+  REQUIRE_THAT( rpn.stack.peek_double(1), WithinAbs(20., eps) );
+  rpn.stack.drop();
+
+  // nPr: P(5,2) = 20, P(6,3) = 120
+  REQUIRE( ev("5. 2. nPr") == rpn::WordDefinition::Result::ok );
+  REQUIRE_THAT( rpn.stack.peek_double(1), WithinAbs(20., eps) );
+  rpn.stack.drop();
+
+  REQUIRE( ev("6. 3. nPr") == rpn::WordDefinition::Result::ok );
+  REQUIRE_THAT( rpn.stack.peek_double(1), WithinAbs(120., eps) );
+  rpn.stack.drop();
+
+  // GCD
+  REQUIRE( ev("12. 8. GCD") == rpn::WordDefinition::Result::ok );
+  REQUIRE_THAT( rpn.stack.peek_double(1), WithinAbs(4., eps) );
+  rpn.stack.drop();
+
+  REQUIRE( ev("35. 14. GCD") == rpn::WordDefinition::Result::ok );
+  REQUIRE_THAT( rpn.stack.peek_double(1), WithinAbs(7., eps) );
+  rpn.stack.drop();
+
+  // GCD with zero
+  REQUIRE( ev("8. 0. GCD") == rpn::WordDefinition::Result::ok );
+  REQUIRE_THAT( rpn.stack.peek_double(1), WithinAbs(8., eps) );
+  rpn.stack.drop();
+
+  // LCM
+  REQUIRE( ev("4. 6. LCM") == rpn::WordDefinition::Result::ok );
+  REQUIRE_THAT( rpn.stack.peek_double(1), WithinAbs(12., eps) );
+  rpn.stack.drop();
+
+  REQUIRE( ev("5. 7. LCM") == rpn::WordDefinition::Result::ok );
+  REQUIRE_THAT( rpn.stack.peek_double(1), WithinAbs(35., eps) );
+  rpn.stack.drop();
+}
+
 /* end of qinc/rpn-lang/tests/runtime-test.cpp */

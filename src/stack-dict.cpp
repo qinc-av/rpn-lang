@@ -87,11 +87,6 @@ rpn::Interp::addStackWords() {
   ADD_STACK_OP(rpn, "REVERSE", zero, reverse);
   ADD_STACK_OP(rpn, "REVERSEn", ntos, reversen);
 
-  /*auto st = */rpn.sync_eval(R"(
-: DUP2 OVER OVER ;
-: DROP2 DROP DROP ;
-)");
-
   addWordMetadata("DROP",     "Discard TOS.");
   addWordMetadata("CLEAR",    "Clear the entire stack.");
   addWordMetadata("DEPTH",    "Push the current stack depth.");
