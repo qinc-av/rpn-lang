@@ -92,6 +92,8 @@ Hybrid architecture: C++ primitives + compiled RPL words.  The stdlib is a raw-s
 
 **Status:** Not yet started.
 
+**Post-stdlib:** Once the stdlib is established, audit existing C++ words for candidates that are better expressed as RPL — composite operations, words that are simple combinations of primitives, anything where the C++ implementation adds no performance or type-safety benefit over an equivalent compiled word.  Simplifying the C++ layer reduces maintenance surface and serves as a correctness check on the stdlib infrastructure.
+
 ---
 
 ## Phase 4 — Advanced Mathematics
