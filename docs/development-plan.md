@@ -2,7 +2,7 @@
 
 ## Status
 
-Phase 0 complete. Phase 1 complete. Phase 2 complete. Phase 3 complete. Starting Phase 4.
+Phase 0 complete. Phase 1 complete. Phase 2 complete. Phase 3 complete. Phase 2.3 retrofitted and complete. RPL standard library infrastructure in place. Starting Phase 4 (stdlib first, then math).
 
 ---
 
@@ -46,13 +46,17 @@ source of most of these tasks.
 |---|---|---|
 | 2.1 | Word introspection / documentation API — `setWordCategory`, `addWordMetadata`, `wordHelp`, `wordList`; `effects` auto-derived from validators; exposed through C++ and ObjC HL. | Done |
 | 2.2 | Display / deparse contract — formalized 4-way contract (`operator string`, `deparse`, `to_text`, `to_latex`); full-precision deparse on all built-in types; `thread_local` display globals; `TRUE`/`FALSE` words; DEPARSE round-trip tests. | Done |
-| 2.3 | Compiled word validation | Deferred (low priority) |
+| 2.3 | Compiled word validation — `( stack-effect )` comment parsed at compile time. Three-tier behavior: all registered type names → `StrictTypeValidator`; HP48-style variable names → `StackSizeValidator(n)` (arity only); zero inputs → `StackSizeValidator::zero`. Type registry in `Privates`; `registerType()` public API for embedder types. Dynamic validator pools own heap-allocated validators. Future: `name:type` annotation syntax (e.g. `cx:double`) for combined doc + typed validation. | Done |
 | 2.4 | Threading / cancel / progress — `std::atomic<bool> _cancelRequested` checked at each word boundary and loop iteration; `cancel()`, `cancelAll()` (drains queue), `isCancelled()`; `setProgressHandler` / `reportProgress`; `Result::cancelled`; full C++ and ObjC HL exposure. | Done |
 | 2.5 | HL interface completeness — `displayStack`, `wordHelp`, `wordList`, `describeStack` (returns full `to_json()` descriptor array) in both C++ and ObjC HL layers. | Done |
 
 ---
 
 ## Phase 3 — Extended Types and Operations (Complete)
+
+### 3.0 Type Identity (Complete)
+
+`virtual std::string type_name() const` added to `Stack::Object` (default `"any"`). Implemented on all concrete types: `double`, `integer`, `boolean`, `string`, `name`, `object`, `array`, `json`, `vec3`, `fraction`, `timecode`, `complex`. All `to_json()` overrides delegate to `type_name()`. Used by the Phase 2.3 type registry.
 
 ### 3.1 JSON Words (Complete)
 
@@ -61,6 +65,32 @@ source of most of these tasks.
 - `->JSON` — pops any value, pushes `StJson` holding the `data` field of its descriptor.
 - `JSON->` — unpacks a `StJson`: array → elements (as StJson) + count; object → (value, key) pairs + count; scalar → native type.  Analogous to `ARRAY->` / `OBJ->`.
 - `describeStack()` on HL layer — returns full descriptor array for UI consumption.
+
+---
+
+## RPL Standard Library
+
+Hybrid architecture: C++ primitives + compiled RPL words.  The stdlib is a raw-string literal in `src/rpn-stdlib.cpp`, parsed by `Interp` at the end of the constructor (after all dict files are loaded).  Each word uses `( stack-effect )` comments to get typed or arity-based validators automatically via Phase 2.3.
+
+**Infrastructure:** Ready.  `addCompiledWord()` accepts inline `( effect )` comments; `registerType()` allows embedders to extend the type registry.
+
+**Planned words (no new C++ types needed):**
+
+| Word | Effect | Definition |
+|---|---|---|
+| `SINH` | `( double -- double )` | `DUP EXP SWAP NEG EXP - 2. /` |
+| `COSH` | `( double -- double )` | `DUP EXP SWAP NEG EXP + 2. /` |
+| `TANH` | `( double -- double )` | `DUP SINH SWAP COSH /` |
+| `ASINH` | `( double -- double )` | `DUP DUP * 1. + SQRT + LN` |
+| `ACOSH` | `( double -- double )` | `DUP DUP * 1. - SQRT + LN` |
+| `ATANH` | `( double -- double )` | `DUP 1. + SWAP NEG 1. + / LN 2. /` |
+| `GCD` | `( integer integer -- integer )` | Euclidean via BEGIN/UNTIL |
+| `LCM` | `( integer integer -- integer )` | `OVER OVER GCD / *` |
+| `!` | `( integer -- integer )` | factorial via FOR loop |
+| `nCr` | `( n r -- integer )` | `OVER ! OVER ! ROT ROT - ! * /` |
+| `nPr` | `( n r -- integer )` | `OVER ! ROT ROT - ! /` |
+
+**Status:** Not yet started.
 
 ---
 
@@ -139,6 +169,8 @@ Items considered but not scheduled.  Revisit if requirements emerge.
 | FOR STEP design | `FOR ... n STEP` — body leaves step on TOS each iteration; STEP pops it. `_step = NaN` sentinel marks step-from-stack mode. NEXT = fixed step 1. Implemented. |
 | StName vs StString for variables | `StName` (`'identifier'` literal) for variable names; `StString` (`"content"` literal) for data. `is_valid_name()` prevents shadowing. Implemented. |
 | Runaway / deadlocked interpreter | Addressed in Phase 2.4. `cancel()` / `cancelAll()` interrupt running evals; `isCancelled()` for native long-running words. Watchdog / iteration-counter debug helpers not implemented — low priority. |
+| Emacs calc feature gaps | Audited. Low-hanging fruit (hyperbolic trig, combinatorics) → RPL stdlib. Needs new types: FIX/SCI/ENG display modes, MAP/REDUCE on arrays, inf/nan as stack values, financial functions, probability distributions, curve fitting, polynomial ops. CAS gaps (symbolic algebra) → Phase 4.4. Units → Phase 5. |
+| RPL stdlib architecture | Hybrid: C++ primitives + RPL compiled words. Stdlib loaded at Interp init from embedded raw string in `src/rpn-stdlib.cpp`. Typed via Phase 2.3 stack-effect comments. |
 
 ---
 
