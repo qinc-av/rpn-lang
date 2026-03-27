@@ -2,7 +2,7 @@
 
 ## Status
 
-Phase 0 complete. Phase 1 complete. Phase 2 complete. Phase 3 complete. Phase 2.3 retrofitted and complete. RPL standard library infrastructure in place. Starting Phase 4 (stdlib first, then math).
+Phase 0 complete. Phase 1 complete. Phase 2 complete. Phase 3 complete. Phase 2.3 retrofitted and complete. RPL standard library complete. C++ word audit complete. Starting Phase 4.
 
 ---
 
@@ -68,31 +68,35 @@ source of most of these tasks.
 
 ---
 
-## RPL Standard Library
+## RPL Standard Library (Complete)
 
-Hybrid architecture: C++ primitives + compiled RPL words.  The stdlib is a raw-string literal in `src/rpn-stdlib.cpp`, parsed by `Interp` at the end of the constructor (after all dict files are loaded).  Each word uses `( stack-effect )` comments to get typed or arity-based validators automatically via Phase 2.3.
+Hybrid architecture: C++ primitives + compiled RPL words.  The stdlib is `src/rpn-stdlib.cpp`, loaded by `addStdlibWords()` at the end of the Interp constructor.  Each word uses `( stack-effect )` comments for typed or arity-based validators via Phase 2.3.
 
-**Infrastructure:** Ready.  `addCompiledWord()` accepts inline `( effect )` comments; `registerType()` allows embedders to extend the type registry.
+**C++ primitives added to support stdlib:** `MOD`, `ABS`, `GAMMA`, `LGAMMA`, `NaN`.
 
-**Planned words (no new C++ types needed):**
+**Implemented words:**
 
-| Word | Effect | Definition |
+| Word | Category | Definition / notes |
 |---|---|---|
-| `SINH` | `( double -- double )` | `DUP EXP SWAP NEG EXP - 2. /` |
-| `COSH` | `( double -- double )` | `DUP EXP SWAP NEG EXP + 2. /` |
-| `TANH` | `( double -- double )` | `DUP SINH SWAP COSH /` |
-| `ASINH` | `( double -- double )` | `DUP DUP * 1. + SQRT + LN` |
-| `ACOSH` | `( double -- double )` | `DUP DUP * 1. - SQRT + LN` |
-| `ATANH` | `( double -- double )` | `DUP 1. + SWAP NEG 1. + / LN 2. /` |
-| `GCD` | `( integer integer -- integer )` | Euclidean via BEGIN/UNTIL (requires `MOD`) |
-| `LCM` | `( integer integer -- integer )` | `OVER OVER GCD / *` |
-| `!` | `( integer -- integer )` | factorial via FOR loop |
-| `nCr` | `( n r -- integer )` | `OVER ! OVER ! ROT ROT - ! * /` |
-| `nPr` | `( n r -- integer )` | `OVER ! ROT ROT - ! /` |
+| `SINH` | math | `DUP EXP SWAP CHS EXP - 2. /` |
+| `COSH` | math | `DUP EXP SWAP CHS EXP + 2. /` |
+| `TANH` | math | `DUP SINH SWAP COSH /` |
+| `ASINH` | math | `DUP DUP * 1. + SQRT + LN` |
+| `ACOSH` | math | `DUP DUP * 1. - SQRT + LN` |
+| `ATANH` | math | `DUP 1. + SWAP CHS 1. + / LN 2. /` |
+| `SQ` | math | `DUP *` — migrated from C++ |
+| `HYPOT` | math | `SQ SWAP SQ + SQRT` — migrated from C++ |
+| `!` / `FACT` | math | `1. + GAMMA` — generalizes to real args via gamma function |
+| `nCr` | math | `OVER OVER - ! SWAP ! * SWAP ! SWAP /` |
+| `nPr` | math | `OVER OVER - ! SWAP DROP SWAP ! SWAP /` |
+| `GCD` | math | Euclidean via `BEGIN`/`UNTIL` with `IF`/`ELSE`/`END` for b=0 base case |
+| `LCM` | math | `OVER OVER GCD / *` |
+| `DUP2` | stack | `OVER OVER` — migrated from C++ (`sync_eval`) |
+| `DROP2` | stack | `DROP DROP` — migrated from C++ (`sync_eval`) |
+| `VEC3->{xy}` | geometry | `VEC3-> DROP ->VEC3y SWAP ->VEC3x +` — migrated from C++ |
+| `->{xy}` | geometry | `->VEC3x SWAP ->VEC3y +` — migrated from C++ |
 
-**Status:** Not yet started.
-
-**Post-stdlib:** Once the stdlib is established, audit existing C++ words for candidates that are better expressed as RPL — composite operations, words that are simple combinations of primitives, anything where the C++ implementation adds no performance or type-safety benefit over an equivalent compiled word.  Simplifying the C++ layer reduces maintenance surface and serves as a correctness check on the stdlib infrastructure.
+**C++ word audit:** Complete.  Remaining C++ words that could theoretically move to RPL (`CHS`, `INV`, `D->R`, `R->D`, `LN2`) were left in C++ because they support both integer and double inputs; moving them would silently drop integer type handling.  `->VEC3x/y/z` remain in C++ (need `std::nan` directly).  All other simple composites have been migrated.
 
 ---
 
