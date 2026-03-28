@@ -2,44 +2,37 @@
 //
 // Package.swift — rpn-lang SwiftPM package
 //
-// Status: SKELETON — not yet buildable.  See TODOs below.
+// Status: SKELETON — not yet buildable. See TODOs below.
 //
 // Architecture:
-//   Swift → (ObjC bridge) → RpnInterp @interface (rpn-hl.mm)
-//                         → C++ library (rpn-interp.cpp, etc.)
+//   Swift --[C++ interop]--> RpnInterp (C++ class in rpn-hl.h)
+//                        --> C++ library (rpn-interp.cpp, etc.)
 //
-// The ObjC @interface RpnInterp in rpn-hl.h IS the Swift bridge.
-// No C ABI wrapper is needed.
+// Swift 5.9+ C++ interoperability is used directly — no ObjC bridge,
+// no bridging header, no .mm files.  The C++ RpnInterp class (the
+// #else branch of rpn-hl.h) is imported directly into Swift.
 //
-// The current bridging header in RP-42 does:
-//   #import <rpn_lang/rpn-hl.h>
-// which exposes the @interface directly to Swift.
+// The RP-42 Xcode project uses rpn-hl.mm (ObjC++ bridge) for its own
+// reasons; that is separate from and unaffected by this package.
 //
-// For SwiftPM, the public header for the module map must be ObjC-only.
-// rpn-hl.h includes rpn.h (C++) unconditionally, which cannot appear in
-// a SwiftPM clang module.  A separate rpn-hl-objc.h is needed that
-// declares only the ObjC interface and imports only Foundation.
+// TODOs before this builds:
+//   1. Create swiftpm-include/ directory with a public header.
+//      rpn-hl.h currently exposes rpn::WordHelp and nlohmann::json
+//      as return types, which Swift's C++ importer will attempt to
+//      import.  Options:
+//        a. Use rpn-hl.h directly and see how far Swift's importer gets
+//           (nlohmann is heavily templated — likely problematic).
+//        b. Create swiftpm-include/RpnInterp.h as a thin Swift-facing
+//           header that wraps only std::string / std::vector return types
+//           and hides rpn::WordHelp / nlohmann::json behind opaque types
+//           or simplified equivalents.
 //
-// TODO:
-//   1. Create src/rpn-hl-objc.h — ObjC-only public header:
-//        #import <Foundation/Foundation.h>
-//        typedef NS_ENUM(NSInteger, RpnResult) { rpn_ok, rpn_parse_error, ... };
-//        @interface RpnInterp : NSObject
-//        - (id) init;
-//        - (void) eval:(NSString*)line completionHandler:(void(^)(RpnResult))completionHandler;
-//        ... (full interface from rpn-hl.h #if __OBJC__ section)
-//        @end
-//      This header has no C++ includes and is safe for a module map.
+//   2. Decide whether the Swift layer calls RpnInterp directly or wraps
+//      it in a @MainActor Swift class for async/UI use.
 //
-//   2. Add .gitignore entry for .build/ (SwiftPM build dir).
+//   3. Add .build/ to .gitignore (done).
 //
-//   3. Verify Catch2 / test targets don't interfere with SwiftPM.
-//
-//   4. On first build: resolve header search path for third_party/ (nlohmann/json).
-//      nlohmann is header-only so it can be vendored under Sources/ or referenced
-//      via headerSearchPath.
-//
-//   5. Confirm cxx20 support on all target platforms (iOS 16+, macOS 13+).
+//   4. Verify CXX_STANDARD 20 is honoured on all target platforms.
 
 import PackageDescription
 
@@ -59,7 +52,6 @@ let sources: [String] = [
     "keypad-dict.cpp",
     "rpn-stdlib.cpp",
     "rpn-hl.cpp",
-    "rpn-hl.mm",   // ObjC++ bridge — must be compiled as ObjC++
 ].map { "src/" + $0 }
 
 let package = Package(
@@ -69,25 +61,28 @@ let package = Package(
         .macOS(.v13),
     ],
     products: [
-        .library(name: "RpnLang", targets: ["RpnLang"]),
+        .library(name: "RpnLang", targets: ["RpnLangCXX", "RpnLang"]),
     ],
     targets: [
+        // C++ library — all rpn-lang sources
         .target(
-            name: "RpnLang",
+            name: "RpnLangCXX",
             path: ".",
             sources: sources,
-            // TODO: replace with src/rpn-hl-objc.h once created (see TODO #1 above).
-            // publicHeadersPath must be relative to path (".") and contain only
-            // ObjC-compatible headers (no C++ includes).
-            publicHeadersPath: "swiftpm-include",  // TODO: create this directory
+            publicHeadersPath: "swiftpm-include", // TODO: create — see TODO #1 above
             cxxSettings: [
-                // Root dir for rpn.h, rpn-hl.h
-                .headerSearchPath("."),
-                // vendored nlohmann/json and other third-party headers
-                .headerSearchPath("third_party"),
-            ],
-            linkerSettings: [
-                .linkedFramework("Foundation"),
+                .headerSearchPath("."),            // rpn.h, rpn-hl.h
+                .headerSearchPath("third_party"),  // nlohmann/json
+            ]
+        ),
+        // Swift wrapper — imports RpnLangCXX via C++ interop
+        // TODO: add Sources/RpnLang/ with Swift files as needed
+        .target(
+            name: "RpnLang",
+            dependencies: ["RpnLangCXX"],
+            path: "Sources/RpnLang",  // TODO: create
+            swiftSettings: [
+                .interoperabilityMode(.cxx),
             ]
         ),
     ],
