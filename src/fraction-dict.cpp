@@ -226,19 +226,19 @@ NATIVE_WORD_DECL(fraction, neg_f) {
 
 const rpn::StrictTypeValidator frac_validator::d1_frac({typeid(StFraction).hash_code()}, "d1_frac");
 const rpn::StrictTypeValidator frac_validator::d2_frac_frac({typeid(StFraction).hash_code(),typeid(StFraction).hash_code()}, "d2_frac_frac");
-const rpn::StrictTypeValidator frac_validator::d2_frac_int({typeid(StFraction).hash_code(),typeid(StInteger).hash_code()}, "d2_frac_int");
-const rpn::StrictTypeValidator frac_validator::d2_frac_double({typeid(StFraction).hash_code(),typeid(StDouble).hash_code()}, "d2_frac_double");
-const rpn::StrictTypeValidator frac_validator::d2_int_frac({typeid(StInteger).hash_code(),typeid(StFraction).hash_code()}, "d2_int_frac");
-const rpn::StrictTypeValidator frac_validator::d2_double_frac({typeid(StDouble).hash_code(),typeid(StFraction).hash_code()}, "d2_double_frac");
-const rpn::StrictTypeValidator frac_validator::d5_double_double_double_double_frac({
+const rpn::StrictTypeValidator frac_validator::d2_int_frac({typeid(StFraction).hash_code(),typeid(StInteger).hash_code()}, "d2_int_frac");
+const rpn::StrictTypeValidator frac_validator::d2_double_frac({typeid(StFraction).hash_code(),typeid(StDouble).hash_code()}, "d2_double_frac");
+const rpn::StrictTypeValidator frac_validator::d2_frac_int({typeid(StInteger).hash_code(),typeid(StFraction).hash_code()}, "d2_frac_int");
+const rpn::StrictTypeValidator frac_validator::d2_frac_double({typeid(StDouble).hash_code(),typeid(StFraction).hash_code()}, "d2_frac_double");
+const rpn::StrictTypeValidator frac_validator::d5_frac_double_double_double_double({
     typeid(StDouble).hash_code(),typeid(StDouble).hash_code(),typeid(StDouble).hash_code(),typeid(StDouble).hash_code(),
-      typeid(StFraction).hash_code()}, "d5_double_double_double_double_frac");
+      typeid(StFraction).hash_code()}, "d5_frac_double_double_double_double");
 
 #define ADD_FRAC_NUM_WORD(rpn, word_token, method)			\
-  rpn.addDefinition(word_token, NATIVE_WORD_WDEF(fraction, frac_validator::d2_frac_int, method##_fn, nullptr)); \
-  rpn.addDefinition(word_token, NATIVE_WORD_WDEF(fraction, frac_validator::d2_frac_double, method##_fn, nullptr)); \
-  rpn.addDefinition(word_token, NATIVE_WORD_WDEF(fraction, frac_validator::d2_int_frac, method##_nf, nullptr)); \
-  rpn.addDefinition(word_token, NATIVE_WORD_WDEF(fraction, frac_validator::d2_double_frac, method##_nf, nullptr)); \
+  rpn.addDefinition(word_token, NATIVE_WORD_WDEF(fraction, frac_validator::d2_int_frac, method##_fn, nullptr)); \
+  rpn.addDefinition(word_token, NATIVE_WORD_WDEF(fraction, frac_validator::d2_double_frac, method##_fn, nullptr)); \
+  rpn.addDefinition(word_token, NATIVE_WORD_WDEF(fraction, frac_validator::d2_frac_int, method##_nf, nullptr)); \
+  rpn.addDefinition(word_token, NATIVE_WORD_WDEF(fraction, frac_validator::d2_frac_double, method##_nf, nullptr)); \
   rpn.addDefinition(word_token, NATIVE_WORD_WDEF(fraction, frac_validator::d2_frac_frac, method##_ff, nullptr))
 
 void

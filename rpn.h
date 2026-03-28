@@ -162,43 +162,43 @@ namespace rpn {
 
     static const StrictTypeValidator d2_vec3_vec3;
     static const StrictTypeValidator d2_double_double;
-    static const StrictTypeValidator d2_double_integer;
     static const StrictTypeValidator d2_integer_double;
+    static const StrictTypeValidator d2_double_integer;
     static const StrictTypeValidator d2_integer_integer;
     static const StrictTypeValidator d2_boolean_boolean;
 
-    static const StrictTypeValidator d2_vec3_double;
     static const StrictTypeValidator d2_double_vec3;
-    static const StrictTypeValidator d2_vec3_integer;
+    static const StrictTypeValidator d2_vec3_double;
     static const StrictTypeValidator d2_integer_vec3;
+    static const StrictTypeValidator d2_vec3_integer;
 
-    static const StrictTypeValidator d2_array_any;
     static const StrictTypeValidator d2_any_array;
+    static const StrictTypeValidator d2_array_any;
 
-    static const StrictTypeValidator d2_string_any;
     static const StrictTypeValidator d2_any_string;
+    static const StrictTypeValidator d2_string_any;
 
-    static const StrictTypeValidator d2_object_any;
     static const StrictTypeValidator d2_any_object;
+    static const StrictTypeValidator d2_object_any;
 
     static const StrictTypeValidator d3_double_double_double;
-    static const StrictTypeValidator d3_integer_double_double;
-    static const StrictTypeValidator d3_double_integer_double;
     static const StrictTypeValidator d3_double_double_integer;
+    static const StrictTypeValidator d3_double_integer_double;
+    static const StrictTypeValidator d3_integer_double_double;
     static const StrictTypeValidator d3_vec3_vec3_vec3;
 
     static const StrictTypeValidator d3_integer_integer_integer;
-    static const StrictTypeValidator d3_double_integer_integer;
-    static const StrictTypeValidator d3_integer_double_integer;
     static const StrictTypeValidator d3_integer_integer_double;
+    static const StrictTypeValidator d3_integer_double_integer;
+    static const StrictTypeValidator d3_double_integer_integer;
 
-    static const StrictTypeValidator d3_any_any_boolean;
     static const StrictTypeValidator d3_boolean_any_any;
-    static const StrictTypeValidator d3_object_string_any;
-    static const StrictTypeValidator d3_string_any_object;
+    static const StrictTypeValidator d3_any_any_boolean;
+    static const StrictTypeValidator d3_any_string_object;
+    static const StrictTypeValidator d3_object_any_string;
 
-    static const StrictTypeValidator d4_double_double_double_integer;
     static const StrictTypeValidator d4_integer_double_double_double;
+    static const StrictTypeValidator d4_double_double_double_integer;
 
     static const size_t v_anytype;
     //    static const size_t v_numbertype;  // is harder than it sounds...
@@ -206,7 +206,7 @@ namespace rpn {
   StrictTypeValidator(const std::vector<size_t> &types, const std::string name) : StackValidator(name),  _types(types) {}
     virtual bool operator()(const std::vector<size_t> &types, rpn::Stack &stack) const override;
     bool operator<(const StrictTypeValidator &rhs) const;
-    // "d2_double_integer" → "double integer"
+    // "d2_integer_double" → "integer double"  (stack-effect order: NOS first, TOS last)
     virtual std::string input_types() const override {
       auto p = _name.find('_');
       if (p == std::string::npos) return _name;
@@ -852,8 +852,8 @@ public:
 // when both parameters are integers
 #define ADD_NATIVE_2_NUMBER_WDEF(mangler, r, symbol, double_func, integer_func, ptr) \
   r.addDefinition(symbol, NATIVE_WORD_WDEF(mangler, rpn::StrictTypeValidator::d2_double_double, double_func, ptr)); \
-  r.addDefinition(symbol, NATIVE_WORD_WDEF(mangler, rpn::StrictTypeValidator::d2_double_integer, double_func, ptr)); \
   r.addDefinition(symbol, NATIVE_WORD_WDEF(mangler, rpn::StrictTypeValidator::d2_integer_double, double_func, ptr)); \
+  r.addDefinition(symbol, NATIVE_WORD_WDEF(mangler, rpn::StrictTypeValidator::d2_double_integer, double_func, ptr)); \
   r.addDefinition(symbol, NATIVE_WORD_WDEF(mangler, rpn::StrictTypeValidator::d2_integer_integer, integer_func, ptr))
 
 #define ADD_NATIVE_1_NUMBER_WDEF(mangler, r, symbol, double_func, integer_func, ptr) \
@@ -862,12 +862,12 @@ public:
 
 #define ADD_NATIVE_3_NUMBER_WDEF(mangler, r, symbol, double_func, integer_func, ptr) \
   r.addDefinition(symbol, NATIVE_WORD_WDEF(mangler, rpn::StrictTypeValidator::d3_double_double_double, double_func, ptr)); \
-  r.addDefinition(symbol, NATIVE_WORD_WDEF(mangler, rpn::StrictTypeValidator::d3_double_double_integer, double_func, ptr)); \
-  r.addDefinition(symbol, NATIVE_WORD_WDEF(mangler, rpn::StrictTypeValidator::d3_double_integer_double, double_func, ptr)); \
-  r.addDefinition(symbol, NATIVE_WORD_WDEF(mangler, rpn::StrictTypeValidator::d3_double_integer_integer, integer_func, ptr)); \
   r.addDefinition(symbol, NATIVE_WORD_WDEF(mangler, rpn::StrictTypeValidator::d3_integer_double_double, double_func, ptr)); \
+  r.addDefinition(symbol, NATIVE_WORD_WDEF(mangler, rpn::StrictTypeValidator::d3_double_integer_double, double_func, ptr)); \
+  r.addDefinition(symbol, NATIVE_WORD_WDEF(mangler, rpn::StrictTypeValidator::d3_integer_integer_double, integer_func, ptr)); \
+  r.addDefinition(symbol, NATIVE_WORD_WDEF(mangler, rpn::StrictTypeValidator::d3_double_double_integer, double_func, ptr)); \
   r.addDefinition(symbol, NATIVE_WORD_WDEF(mangler, rpn::StrictTypeValidator::d3_integer_double_integer, double_func, ptr)); \
-  r.addDefinition(symbol, NATIVE_WORD_WDEF(mangler, rpn::StrictTypeValidator::d3_integer_integer_double, double_func, ptr)); \
+  r.addDefinition(symbol, NATIVE_WORD_WDEF(mangler, rpn::StrictTypeValidator::d3_double_integer_integer, double_func, ptr)); \
   r.addDefinition(symbol, NATIVE_WORD_WDEF(mangler, rpn::StrictTypeValidator::d3_integer_integer_integer, integer_func, ptr))
 
 /* end of qinc/rpn-lang/rpn.h */

@@ -32,9 +32,9 @@ rpn::Interp::addStdlibWords() {
   setWordCategory("stack");
 
   addCompiledWord("DUP2",  "( a b -- a b a b ) OVER OVER");
-  addCompiledWord("DROP2", "( a b -- ) DROP DROP");
-
   addWordMetadata("DUP2",  "Duplicate the top two items (equivalent to OVER OVER).");
+
+  addCompiledWord("DROP2", "( a b -- ) DROP DROP");
   addWordMetadata("DROP2", "Drop the top two items (equivalent to DROP DROP).");
 
   // -------------------------------------------------------------------------
@@ -42,50 +42,54 @@ rpn::Interp::addStdlibWords() {
   setWordCategory("math");
 
   addCompiledWord("SQ",    "( n -- n ) DUP *");
-  addCompiledWord("HYPOT", "( a b -- c ) SQ SWAP SQ + SQRT");
-
   addWordMetadata("SQ",    "Square: TOS².");
+
+  addCompiledWord("HYPOT", "( a b -- c ) SQ SWAP SQ + SQRT");
   addWordMetadata("HYPOT", "Euclidean distance: sqrt(a² + b²).");
 
   // -------------------------------------------------------------------------
   // Hyperbolic trigonometry
   // sinh(x) = (e^x - e^(-x)) / 2
   addCompiledWord("SINH",  "( double -- double ) DUP EXP SWAP CHS EXP - 2. /");
+  addWordMetadata("SINH",  "Hyperbolic sine.");
+
   // cosh(x) = (e^x + e^(-x)) / 2
   addCompiledWord("COSH",  "( double -- double ) DUP EXP SWAP CHS EXP + 2. /");
+  addWordMetadata("COSH",  "Hyperbolic cosine.");
+
   // tanh(x) = sinh(x) / cosh(x)
   addCompiledWord("TANH",  "( double -- double ) DUP SINH SWAP COSH /");
+  addWordMetadata("TANH",  "Hyperbolic tangent.");
+
   // asinh(x) = ln(x + sqrt(x^2 + 1))
   addCompiledWord("ASINH", "( double -- double ) DUP DUP * 1. + SQRT + LN");
+  addWordMetadata("ASINH", "Inverse hyperbolic sine.");
+
   // acosh(x) = ln(x + sqrt(x^2 - 1))
   addCompiledWord("ACOSH", "( double -- double ) DUP DUP * 1. - SQRT + LN");
+  addWordMetadata("ACOSH", "Inverse hyperbolic cosine. Domain: x >= 1.");
+
   // atanh(x) = ln((1+x)/(1-x)) / 2
   addCompiledWord("ATANH", "( double -- double ) DUP 1. + SWAP CHS 1. + / LN 2. /");
-
-  addWordMetadata("SINH",  "Hyperbolic sine.");
-  addWordMetadata("COSH",  "Hyperbolic cosine.");
-  addWordMetadata("TANH",  "Hyperbolic tangent.");
-  addWordMetadata("ASINH", "Inverse hyperbolic sine.");
-  addWordMetadata("ACOSH", "Inverse hyperbolic cosine. Domain: x >= 1.");
   addWordMetadata("ATANH", "Inverse hyperbolic arctangent. Domain: |x| < 1.");
 
   // -------------------------------------------------------------------------
   // Factorial and combinatorics
   // ! generalizes to real arguments via the gamma function: n! = Gamma(n+1)
   addCompiledWord("!",    "( double -- double ) 1. + GAMMA");
+  addWordMetadata("!",    "Factorial (generalized). n! = Gamma(n+1). Works for real n.");
+
   addCompiledWord("FACT", "( double -- double ) !");
+  addWordMetadata("FACT", "Factorial. Alias for !.");
 
   // nCr(n,r) = n! / (r! * (n-r)!)
   addCompiledWord("nCr",
     "( double double -- double ) OVER OVER - ! SWAP ! * SWAP ! SWAP /");
+  addWordMetadata("nCr", "Combinations: n choose r = n! / (r! * (n-r)!).");
 
   // nPr(n,r) = n! / (n-r)!
   addCompiledWord("nPr",
     "( double double -- double ) OVER OVER - ! SWAP DROP SWAP ! SWAP /");
-
-  addWordMetadata("!",    "Factorial (generalized). n! = Gamma(n+1). Works for real n.");
-  addWordMetadata("FACT", "Factorial. Alias for !.");
-  addWordMetadata("nCr", "Combinations: n choose r = n! / (r! * (n-r)!).");
   addWordMetadata("nPr", "Permutations: n P r = n! / (n-r)!.");
 
   // -------------------------------------------------------------------------
@@ -98,12 +102,11 @@ rpn::Interp::addStdlibWords() {
     "BEGIN "
       "DUP 0. == IF DROP TRUE ELSE OVER OVER MOD ROTU DROP FALSE END "
     "UNTIL");
+  addWordMetadata("GCD", "Greatest common divisor (Euclidean algorithm).");
 
   // LCM(a,b) = (b / gcd(a,b)) * a  — divide before multiply to keep values small
   addCompiledWord("LCM",
     "( double double -- double ) OVER OVER GCD / *");
-
-  addWordMetadata("GCD", "Greatest common divisor (Euclidean algorithm).");
   addWordMetadata("LCM", "Least common multiple.");
 
   // -------------------------------------------------------------------------
@@ -113,12 +116,11 @@ rpn::Interp::addStdlibWords() {
   // Extract x and y from a VEC3 and build a new VEC3 with those two components.
   addCompiledWord("VEC3->{xy}",
     "( v3 -- v3' ) VEC3-> DROP ->VEC3y SWAP ->VEC3x +");
+  addWordMetadata("VEC3->{xy}", "Project a VEC3 onto the XY plane (Z dropped).");
 
   // Build a VEC3 from x (NOS) and y (TOS).
   addCompiledWord("->{xy}",
     "( x y -- v3 ) ->VEC3x SWAP ->VEC3y +");
-
-  addWordMetadata("VEC3->{xy}", "Project a VEC3 onto the XY plane (Z dropped).");
   addWordMetadata("->{xy}",     "Create a VEC3 from x (NOS) and y (TOS) components.");
 
   setWordCategory(""); // reset

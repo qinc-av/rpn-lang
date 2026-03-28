@@ -21,7 +21,7 @@
  * points.  If we only pass in 3 points, it's an exact fit.
  *
  *
- * Derrivation of regression model:
+ * Derrivation of regression model, starting with a translated circle at (x0,y0):
  *
  *   (X - x0)^2 + (Y-y0)^2 = R^2
  *   X^2 - 2*x0*X + x0^2 + Y^2 - 2*y0*Y + y0^2 = R^2

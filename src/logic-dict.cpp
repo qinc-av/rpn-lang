@@ -155,7 +155,7 @@ rpn::Interp::addLogicWords() {
   //    IF
   //    IFTE
   //    EQ?
-  addDefinition("IFTE", NATIVE_WORD_WDEF(logic, rpn::StrictTypeValidator::d3_boolean_any_any, ifte, nullptr));
+  addDefinition("IFTE", NATIVE_WORD_WDEF(logic, rpn::StrictTypeValidator::d3_any_any_boolean, ifte, nullptr));
   addDefinition("==", NATIVE_WORD_WDEF(logic, rpn::StackSizeValidator::two, equal, nullptr));
   addDefinition(">", NATIVE_WORD_WDEF(logic, rpn::StackSizeValidator::two, greater, nullptr));
   addDefinition(">=", NATIVE_WORD_WDEF(logic, rpn::StackSizeValidator::two, greater_eq, nullptr));
@@ -174,9 +174,9 @@ rpn::Interp::addLogicWords() {
   // LSHIFT/RSHIFT: value must be integer; shift count may be integer or double (4 vs 0x04).
   // LSHIFT/RSHIFT: value must be integer (TOS-1); shift count may be integer or double (TOS).
   addDefinition("LSHIFT", NATIVE_WORD_WDEF(logic, rpn::StrictTypeValidator::d2_integer_integer, b_lshift, nullptr));
-  addDefinition("LSHIFT", NATIVE_WORD_WDEF(logic, rpn::StrictTypeValidator::d2_double_integer,  b_lshift, nullptr));
+  addDefinition("LSHIFT", NATIVE_WORD_WDEF(logic, rpn::StrictTypeValidator::d2_integer_double,  b_lshift, nullptr));
   addDefinition("RSHIFT", NATIVE_WORD_WDEF(logic, rpn::StrictTypeValidator::d2_integer_integer, b_rshift, nullptr));
-  addDefinition("RSHIFT", NATIVE_WORD_WDEF(logic, rpn::StrictTypeValidator::d2_double_integer,  b_rshift, nullptr));
+  addDefinition("RSHIFT", NATIVE_WORD_WDEF(logic, rpn::StrictTypeValidator::d2_integer_double,  b_rshift, nullptr));
 
   // Binary wordsize: ->WORDSIZE sets (TOS integer, 1–64); WORDSIZE-> queries.
   addDefinition("->WORDSIZE", { rpn::StrictTypeValidator::d1_integer,

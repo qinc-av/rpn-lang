@@ -161,6 +161,32 @@ void rpn::Interp::addMyWords() {
 
 Call `addMyWords()` from `Interp::Interp()` in `rpn-interp.cpp`.
 
+### Validator naming convention
+
+`dN_X_..._Y` names read **left-to-right in stack-effect order** (bottom → TOS), matching
+the left side of a `( X ... Y -- )` comment:
+
+- `d2_integer_double` → NOS=integer, TOS=double → `( integer double -- )`
+- `d2_vector_double`  → NOS=vector,  TOS=double → `( vector double -- )`
+- `d3_double_double_integer` → bottom=double, mid=double, TOS=integer → `( double double integer -- )`
+
+The `_types[]` constructor array is indexed **TOS-first** (index 0 = TOS) — the reverse
+of the name order.  Always construct validators as `{TOS_type, ..., NOS_type}` while
+naming them `dN_NOS_..._TOS`.  The same convention applies to local validators in
+dict-file namespaces (`matrix_validator::`, `frac_validator::`, etc.):
+
+```cpp
+namespace mydict_validator {
+  // ( vector double -- )  NOS=vector, TOS=double
+  const rpn::StrictTypeValidator d2_vector_double(
+    {typeid(StDouble).hash_code(), typeid(StVector).hash_code()},
+    "d2_vector_double");
+}
+```
+
+Compiled RPL words with fully-typed stack-effect comments follow the same convention:
+`( integer double -- result )` generates a validator requiring NOS=integer, TOS=double.
+
 ### Shortcut macros for common patterns
 
 For words that simply wrap a C function:

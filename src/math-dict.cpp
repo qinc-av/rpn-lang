@@ -356,8 +356,8 @@ rpn::Interp::addMathWords() {
   ADD_MATH_BINARY_NUMBER_WDEF(rpn, "^", pow, ipow);
   // ATAN2 accepts any two numeric types; both paths use the mode-aware body.
   rpn.addDefinition("ATAN2", { rpn::StrictTypeValidator::d2_double_double,   NATIVE_WORD_FN(math, trig_atan2), nullptr });
-  rpn.addDefinition("ATAN2", { rpn::StrictTypeValidator::d2_double_integer,  NATIVE_WORD_FN(math, trig_atan2), nullptr });
   rpn.addDefinition("ATAN2", { rpn::StrictTypeValidator::d2_integer_double,  NATIVE_WORD_FN(math, trig_atan2), nullptr });
+  rpn.addDefinition("ATAN2", { rpn::StrictTypeValidator::d2_double_integer,  NATIVE_WORD_FN(math, trig_atan2), nullptr });
   rpn.addDefinition("ATAN2", { rpn::StrictTypeValidator::d2_integer_integer, NATIVE_WORD_FN(math, trig_atan2), nullptr });
   ADD_MATH_BINARY_NUMBER_WDEF(rpn, "MIN", fmin, imin);
   ADD_MATH_BINARY_NUMBER_WDEF(rpn, "MAX", fmax, imax);

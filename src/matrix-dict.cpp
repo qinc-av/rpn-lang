@@ -199,16 +199,16 @@ namespace matrix_validator {
   const rpn::StrictTypeValidator d1_matrix({typeid(StMatrix).hash_code()}, "d1_matrix");
   const rpn::StrictTypeValidator d2_vector_vector({typeid(StVector).hash_code(), typeid(StVector).hash_code()}, "d2_vector_vector");
   const rpn::StrictTypeValidator d2_matrix_matrix({typeid(StMatrix).hash_code(), typeid(StMatrix).hash_code()}, "d2_matrix_matrix");
-  const rpn::StrictTypeValidator d2_matrix_vector({typeid(StMatrix).hash_code(), typeid(StVector).hash_code()}, "d2_matrix_vector");
-  const rpn::StrictTypeValidator d2_vector_matrix({typeid(StVector).hash_code(), typeid(StMatrix).hash_code()}, "d2_vector_matrix");
-  const rpn::StrictTypeValidator d2_vector_double( {typeid(StVector).hash_code(), typeid(StDouble).hash_code()},  "d2_vector_double");
-  const rpn::StrictTypeValidator d2_vector_integer({typeid(StVector).hash_code(), typeid(StInteger).hash_code()}, "d2_vector_integer");
-  const rpn::StrictTypeValidator d2_double_vector( {typeid(StDouble).hash_code(),  typeid(StVector).hash_code()}, "d2_double_vector");
-  const rpn::StrictTypeValidator d2_integer_vector({typeid(StInteger).hash_code(), typeid(StVector).hash_code()}, "d2_integer_vector");
-  const rpn::StrictTypeValidator d2_matrix_double( {typeid(StMatrix).hash_code(), typeid(StDouble).hash_code()},  "d2_matrix_double");
-  const rpn::StrictTypeValidator d2_matrix_integer({typeid(StMatrix).hash_code(), typeid(StInteger).hash_code()}, "d2_matrix_integer");
-  const rpn::StrictTypeValidator d2_double_matrix( {typeid(StDouble).hash_code(),  typeid(StMatrix).hash_code()}, "d2_double_matrix");
-  const rpn::StrictTypeValidator d2_integer_matrix({typeid(StInteger).hash_code(), typeid(StMatrix).hash_code()}, "d2_integer_matrix");
+  const rpn::StrictTypeValidator d2_vector_matrix({typeid(StMatrix).hash_code(), typeid(StVector).hash_code()}, "d2_vector_matrix");
+  const rpn::StrictTypeValidator d2_matrix_vector({typeid(StVector).hash_code(), typeid(StMatrix).hash_code()}, "d2_matrix_vector");
+  const rpn::StrictTypeValidator d2_double_vector( {typeid(StVector).hash_code(), typeid(StDouble).hash_code()},  "d2_double_vector");
+  const rpn::StrictTypeValidator d2_integer_vector({typeid(StVector).hash_code(), typeid(StInteger).hash_code()}, "d2_integer_vector");
+  const rpn::StrictTypeValidator d2_vector_double( {typeid(StDouble).hash_code(),  typeid(StVector).hash_code()}, "d2_vector_double");
+  const rpn::StrictTypeValidator d2_vector_integer({typeid(StInteger).hash_code(), typeid(StVector).hash_code()}, "d2_vector_integer");
+  const rpn::StrictTypeValidator d2_double_matrix( {typeid(StMatrix).hash_code(), typeid(StDouble).hash_code()},  "d2_double_matrix");
+  const rpn::StrictTypeValidator d2_integer_matrix({typeid(StMatrix).hash_code(), typeid(StInteger).hash_code()}, "d2_integer_matrix");
+  const rpn::StrictTypeValidator d2_matrix_double( {typeid(StDouble).hash_code(),  typeid(StMatrix).hash_code()}, "d2_matrix_double");
+  const rpn::StrictTypeValidator d2_matrix_integer({typeid(StInteger).hash_code(), typeid(StMatrix).hash_code()}, "d2_matrix_integer");
 }
 
 #define MV_WDEF(validator, fn) { matrix_validator::validator, NATIVE_WORD_FN(matrix, fn), nullptr }
@@ -524,10 +524,10 @@ rpn::Interp::addMatrixWords() {
   // ------- Vector arithmetic -------
   rpn.addDefinition("+", MV_WDEF(d2_vector_vector,  vec_add));
   rpn.addDefinition("-", MV_WDEF(d2_vector_vector,  vec_sub));
-  rpn.addDefinition("*", MV_WDEF(d2_double_vector,  vec_scale_double));  // TOS=double, pop double first
-  rpn.addDefinition("*", MV_WDEF(d2_integer_vector, vec_scale_double));  // TOS=int,    pop as double first
-  rpn.addDefinition("*", MV_WDEF(d2_vector_double,  scale_double_vec));  // TOS=vector, pop vec first
-  rpn.addDefinition("*", MV_WDEF(d2_vector_integer, scale_double_vec));  // TOS=vector, pop vec first
+  rpn.addDefinition("*", MV_WDEF(d2_vector_double,  vec_scale_double));  // TOS=double, pop double first
+  rpn.addDefinition("*", MV_WDEF(d2_vector_integer, vec_scale_double));  // TOS=int,    pop as double first
+  rpn.addDefinition("*", MV_WDEF(d2_double_vector,  scale_double_vec));  // TOS=vector, pop vec first
+  rpn.addDefinition("*", MV_WDEF(d2_integer_vector, scale_double_vec));  // TOS=vector, pop vec first
 
   // ------- Vector operations -------
   rpn.addDefinition("VDOT",  MV_WDEF(d2_vector_vector, vec_dot));
@@ -565,11 +565,11 @@ rpn::Interp::addMatrixWords() {
   rpn.addDefinition("+", MV_WDEF(d2_matrix_matrix,  mat_add));
   rpn.addDefinition("-", MV_WDEF(d2_matrix_matrix,  mat_sub));
   rpn.addDefinition("*", MV_WDEF(d2_matrix_matrix,  mat_mul));
-  rpn.addDefinition("*", MV_WDEF(d2_vector_matrix,  mat_vec_mul));  // TOS=vec, NOS=matrix (M v *)
-  rpn.addDefinition("*", MV_WDEF(d2_double_matrix,  mat_scale_double));  // TOS=double, pop double first
-  rpn.addDefinition("*", MV_WDEF(d2_integer_matrix, mat_scale_double));  // TOS=int,    pop as double first
-  rpn.addDefinition("*", MV_WDEF(d2_matrix_double,  scale_double_mat));  // TOS=matrix, pop mat first
-  rpn.addDefinition("*", MV_WDEF(d2_matrix_integer, scale_double_mat));  // TOS=matrix, pop mat first
+  rpn.addDefinition("*", MV_WDEF(d2_matrix_vector,  mat_vec_mul));  // TOS=vec, NOS=matrix (M v *)
+  rpn.addDefinition("*", MV_WDEF(d2_matrix_double,  mat_scale_double));  // TOS=double, pop double first
+  rpn.addDefinition("*", MV_WDEF(d2_matrix_integer, mat_scale_double));  // TOS=int,    pop as double first
+  rpn.addDefinition("*", MV_WDEF(d2_double_matrix,  scale_double_mat));  // TOS=matrix, pop mat first
+  rpn.addDefinition("*", MV_WDEF(d2_integer_matrix, scale_double_mat));  // TOS=matrix, pop mat first
 
   // ------- Matrix operations -------
   rpn.addDefinition("DET",      MV_WDEF(d1_matrix, mat_det));

@@ -106,9 +106,9 @@ Hybrid architecture: C++ primitives + compiled RPL words.  The stdlib is `src/rp
 |---|---|---|---|
 | 4.0 | Matrix type: `stack::Matrix` (NxM), `->MATRIX`, `+`, `-`, `*`, determinant, transpose, inverse. Connect to `StVec3`. | L | Moved from 3.2; prerequisite for 4.2 |
 | 4.1 | Statistics: MEAN, VARIANCE, STDDEV, LINFIT, CORRELATION on Array | M | No new type |
-| 4.2 | Linear Algebra: DET, INV, TRANS, EIGENVAL on Matrix | L | Requires 4.0 |
+| 4.2 | Linear Algebra: EIGENVAL and full decomposition on Matrix. **Prerequisite: migrate matrix backend from Techsoft Matrix TCL Lite (`src/matrix.h`) to Eigen** (header-only, actively maintained, provides eigenvalue decomposition via `SelfAdjointEigenSolver` / `EigenSolver`). DET, INV, TRANS already implemented in 4.0; 4.2 adds EIGENVAL and the Eigen migration. | L | Requires 4.0; Eigen migration is also prerequisite for 4.4 |
 | 4.3 | Binary ops enhancement: RLEFT, RRIGHT (rotate), STWS | S | Builds on 1.7 |
-| 4.4 | CAS: symbolic differentiation, integration, simplification. Evaluate SymEngine/GiNaC. Algebraic entry (`'expr'` literal syntax, implied multiplication, function calls) is a thin wrapper over the CAS parser — implement here, not separately. Remove `src/shunting-yard.cpp`. | XL | Research first |
+| 4.4 | CAS: symbolic differentiation, integration, simplification. Evaluate SymEngine/GiNaC. Algebraic entry (`'expr'` literal syntax, implied multiplication, function calls) is a thin wrapper over the CAS parser — implement here, not separately. Remove `src/shunting-yard.cpp`. **Note: SymEngine uses Eigen for its numeric layer; the Eigen migration from 4.2 is a prerequisite.** | XL | Requires 4.2 (Eigen migration); Research first |
 
 ---
 
@@ -170,7 +170,7 @@ Items considered but not scheduled.  Revisit if requirements emerge.
 | Trig mode propagation | `AngleMode` enum in `rpn.h`; public `angleMode()`/`setAngleMode()` on `Interp`; math words call `rpn.angleMode()`. Implemented. |
 | JSON type vs JSON words | `StJson` (MI: `Stack::Object + nlohmann::json`) as first-class type. `to_json()` returns full `{type,display,deparse,data}` descriptor on all types; `->JSON` / `JSON->` for stack interop. |
 | Double → Number rename | Low urgency; no strong reason to rename. Leave as-is. |
-| CAS library | Research phase. Evaluate SymEngine and GiNaC before any implementation. |
+| CAS library | Research phase. Evaluate SymEngine and GiNaC before any implementation. **Dependency note:** SymEngine uses Eigen for its numeric layer; GiNaC does not. The Eigen migration (Phase 4.2) is therefore a prerequisite for a SymEngine-based CAS. If GiNaC is chosen instead, 4.2 remains a prerequisite only for eigenvalue support. Resolve CAS library choice before starting 4.4. |
 | WHILE loop design | Single-block: all body+condition before WHILE/UNTIL; `__until` key distinguishes WHILE (exit when false) from UNTIL (exit when true). At-least-one-iteration semantics for UNTIL. Implemented. |
 | FOR STEP design | `FOR ... n STEP` — body leaves step on TOS each iteration; STEP pops it. `_step = NaN` sentinel marks step-from-stack mode. NEXT = fixed step 1. Implemented. |
 | StName vs StString for variables | `StName` (`'identifier'` literal) for variable names; `StString` (`"content"` literal) for data. `is_valid_name()` prevents shadowing. Implemented. |

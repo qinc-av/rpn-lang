@@ -215,8 +215,8 @@ rpn::Interp::addTimecodeWords() {
   rpn::Interp &rpn = *this; // in case we want to move this out someday
   setWordCategory("timecode");
   registerType("timecode", typeid(stack::Timecode).hash_code());
-  rpn.addDefinition("->TC", NATIVE_WORD_WDEF(timecode, frac_validator::d2_double_frac, to_tc_df, nullptr));
-  rpn.addDefinition("->TC", NATIVE_WORD_WDEF(timecode, frac_validator::d5_double_double_double_double_frac, to_tc_ddddf, nullptr));
+  rpn.addDefinition("->TC", NATIVE_WORD_WDEF(timecode, frac_validator::d2_frac_double, to_tc_df, nullptr));
+  rpn.addDefinition("->TC", NATIVE_WORD_WDEF(timecode, frac_validator::d5_frac_double_double_double_double, to_tc_ddddf, nullptr));
   rpn.addDefinition("FR", NATIVE_WORD_WDEF(timecode, timecode_validator::d1_tc, framerate, nullptr));
   rpn.addDefinition("->FRAMES", NATIVE_WORD_WDEF(timecode, timecode_validator::d1_tc, to_frames, nullptr));
 
@@ -227,7 +227,7 @@ rpn::Interp::addTimecodeWords() {
 
 const rpn::StrictTypeValidator timecode_validator::d1_tc({typeid(stack::Timecode).hash_code()}, "d1_tc");
 const rpn::StrictTypeValidator timecode_validator::d2_tc_tc({typeid(stack::Timecode).hash_code(),typeid(stack::Timecode).hash_code()}, "d2_tc_tc");
-const rpn::StrictTypeValidator timecode_validator::d2_double_tc({typeid(StDouble).hash_code(),typeid(stack::Timecode).hash_code()}, "d2_double_tc");
-const rpn::StrictTypeValidator timecode_validator::d2_tc_double({typeid(stack::Timecode).hash_code(),typeid(StDouble).hash_code()}, "d2_tc_double");
+const rpn::StrictTypeValidator timecode_validator::d2_tc_double({typeid(StDouble).hash_code(),typeid(stack::Timecode).hash_code()}, "d2_tc_double");
+const rpn::StrictTypeValidator timecode_validator::d2_double_tc({typeid(stack::Timecode).hash_code(),typeid(StDouble).hash_code()}, "d2_double_tc");
 
 /* end of QInc/Projects/color-calc/src/libs/rpn-lang/src/timecode-dict.cpp */

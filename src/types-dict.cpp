@@ -127,7 +127,7 @@ NATIVE_WORD_DECL(t_array, array_to) {
 }
 
 NATIVE_WORD_DECL(t_array, add_array_any) {
-  // d2_array_any: TOS=any, NOS=array → append any to array
+  // d2_any_array: TOS=any, NOS=array → append any to array
   auto any = rpn.stack.pop();
   auto sob = rpn.stack.pop();
   StArray arr = PEEK_CAST(const StArray, *sob);
@@ -137,7 +137,7 @@ NATIVE_WORD_DECL(t_array, add_array_any) {
 }
 
 NATIVE_WORD_DECL(t_array, add_any_array) {
-  // d2_any_array: TOS=array, NOS=any → prepend any to array
+  // d2_array_any: TOS=array, NOS=any → prepend any to array
   auto sob = rpn.stack.pop();
   const StArray &src = PEEK_CAST(const StArray, *sob);
   auto any = rpn.stack.pop();
@@ -395,29 +395,29 @@ rpn::Interp::addTypeWords() {
   addDefinition("->FLOAT", NATIVE_WORD_WDEF(types, rpn::StrictTypeValidator::d1_integer, to_float, nullptr));
   addDefinition("->STRING", NATIVE_WORD_WDEF(types, rpn::StackSizeValidator::one, to_string, nullptr));
 
-  addDefinition("->OBJ", NATIVE_WORD_WDEF(t_object, rpn::StrictTypeValidator::d2_string_any, to_object, nullptr));
+  addDefinition("->OBJ", NATIVE_WORD_WDEF(t_object, rpn::StrictTypeValidator::d2_any_string, to_object, nullptr));
   addDefinition("OBJ->", NATIVE_WORD_WDEF(t_object, rpn::StrictTypeValidator::d1_object, object_to, nullptr));
   addDefinition("->ARRAY", NATIVE_WORD_WDEF(t_array, rpn::StackSizeValidator::ntos, to_array, nullptr));
   addDefinition("OBJ->", NATIVE_WORD_WDEF(t_array, rpn::StrictTypeValidator::d1_array, array_to, nullptr));
 
   addDefinition("ARREV", NATIVE_WORD_WDEF(t_array, rpn::StrictTypeValidator::d1_array, reverse, nullptr));
 
-  addDefinition("+", NATIVE_WORD_WDEF(t_object, rpn::StrictTypeValidator::d3_object_string_any, add_object_string_any, nullptr));
-  addDefinition("+", NATIVE_WORD_WDEF(t_object, rpn::StrictTypeValidator::d3_string_any_object, add_string_any_object, nullptr));
-  addDefinition("+", NATIVE_WORD_WDEF(t_array, rpn::StrictTypeValidator::d2_array_any, add_array_any, nullptr));
-  addDefinition("+", NATIVE_WORD_WDEF(t_array, rpn::StrictTypeValidator::d2_any_array, add_any_array, nullptr));
+  addDefinition("+", NATIVE_WORD_WDEF(t_object, rpn::StrictTypeValidator::d3_any_string_object, add_object_string_any, nullptr));
+  addDefinition("+", NATIVE_WORD_WDEF(t_object, rpn::StrictTypeValidator::d3_object_any_string, add_string_any_object, nullptr));
+  addDefinition("+", NATIVE_WORD_WDEF(t_array, rpn::StrictTypeValidator::d2_any_array, add_array_any, nullptr));
+  addDefinition("+", NATIVE_WORD_WDEF(t_array, rpn::StrictTypeValidator::d2_array_any, add_any_array, nullptr));
 
   addDefinition("+", NATIVE_WORD_WDEF(vec3, rpn::StrictTypeValidator::d2_vec3_vec3, add_vec3, nullptr));
-  addDefinition("+", NATIVE_WORD_WDEF(vec3, rpn::StrictTypeValidator::d2_vec3_double, add_vec3_num, nullptr));
-  addDefinition("+", NATIVE_WORD_WDEF(vec3, rpn::StrictTypeValidator::d2_vec3_integer, add_vec3_num, nullptr));
-  addDefinition("+", NATIVE_WORD_WDEF(vec3, rpn::StrictTypeValidator::d2_double_vec3, add_num_vec3, nullptr));
-  addDefinition("+", NATIVE_WORD_WDEF(vec3, rpn::StrictTypeValidator::d2_integer_vec3, add_num_vec3, nullptr));
+  addDefinition("+", NATIVE_WORD_WDEF(vec3, rpn::StrictTypeValidator::d2_double_vec3, add_vec3_num, nullptr));
+  addDefinition("+", NATIVE_WORD_WDEF(vec3, rpn::StrictTypeValidator::d2_integer_vec3, add_vec3_num, nullptr));
+  addDefinition("+", NATIVE_WORD_WDEF(vec3, rpn::StrictTypeValidator::d2_vec3_double, add_num_vec3, nullptr));
+  addDefinition("+", NATIVE_WORD_WDEF(vec3, rpn::StrictTypeValidator::d2_vec3_integer, add_num_vec3, nullptr));
 
   addDefinition("-", NATIVE_WORD_WDEF(vec3, rpn::StrictTypeValidator::d2_vec3_vec3, sub_vec3, nullptr));
-  addDefinition("-", NATIVE_WORD_WDEF(vec3, rpn::StrictTypeValidator::d2_vec3_double, sub_vec3_num, nullptr));
-  addDefinition("-", NATIVE_WORD_WDEF(vec3, rpn::StrictTypeValidator::d2_vec3_integer, sub_vec3_num, nullptr));
-  addDefinition("-", NATIVE_WORD_WDEF(vec3, rpn::StrictTypeValidator::d2_double_vec3, sub_num_vec3, nullptr));
-  addDefinition("-", NATIVE_WORD_WDEF(vec3, rpn::StrictTypeValidator::d2_integer_vec3, sub_num_vec3, nullptr));
+  addDefinition("-", NATIVE_WORD_WDEF(vec3, rpn::StrictTypeValidator::d2_double_vec3, sub_vec3_num, nullptr));
+  addDefinition("-", NATIVE_WORD_WDEF(vec3, rpn::StrictTypeValidator::d2_integer_vec3, sub_vec3_num, nullptr));
+  addDefinition("-", NATIVE_WORD_WDEF(vec3, rpn::StrictTypeValidator::d2_vec3_double, sub_num_vec3, nullptr));
+  addDefinition("-", NATIVE_WORD_WDEF(vec3, rpn::StrictTypeValidator::d2_vec3_integer, sub_num_vec3, nullptr));
 
   ADD_NATIVE_3_NUMBER_WDEF(vec3, (*this), "->VEC3", to_vec3, to_vec3, nullptr);
   addDefinition("->VEC3x", NATIVE_WORD_WDEF(vec3, rpn::StrictTypeValidator::d1_double, to_vec3x, nullptr));

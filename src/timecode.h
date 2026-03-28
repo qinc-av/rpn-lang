@@ -62,7 +62,7 @@ public:
       return q::Timecode::to_string();
     }
     virtual std::string deparse() const override {
-      // ->TC expects d2_double_frac: frame count as double, frame rate as Fraction.
+      // ->TC expects d2_frac_double: frame count as double, frame rate as Fraction.
       // ->FRAC expects d2_integer_integer; use 0d prefix to force integer parsing.
       return std::to_string(to_frames()) + ". " +
              "0d" + std::to_string(_frameRate._numerator) + " " +
@@ -82,8 +82,8 @@ public:
 namespace timecode_validator {
   extern const rpn::StrictTypeValidator d1_tc;
   extern const rpn::StrictTypeValidator d2_tc_tc;
-  extern const rpn::StrictTypeValidator d2_double_tc;
   extern const rpn::StrictTypeValidator d2_tc_double;
+  extern const rpn::StrictTypeValidator d2_double_tc;
 }
 #endif
 

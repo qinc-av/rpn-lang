@@ -142,11 +142,11 @@ namespace stack {
 namespace frac_validator {
   extern const rpn::StrictTypeValidator d1_frac;
   extern const rpn::StrictTypeValidator d2_frac_frac;
-  extern const rpn::StrictTypeValidator d2_frac_int;
-  extern const rpn::StrictTypeValidator d2_frac_double;
   extern const rpn::StrictTypeValidator d2_int_frac;
   extern const rpn::StrictTypeValidator d2_double_frac;
-  extern const rpn::StrictTypeValidator d5_double_double_double_double_frac;
+  extern const rpn::StrictTypeValidator d2_frac_int;
+  extern const rpn::StrictTypeValidator d2_frac_double;
+  extern const rpn::StrictTypeValidator d5_frac_double_double_double_double;
 }
 #endif
 
