@@ -414,6 +414,41 @@ Compile-time words:
 
 ## 8. Stack Types
 
+### Core types vs domain types
+
+Stack types are divided into two tiers.
+
+**Core types** live in `rpn.h` and are always available to every embedder.
+They depend only on the C++ standard library and the vendored `nlohmann/json`:
+
+| Type | Description |
+|---|---|
+| `stack::Double` | Double-precision floating point |
+| `stack::Integer` | 64-bit signed integer (radix display, binary ops) |
+| `stack::Boolean` | True/false |
+| `stack::String` | Text string |
+| `stack::Name` | HP48-style identifier (`'x'` literal syntax) |
+| `stack::Object` | Named-field record (map of string → Stack::Object) |
+| `stack::Array` | Ordered heterogeneous collection |
+| `stack::Json` | JSON value (IS-A `nlohmann::json`) |
+| `stack::Complex` | Complex number (IS-A `std::complex<double>`) |
+| `StVec3` | 3-component vector — to be refactored as `stack::Vec3` in Phase 4.6 |
+
+**Domain types** each have their own header and may include whatever
+dependencies they require.  Embedders opt in by including the relevant header:
+
+| Type | Header | Dep |
+|---|---|---|
+| `stack::Fraction` | `src/fraction.h` | `q::Fraction` |
+| `stack::Timecode` | `src/timecode.h` | `q::Timecode` |
+| `stack::Vector`, `stack::Matrix` | `rpn-matrix.h` (Phase 4.2) | Eigen |
+| Future CAS type | `rpn-cas.h` (Phase 4.4) | SymEngine / GiNaC |
+
+**Rule:** `rpn.h` never gains a heavy dependency.  If a new type needs an
+external library, it gets its own header.
+
+---
+
 All stack values inherit from `rpn::Stack::Object`.  The required interface:
 
 ```cpp
@@ -517,14 +552,19 @@ needed because the object already IS-A `::Widget`.
 
 ### Step-by-step checklist
 
-1. **Define the adapter class** — in your dict header or `.cpp` file, not in
-   `rpn.h`.  Inherit `rpn::Stack::Object` first, then your domain type.
+1. **Choose the right header.** If the type has no external deps beyond stdlib
+   + nlohmann, add it to the `namespace stack {}` block in `rpn.h` (core type).
+   If it depends on an external library, create a dedicated public header (e.g.
+   `rpn-matrix.h`) or use an existing one (e.g. `src/fraction.h`).
 
-2. **Implement the required interface** — `deep_copy`, `operator string`,
+2. **Define the adapter class** in `namespace stack`.  Inherit
+   `rpn::Stack::Object` first, then your domain type.
+
+3. **Implement the required interface** — `deep_copy`, `operator string`,
    `deparse`, `operator==`.  Add `operator>` / `operator<` if the type will
    be compared or sorted.
 
-3. **Add a validator** if the type needs to appear in word signatures:
+4. **Add a validator** if the type needs to appear in word signatures:
 
    ```cpp
    namespace mydict_validator {
@@ -534,22 +574,16 @@ needed because the object already IS-A `::Widget`.
      {typeid(stack::Widget).hash_code()}, "d1_widget");
    ```
 
-4. **Add conversion words** — `->WIDGET` to construct from stack items,
+5. **Add conversion words** — `->WIDGET` to construct from stack items,
    `WIDGET->` to explode back to primitives.
-
-5. **Add a type alias** if widely used:
-
-   ```cpp
-   using StWidget = stack::Widget;
-   ```
 
 ### Real-world example
 
-`stack::Complex` in `src/math-dict.cpp` uses this exact pattern, inheriting
-both `rpn::Stack::Object` and `std::complex<double>`.  The color-math
-extension in `etc/colorcalc-rpn.h` shows it at scale: `stack::Rgb`,
-`stack::XYZ`, `stack::Lab`, etc., each inheriting their CIE/RGB domain class
-alongside `rpn::Stack::Object`.
+`stack::Complex` in `rpn.h` uses this exact pattern, inheriting both
+`rpn::Stack::Object` and `std::complex<double>`.  The color-math extension in
+`etc/colorcalc-rpn.h` shows it at scale: `stack::Rgb`, `stack::XYZ`,
+`stack::Lab`, etc., each inheriting their CIE/RGB domain class alongside
+`rpn::Stack::Object`.
 
 ---
 
