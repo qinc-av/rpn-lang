@@ -89,9 +89,10 @@ NATIVE_WORD_DECL(t_object, add_string_any_object) {
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
   std::string ident = rpn.stack.pop_string();
   auto val = rpn.stack.pop();
-  auto &sob = rpn.stack.peek(1);
-  stack::Object &obj = PEEK_CAST(stack::Object,sob);
-  obj.add_value(ident,*val.get());
+  auto sob = rpn.stack.pop();
+  stack::Object obj = PEEK_CAST(const stack::Object, *sob);
+  obj.add_value(ident, *val.get());
+  rpn.stack.push(obj);
   return rv;
 }
 
@@ -118,7 +119,7 @@ NATIVE_WORD_DECL(t_array, to_array) {
 NATIVE_WORD_DECL(t_array, array_to) {
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
   auto sob = rpn.stack.pop();
-  const auto &v = PEEK_CAST(stack::Array,*sob).val();
+  const auto &v = PEEK_CAST(const stack::Array,*sob).val();
   for(auto ri = v.rbegin(); ri != v.rend(); ri++) {
     rpn.stack.push(**ri);
   }
@@ -332,9 +333,10 @@ NATIVE_WORD_DECL(vec3, to_vec3z) {
 
 NATIVE_WORD_DECL(t_array, reverse) {
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
-  auto &sob = rpn.stack.peek(1);
-  stack::Array &arr = PEEK_CAST(stack::Array,sob);
+  auto sob = rpn.stack.pop();
+  stack::Array arr = PEEK_CAST(const stack::Array, *sob);
   arr.reverse();
+  rpn.stack.push(arr);
   return rv;
 }
 
@@ -357,7 +359,7 @@ NATIVE_WORD_DECL(types, json_to) {
   // - JSON null   → push stack::Json(null) unchanged
   // Note: this is a pure unpack; no round-trip with ->JSON is implied.
   auto obj = rpn.stack.pop();
-  auto *jp = dynamic_cast<stack::Json *>(obj.get());
+  auto *jp = dynamic_cast<const stack::Json *>(obj.get());
   if (!jp) {
     rpn.stack.push(*obj);
     return rpn::WordDefinition::Result::param_error;

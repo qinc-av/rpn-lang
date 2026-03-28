@@ -86,9 +86,9 @@ namespace rpn {
     int64_t pop_as_integer(); // auto-converts doubles to integer, throws if not possible
     bool pop_as_boolean(); // auto-converts boolean, integer, double, and string, returns false if it couldn't convert
 
-    std::unique_ptr<Object> pop();
+    std::unique_ptr<const Object> pop();
 
-    Object &peek(int n) const;
+    const Object &peek(int n) const;
     bool peek_boolean(int n) const;
     std::string peek_string(int n) const;
     std::string peek_for_display(int n) const; // auto-converts to string if the type is not string
@@ -125,7 +125,7 @@ namespace rpn {
 
     std::vector<size_t> types() const;
   private:
-    std::deque<std::unique_ptr<Object>> _stack;
+    std::deque<std::unique_ptr<const Object>> _stack;
   };
 
   class Interp;
@@ -375,8 +375,8 @@ namespace rpn {
   };
 }
 
-#define PEEK_CAST(obtype,ob)  dynamic_cast<obtype&>(ob)
-#define POP_CAST(obtype,ob)  dynamic_cast<obtype&>(*ob.get())
+#define PEEK_CAST(obtype,ob)  dynamic_cast<const obtype&>(ob)
+#define POP_CAST(obtype,ob)  dynamic_cast<const obtype&>(*ob.get())
 #define OBJECTP_CAST(obtype)  dynamic_cast<obtype*>
 
 

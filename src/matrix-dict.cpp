@@ -133,7 +133,7 @@ NATIVE_WORD_DECL(matrix, vec_sub) {
 NATIVE_WORD_DECL(matrix, vec_scale_double) {
   double s = rpn.stack.pop_as_double();
   auto sv = rpn.stack.pop();
-  auto &v = PEEK_CAST(::stack::Vector, *sv);
+  ::stack::Vector v = PEEK_CAST(::stack::Vector, *sv);
   v.mat() *= s;
   rpn.stack.push(v);
   return rpn::WordDefinition::Result::ok;
@@ -143,7 +143,7 @@ NATIVE_WORD_DECL(matrix, vec_scale_double) {
 NATIVE_WORD_DECL(matrix, scale_double_vec) {
   auto sv = rpn.stack.pop();   // TOS: vec
   double s = rpn.stack.pop_as_double();  // NOS: scalar
-  auto &v = PEEK_CAST(::stack::Vector, *sv);
+  ::stack::Vector v = PEEK_CAST(::stack::Vector, *sv);
   v.mat() *= s;
   rpn.stack.push(v);
   return rpn::WordDefinition::Result::ok;
@@ -288,7 +288,7 @@ NATIVE_WORD_DECL(matrix, mat_vec_mul) {
 NATIVE_WORD_DECL(matrix, mat_scale_double) {
   double s = rpn.stack.pop_as_double();
   auto sm = rpn.stack.pop();
-  auto &m = PEEK_CAST(::stack::Matrix, *sm);
+  ::stack::Matrix m = PEEK_CAST(::stack::Matrix, *sm);
   m.mat() *= s;
   rpn.stack.push(m);
   return rpn::WordDefinition::Result::ok;
@@ -298,7 +298,7 @@ NATIVE_WORD_DECL(matrix, mat_scale_double) {
 NATIVE_WORD_DECL(matrix, scale_double_mat) {
   auto sm = rpn.stack.pop();   // TOS: matrix
   double s = rpn.stack.pop_as_double();  // NOS: scalar
-  auto &m = PEEK_CAST(::stack::Matrix, *sm);
+  ::stack::Matrix m = PEEK_CAST(::stack::Matrix, *sm);
   m.mat() *= s;
   rpn.stack.push(m);
   return rpn::WordDefinition::Result::ok;
@@ -324,7 +324,7 @@ NATIVE_WORD_DECL(matrix, mat_trans) {
 // INV  ( matrix -- matrix )  inverse; square non-singular required
 NATIVE_WORD_DECL(matrix, mat_inv) {
   auto sm = rpn.stack.pop();
-  auto &m = PEEK_CAST(::stack::Matrix, *sm);
+  ::stack::Matrix m = PEEK_CAST(::stack::Matrix, *sm);
   if (m.rows() != m.cols()) return rpn::WordDefinition::Result::param_error;
   rpn.stack.push(::stack::Matrix(m.mat().Inv()));
   return rpn::WordDefinition::Result::ok;

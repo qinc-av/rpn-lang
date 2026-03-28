@@ -960,7 +960,7 @@ NEXT
     int i=0;
     for(const auto &p : positions) {
       auto &so = g_rpn.stack.peek(i+1);
-      StVec3 &v3 = dynamic_cast<StVec3&>(so);
+      const StVec3 &v3 = dynamic_cast<const StVec3&>(so);
       REQUIRE_THAT(v3._x, Catch::Matchers::WithinAbs(p.first, 0.000001));
       REQUIRE_THAT(v3._y, Catch::Matchers::WithinAbs(p.second, 0.000001));
       i++;
@@ -986,7 +986,7 @@ NEXT
     int i=0;
     for(const auto &p : positions) {
       auto &so = g_rpn.stack.peek(i+1);
-      StVec3 &v3 = dynamic_cast<StVec3&>(so);
+      const StVec3 &v3 = dynamic_cast<const StVec3&>(so);
       REQUIRE_THAT(v3._x, Catch::Matchers::WithinAbs(p.first, 0.000001));
       REQUIRE_THAT(v3._y, Catch::Matchers::WithinAbs(p.second, 0.000001));
       i++;
@@ -1095,7 +1095,7 @@ TEST_CASE( "object", "types" ) {
     g_rpn.stack.clear();
     auto st = g_rpn.sync_eval(line);
     auto &so = g_rpn.stack.peek(1);
-    REQUIRE_THROWS_AS( dynamic_cast<stack::Object&>(so),
+    REQUIRE_THROWS_AS( dynamic_cast<const stack::Object&>(so),
 		       std::bad_cast);
   }
 
@@ -1635,7 +1635,7 @@ TEST_CASE("deparse round-trips", "display") {
     g_rpn.sync_eval("'myvar' DEPARSE EVAL");
     REQUIRE( g_rpn.stack.depth() == 1 );
     auto obj = g_rpn.stack.pop();
-    auto *n = dynamic_cast<stack::Name*>(obj.get());
+    auto *n = dynamic_cast<const stack::Name*>(obj.get());
     REQUIRE( n != nullptr );
     REQUIRE( std::string(*n) == "myvar" );
   }
@@ -1646,7 +1646,7 @@ TEST_CASE("deparse round-trips", "display") {
     g_rpn.sync_eval("1.5 2.25 -3.125 ->VEC3 DEPARSE EVAL");
     REQUIRE( g_rpn.stack.depth() == 1 );
     auto obj = g_rpn.stack.pop();
-    auto *v = dynamic_cast<StVec3*>(obj.get());
+    auto *v = dynamic_cast<const StVec3*>(obj.get());
     REQUIRE( v != nullptr );
     REQUIRE( v->_x == 1.5 );
     REQUIRE( v->_y == 2.25 );
@@ -1667,7 +1667,7 @@ TEST_CASE("deparse round-trips", "display") {
     g_rpn.sync_eval("1. 2. 3. 3 ->ARRAY DEPARSE EVAL");
     REQUIRE( g_rpn.stack.depth() == 1 );
     auto obj = g_rpn.stack.pop();
-    auto *arr = dynamic_cast<stack::Array*>(obj.get());
+    auto *arr = dynamic_cast<const stack::Array*>(obj.get());
     REQUIRE( arr != nullptr );
     REQUIRE( arr->val().size() == 3 );
   }
@@ -1852,7 +1852,7 @@ TEST_CASE("json type and words", "types") {
     rpn.sync_eval("3.14 ->JSON");
     REQUIRE( rpn.stack.depth() == 1 );
     auto jobj = rpn.stack.pop();
-    auto *j = dynamic_cast<stack::Json *>(jobj.get());
+    auto *j = dynamic_cast<const stack::Json*>(jobj.get());
     REQUIRE( j != nullptr );
     REQUIRE( j->is_number_float() );
     REQUIRE_THAT( j->get<double>(), Catch::Matchers::WithinAbs(3.14, 1e-10) );
@@ -1863,7 +1863,7 @@ TEST_CASE("json type and words", "types") {
     rpn.sync_eval("0d42 ->JSON");
     REQUIRE( rpn.stack.depth() == 1 );
     auto jobj = rpn.stack.pop();
-    auto *j = dynamic_cast<stack::Json *>(jobj.get());
+    auto *j = dynamic_cast<const stack::Json*>(jobj.get());
     REQUIRE( j != nullptr );
     REQUIRE( j->is_number_integer() );
     REQUIRE( j->get<int64_t>() == 42 );
@@ -1874,7 +1874,7 @@ TEST_CASE("json type and words", "types") {
     rpn.sync_eval("TRUE ->JSON");
     REQUIRE( rpn.stack.depth() == 1 );
     auto jobj = rpn.stack.pop();
-    auto *j = dynamic_cast<stack::Json *>(jobj.get());
+    auto *j = dynamic_cast<const stack::Json*>(jobj.get());
     REQUIRE( j != nullptr );
     REQUIRE( j->is_boolean() );
     REQUIRE( j->get<bool>() == true );
@@ -1886,7 +1886,7 @@ TEST_CASE("json type and words", "types") {
     rpn.sync_eval("->JSON");
     REQUIRE( rpn.stack.depth() == 1 );
     auto jobj = rpn.stack.pop();
-    auto *j = dynamic_cast<stack::Json *>(jobj.get());
+    auto *j = dynamic_cast<const stack::Json*>(jobj.get());
     REQUIRE( j != nullptr );
     REQUIRE( j->is_string() );
     REQUIRE( j->get<std::string>() == "hello" );
@@ -1940,7 +1940,7 @@ TEST_CASE("json type and words", "types") {
     rpn.stack.drop();  // drop count
     // Now TOS = first element (10), then 20, then 30 (bottom)
     auto jobj = rpn.stack.pop();
-    REQUIRE( dynamic_cast<stack::Json *>(jobj.get())->get<int>() == 10 );  // first element on TOS
+    REQUIRE( dynamic_cast<const stack::Json*>(jobj.get())->get<int>() == 10 );  // first element on TOS
     rpn.stack.clear();
   }
 
@@ -1957,7 +1957,7 @@ TEST_CASE("json type and words", "types") {
     rpn.stack.drop();  // drop count
     rpn.stack.drop();  // drop key
     auto vobj = rpn.stack.pop();
-    REQUIRE( dynamic_cast<stack::Json *>(vobj.get())->get<int>() == 42 );
+    REQUIRE( dynamic_cast<const stack::Json*>(vobj.get())->get<int>() == 42 );
     rpn.stack.clear();
   }
 

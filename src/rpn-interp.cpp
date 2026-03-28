@@ -996,7 +996,8 @@ NATIVE_WORD_DECL(private, ct_RSHIFT_LAMBDA) {
 // EXEC: pop a lambda (Progn) from TOS and evaluate it.
 NATIVE_WORD_DECL(private, EXEC) {
   auto sob = rpn.stack.pop();
-  Progn *progn = dynamic_cast<Progn*>(sob.get());
+  // const_cast: Progn::eval() mutates interpreter state, not the Progn's program body.
+  Progn *progn = const_cast<Progn*>(dynamic_cast<const Progn*>(sob.get()));
   if (progn == nullptr) return rpn::WordDefinition::Result::param_error;
   return progn->eval(rpn);
 }
@@ -1006,8 +1007,8 @@ NATIVE_WORD_DECL(private, EXEC) {
 // Extract a variable name from TOS — accepts stack::Name ('x') or stack::String ("x").
 static std::string name_from_tos(rpn::Stack &stack) {
   auto obj = stack.pop();
-  if (auto *n = dynamic_cast<stack::Name*>(obj.get()))   return std::string(*n);
-  if (auto *s = dynamic_cast<stack::String*>(obj.get())) return std::string(*s);
+  if (auto *n = dynamic_cast<const stack::Name*>(obj.get()))   return std::string(*n);
+  if (auto *s = dynamic_cast<const stack::String*>(obj.get())) return std::string(*s);
   throw std::runtime_error("expected name or string");
 }
 
@@ -1019,7 +1020,7 @@ NATIVE_WORD_DECL(private, STO) {
   catch (...) { return rpn::WordDefinition::Result::param_error; }
   auto val = rpn.stack.pop();
   if (!val) return rpn::WordDefinition::Result::param_error;
-  p->_globalVars[name] = std::move(val);
+  p->_globalVars[name] = val->deep_copy();
   return rpn::WordDefinition::Result::ok;
 }
 

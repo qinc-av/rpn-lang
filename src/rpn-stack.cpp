@@ -57,9 +57,9 @@ rpn::Stack::push_double(const double &val) {
   push(stack::Double(val));
 }
 
-std::unique_ptr<rpn::Stack::Object>
+std::unique_ptr<const rpn::Stack::Object>
 rpn::Stack::pop() {
-  std::unique_ptr<Object> rv(nullptr);
+  std::unique_ptr<const Object> rv(nullptr);
   if (_stack.size()>0) {
     rv = std::move(_stack.front());
     _stack.pop_front();
@@ -70,7 +70,7 @@ rpn::Stack::pop() {
 bool
 rpn::Stack::pop_boolean() {
   auto tos = pop();
-  auto *typed = dynamic_cast<stack::Boolean*>(tos.get());
+  auto *typed = dynamic_cast<const stack::Boolean*>(tos.get());
   if (typed) {
     return bool(*typed);
   }
@@ -80,7 +80,7 @@ rpn::Stack::pop_boolean() {
 std::string
 rpn::Stack::pop_string() {
   auto tos = pop();
-  auto *typed = dynamic_cast<stack::String*>(tos.get());
+  auto *typed = dynamic_cast<const stack::String*>(tos.get());
   if (typed) {
     return std::string(*typed);
   }
@@ -90,7 +90,7 @@ rpn::Stack::pop_string() {
 int64_t
 rpn::Stack::pop_integer() {
   auto tos = pop();
-  auto *typed = dynamic_cast<stack::Integer*>(tos.get());
+  auto *typed = dynamic_cast<const stack::Integer*>(tos.get());
   if (typed) {
     return *typed;
   }
@@ -107,7 +107,7 @@ rpn::Stack::pop_integer() {
 double
 rpn::Stack::pop_double() {
   auto tos = pop();
-  auto *typed = dynamic_cast<stack::Double*>(tos.get());
+  auto *typed = dynamic_cast<const stack::Double*>(tos.get());
   if (typed) {
     return double(*typed);
   }
@@ -141,10 +141,10 @@ rpn::Stack::pop_as_boolean() {
   auto raw = tos.get();
   bool val=false;
 
-  auto *bp = dynamic_cast<stack::Boolean*>(raw);
-  auto *sp = dynamic_cast<stack::String*>(raw);
-  auto *dp = dynamic_cast<stack::Double*>(raw);
-  auto *ip = dynamic_cast<stack::Integer*>(raw);
+  auto *bp = dynamic_cast<const stack::Boolean*>(raw);
+  auto *sp = dynamic_cast<const stack::String*>(raw);
+  auto *dp = dynamic_cast<const stack::Double*>(raw);
+  auto *ip = dynamic_cast<const stack::Integer*>(raw);
 
   if (bp) {
     val = *bp;
@@ -163,7 +163,7 @@ rpn::Stack::pop_as_boolean() {
   return val;
 }
 
-rpn::Stack::Object &
+const rpn::Stack::Object &
 rpn::Stack::peek(int n) const {
   if(n>0 && _stack.size()>=n) {
     return **(_stack.begin()+n-1);
