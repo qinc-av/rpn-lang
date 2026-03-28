@@ -1,0 +1,28 @@
+{
+  "version": 3,
+  "cmakeMinimumRequired": { "major": 3, "minor": 24, "patch": 0 },
+  "configurePresets": [
+    {
+      "name": "lib",
+      "displayName": "Library (debug)",
+      "description": "Build the rpn-lang static library",
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "lib-release",
+      "displayName": "Library (release)",
+      "inherits": "lib",
+      "binaryDir": "${sourceDir}/build-release",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    }
+  ],
+  "buildPresets": [
+    { "name": "lib",         "configurePreset": "lib"         },
+    { "name": "lib-release", "configurePreset": "lib-release" }
+  ]
+}

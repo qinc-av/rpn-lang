@@ -105,10 +105,12 @@ Hybrid architecture: C++ primitives + compiled RPL words.  The stdlib is `src/rp
 | # | Task | Complexity | Notes |
 |---|---|---|---|
 | 4.0 | Matrix type: `stack::Matrix` (NxM), `->MATRIX`, `+`, `-`, `*`, determinant, transpose, inverse. Connect to `StVec3`. | L | Moved from 3.2; prerequisite for 4.2 |
-| 4.1 | Statistics: MEAN, VARIANCE, STDDEV, LINFIT, CORRELATION on Array | M | No new type |
+| 4.1 | Statistics: MEAN, VARIANCE, STDDEV, LINFIT, CORRELATION on Array. OLS (ordinary least squares) regression: takes a matrix of independent variables and a vector/matrix of dependent variables; returns a result object (JSON or new `LinearModel` type) containing beta estimators, t-stats, TSS/RSS/ESS, adjusted R², degrees of freedom, fitted values, and residuals. Design needed: formula specification, intercept term, column selection. Reference implementation in `etc/LinearModel.{cpp,h}`; Eigen may provide primitives. File I/O probably needed for large datasets (defer). | M+ | No new type for basic stats; LinearModel type TBD for OLS |
 | 4.2 | Linear Algebra: EIGENVAL and full decomposition on Matrix. **Prerequisite: migrate matrix backend from Techsoft Matrix TCL Lite (`src/matrix.h`) to Eigen** (header-only, actively maintained, provides eigenvalue decomposition via `SelfAdjointEigenSolver` / `EigenSolver`). DET, INV, TRANS already implemented in 4.0; 4.2 adds EIGENVAL and the Eigen migration. | L | Requires 4.0; Eigen migration is also prerequisite for 4.4 |
 | 4.3 | Binary ops enhancement: RLEFT, RRIGHT (rotate), STWS | S | Builds on 1.7 |
 | 4.4 | CAS: symbolic differentiation, integration, simplification. Evaluate SymEngine/GiNaC. Algebraic entry (`'expr'` literal syntax, implied multiplication, function calls) is a thin wrapper over the CAS parser — implement here, not separately. Remove `src/shunting-yard.cpp`. **Note: SymEngine uses Eigen for its numeric layer; the Eigen migration from 4.2 is a prerequisite.** | XL | Requires 4.2 (Eigen migration); Research first |
+| 4.5 | Literal vector/matrix entry: `[` pushes a partial-array sentinel onto the stack (displayed as `[ ...`); subsequent words push elements normally; `]` scans down to the sentinel, collects elements into `StVector` or `StMatrix` (if elements are conformant vectors). Follows emacs-calc model. Non-conformant elements → `StArray`. Needed for usable interactive and script matrix entry; prerequisite for comfortable 4.1 statistics use. | M | Requires 4.0; design: how does `]` distinguish vector vs matrix? |
+| 4.6 | `stack::Mx3` and `stack::Vec3` completeness: 3×3 rotation/transform matrices and 3×1 vectors as specialized types with geometry-focused words (cross product, rotation, homogeneous transforms). Reference implementation in `etc/vecmx.{h,cpp}`. Evaluate whether to keep as a distinct type or subsume into general `stack::Matrix`. | S | Requires 4.0 |
 
 ---
 
@@ -149,6 +151,16 @@ The word reference section will be substantially auto-generated once Phase 2.1 (
 
 ---
 
+## Build & Infrastructure
+
+| Item | Notes |
+|---|---|
+| `rpn-lang.cmake` | Source-list helper for CMake-based consumers (currently `ui/qt/CMakeLists.txt`). Defines `RPN_LANG_SRCS` via `include()` so external CMake projects can build rpn-lang inline. Keep in sync when adding/removing source files. The RP-42 Xcode project embeds sources directly and does not use this file. |
+| CMakePresets | `CMakePresets.json` added at repo root. Presets: `lib` (debug, `build/`), `lib-release` (`build-release/`), `tests` (`build-tests/`, source `tests/`). Usage: `cmake --preset lib && cmake --build --preset lib`; `cmake --preset tests && cmake --build --preset tests`. |
+| SwiftPM package | `Package.swift` skeleton added. Architecture: Swift → ObjC bridge (`rpn-hl.mm`) → C++ library. No C ABI needed — `@interface RpnInterp` in `rpn-hl.h` is the Swift bridge (same role as the current `RP42-Bridging-Header.h` which imports `rpn-hl.h`). **Blocker:** SwiftPM module public header must be ObjC-only; `rpn-hl.h` includes `rpn.h` (C++) unconditionally. Need `src/rpn-hl-objc.h` — an ObjC-only copy of the `#if __OBJC__` section. Then `swiftpm-include/` holds it as the `publicHeadersPath`. |
+
+---
+
 ## Possible Future Work
 
 Items considered but not scheduled.  Revisit if requirements emerge.
@@ -156,7 +168,7 @@ Items considered but not scheduled.  Revisit if requirements emerge.
 | Item | Notes |
 |---|---|
 | WASM build target | Technically feasible; no current use case. |
-| C ABI wrapper (`rpn_c.h`) | Would enable non-C++ bindings; no active requirement. |
+| C ABI wrapper (`rpn_c.h`) | Would enable non-C++ bindings; likely needed as part of SwiftPM packaging (see Build & Infrastructure). |
 
 ---
 
@@ -171,6 +183,11 @@ Items considered but not scheduled.  Revisit if requirements emerge.
 | JSON type vs JSON words | `StJson` (MI: `Stack::Object + nlohmann::json`) as first-class type. `to_json()` returns full `{type,display,deparse,data}` descriptor on all types; `->JSON` / `JSON->` for stack interop. |
 | Double → Number rename | Low urgency; no strong reason to rename. Leave as-is. |
 | CAS library | Research phase. Evaluate SymEngine and GiNaC before any implementation. **Dependency note:** SymEngine uses Eigen for its numeric layer; GiNaC does not. The Eigen migration (Phase 4.2) is therefore a prerequisite for a SymEngine-based CAS. If GiNaC is chosen instead, 4.2 remains a prerequisite only for eigenvalue support. Resolve CAS library choice before starting 4.4. |
+| Type overlap consolidation | We have overlapping types: `StVector` vs `StArray`; `StArray` vs `StJson` (array); `StObject` vs `StJson` (object). Should `StObject` and `StArray` be retired in favour of `StJson`? Key question: how do symbolic arrays and matrices fit in (Phase 4.4 CAS)? Decide before Phase 4.1 statistics work locks in array-based API. |
+| Stack object naming convention | Two naming styles in use: `stack::Double` (class name inside namespace) and `StDouble` (typedef alias). Are all types consistent? Audit: confirm every type has a `stack::X` class and a `using StX = stack::X` alias; remove any that don't. |
+| Number type / integer coalescing | `StDouble` and `StInteger` coexist with strict type validators, but bare numeric literals (`3`, `42`) always parse as `StDouble`. Words like `DUPn` need an integer count but `3 DUPn` reads naturally. Current workaround: `pop_as_integer()` coalesces at runtime; validators use `v_anytype`. Proper solution: add a `v_numbertype` sentinel to `StrictTypeValidator` that matches both `StDouble` and `StInteger`, or adopt HP48's approach (single numeric type; integer display is a formatting choice). Design needed before adding more words with integer parameters. |
+| Header split for embedders | All stack subtypes are currently in `rpn.h`. Embedders adding custom words need access to concrete types (e.g. `stack::Vector`, `stack::Matrix`), but embedders only wrapping the interpreter don't. Consider splitting to `rpn-types.h` (concrete subtypes) + `rpn.h` (interpreter API). `stack::Vector` and `stack::Matrix` currently have no path for external use. |
+| UI / SwiftUI alignment | How well does the `Stack` and `Stack::Object` interface align with a SwiftUI / React declarative event-driven UI? `describeStack()` returns JSON descriptors — is that sufficient for reactive binding, or do we need a push/notification model? Revisit when RP-42 UI integration work begins. |
 | WHILE loop design | Single-block: all body+condition before WHILE/UNTIL; `__until` key distinguishes WHILE (exit when false) from UNTIL (exit when true). At-least-one-iteration semantics for UNTIL. Implemented. |
 | FOR STEP design | `FOR ... n STEP` — body leaves step on TOS each iteration; STEP pops it. `_step = NaN` sentinel marks step-from-stack mode. NEXT = fixed step 1. Implemented. |
 | StName vs StString for variables | `StName` (`'identifier'` literal) for variable names; `StString` (`"content"` literal) for data. `is_valid_name()` prevents shadowing. Implemented. |

@@ -2,6 +2,7 @@
 /x/
 /nn/
 /build/
+/.build/
 **/build-*
 /tests/n/
 /tests/runtime
