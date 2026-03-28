@@ -1,7 +1,16 @@
 /n/
 /x/
+/nn/
+/build/
 **/build-*
+/tests/n/
+/tests/runtime
+/tests/runtime.out
 /ui/win/.vs/
 /ui/win/x64/
+/ui/wasm-xxx/
 /ui/apple/RPN Calc.xcodeproj/xcuserdata/
 /ui/apple/RPN Calc.xcodeproj/project.xcworkspace/
+/docs/notes.txt
+/etc/
+.claude/settings.local.json
