@@ -68,7 +68,7 @@ NATIVE_WORD_DECL(t_object, to_object) {
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
   std::string ident = rpn.stack.pop_string();
   auto val = rpn.stack.pop();
-  StObject obj;
+  stack::Object obj;
   obj.add_value(ident,*val.get());
   rpn.stack.push(obj);
   return rv;
@@ -76,7 +76,7 @@ NATIVE_WORD_DECL(t_object, to_object) {
 
 NATIVE_WORD_DECL(t_object, object_to) {
   auto sob = rpn.stack.pop();
-  const auto &obj = PEEK_CAST(const StObject, *sob);
+  const auto &obj = PEEK_CAST(const stack::Object, *sob);
   for (const auto &m : obj.val()) {
     rpn.stack.push(*m.second);
     rpn.stack.push_string(m.first);
@@ -90,7 +90,7 @@ NATIVE_WORD_DECL(t_object, add_string_any_object) {
   std::string ident = rpn.stack.pop_string();
   auto val = rpn.stack.pop();
   auto &sob = rpn.stack.peek(1);
-  StObject &obj = PEEK_CAST(StObject,sob);
+  stack::Object &obj = PEEK_CAST(stack::Object,sob);
   obj.add_value(ident,*val.get());
   return rv;
 }
@@ -107,7 +107,7 @@ NATIVE_WORD_DECL(t_array, to_array) {
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
   size_t n = size_t(rpn.stack.pop_as_integer());
   rpn.stack.reversen(n);
-  StArray array;
+  stack::Array array;
   for(size_t i=0; i<n; i++) {
     array.add_value(*rpn.stack.pop());
   }
@@ -118,7 +118,7 @@ NATIVE_WORD_DECL(t_array, to_array) {
 NATIVE_WORD_DECL(t_array, array_to) {
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
   auto sob = rpn.stack.pop();
-  const auto &v = PEEK_CAST(StArray,*sob).val();
+  const auto &v = PEEK_CAST(stack::Array,*sob).val();
   for(auto ri = v.rbegin(); ri != v.rend(); ri++) {
     rpn.stack.push(**ri);
   }
@@ -130,7 +130,7 @@ NATIVE_WORD_DECL(t_array, add_array_any) {
   // d2_any_array: TOS=any, NOS=array → append any to array
   auto any = rpn.stack.pop();
   auto sob = rpn.stack.pop();
-  StArray arr = PEEK_CAST(const StArray, *sob);
+  stack::Array arr = PEEK_CAST(const stack::Array, *sob);
   arr.add_value(*any);
   rpn.stack.push(arr);
   return rpn::WordDefinition::Result::ok;
@@ -139,9 +139,9 @@ NATIVE_WORD_DECL(t_array, add_array_any) {
 NATIVE_WORD_DECL(t_array, add_any_array) {
   // d2_array_any: TOS=array, NOS=any → prepend any to array
   auto sob = rpn.stack.pop();
-  const StArray &src = PEEK_CAST(const StArray, *sob);
+  const stack::Array &src = PEEK_CAST(const stack::Array, *sob);
   auto any = rpn.stack.pop();
-  StArray result;
+  stack::Array result;
   result.add_value(*any);
   for (const auto &e : src.val()) {
     result.add_value(*e);
@@ -333,7 +333,7 @@ NATIVE_WORD_DECL(vec3, to_vec3z) {
 NATIVE_WORD_DECL(t_array, reverse) {
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
   auto &sob = rpn.stack.peek(1);
-  StArray &arr = PEEK_CAST(StArray,sob);
+  stack::Array &arr = PEEK_CAST(stack::Array,sob);
   arr.reverse();
   return rv;
 }
@@ -342,33 +342,33 @@ NATIVE_WORD_DECL(t_array, reverse) {
  * JSON
  */
 NATIVE_WORD_DECL(types, to_json) {
-  // ->JSON: pop any value, call to_json(), push StJson containing the "data" field.
+  // ->JSON: pop any value, call to_json(), push stack::Json containing the "data" field.
   auto obj = rpn.stack.pop();
   auto descriptor = obj->to_json();
-  rpn.stack.push(StJson(descriptor["data"]));
+  rpn.stack.push(stack::Json(descriptor["data"]));
   return rpn::WordDefinition::Result::ok;
 }
 
 NATIVE_WORD_DECL(types, json_to) {
-  // JSON->: unpack a StJson value onto the stack, analogous to ARRAY-> and OBJ->.
-  // - JSON array  → elements pushed bottom-to-top as StJson, then integer count
-  // - JSON object → (value StJson, key StString) pairs in iteration order, then integer count
-  // - JSON scalar → push as native type (StDouble/StInteger/StBoolean/StString)
-  // - JSON null   → push StJson(null) unchanged
+  // JSON->: unpack a stack::Json value onto the stack, analogous to ARRAY-> and OBJ->.
+  // - JSON array  → elements pushed bottom-to-top as stack::Json, then integer count
+  // - JSON object → (value stack::Json, key stack::String) pairs in iteration order, then integer count
+  // - JSON scalar → push as native type (stack::Double/stack::Integer/stack::Boolean/stack::String)
+  // - JSON null   → push stack::Json(null) unchanged
   // Note: this is a pure unpack; no round-trip with ->JSON is implied.
   auto obj = rpn.stack.pop();
-  auto *jp = dynamic_cast<StJson *>(obj.get());
+  auto *jp = dynamic_cast<stack::Json *>(obj.get());
   if (!jp) {
     rpn.stack.push(*obj);
     return rpn::WordDefinition::Result::param_error;
   }
   const auto &j = *jp;
   if (j.is_array()) {
-    for (auto it = j.rbegin(); it != j.rend(); ++it) rpn.stack.push(StJson(*it));
+    for (auto it = j.rbegin(); it != j.rend(); ++it) rpn.stack.push(stack::Json(*it));
     rpn.stack.push_integer((int64_t)j.size());
   } else if (j.is_object()) {
     for (auto it = j.begin(); it != j.end(); ++it) {
-      rpn.stack.push(StJson(it.value()));
+      rpn.stack.push(stack::Json(it.value()));
       rpn.stack.push_string(it.key());
     }
     rpn.stack.push_integer((int64_t)j.size());
@@ -451,7 +451,7 @@ rpn::Interp::addTypeWords() {
 
   addDefinition("->JSON", NATIVE_WORD_WDEF(types, rpn::StackSizeValidator::one, to_json, nullptr));
   addDefinition("JSON->", NATIVE_WORD_WDEF(types, rpn::StackSizeValidator::one, json_to, nullptr));
-  addWordMetadata("->JSON", "Convert TOS to a JSON value (StJson), using the type's data encoding.");
+  addWordMetadata("->JSON", "Convert TOS to a JSON value (stack::Json), using the type's data encoding.");
   addWordMetadata("JSON->", "Unpack a JSON value: array→elements+count, object→(val,key) pairs+count, scalar→native type.");
 }
 

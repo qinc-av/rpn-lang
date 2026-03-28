@@ -17,7 +17,7 @@
 NATIVE_WORD_DECL(geometry, circle_a) {
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
   auto oo  = rpn.stack.pop();
-  const auto &array = POP_CAST(StArray,oo);
+  const auto &array = POP_CAST(stack::Array,oo);
   const auto &vals = array.val();
 
   std::vector<StVec3> points;

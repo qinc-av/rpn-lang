@@ -390,7 +390,7 @@ Progn::eval_forloop(rpn::Interp &rpn) {
     double step = 1.0; // sentinel; overwritten after first body execution
     do {
       if (_p._cancelRequested.load()) { rv = rpn::WordDefinition::Result::cancelled; break; }
-      (*_locals)[_ident] = std::make_unique<StDouble>(current);
+      (*_locals)[_ident] = std::make_unique<stack::Double>(current);
       rv = eval_lambda(rpn);
       if (rv != rpn::WordDefinition::Result::ok) break;
       step = rpn.stack.pop_as_double();
@@ -403,7 +403,7 @@ Progn::eval_forloop(rpn::Interp &rpn) {
     auto loop_cond = [&]() { return step > 0 ? start < end : start > end; };
     for(; rv==rpn::WordDefinition::Result::ok && loop_cond(); start += step) {
       if (_p._cancelRequested.load()) { rv = rpn::WordDefinition::Result::cancelled; break; }
-      (*_locals)[_ident] = std::make_unique<StDouble>(start);
+      (*_locals)[_ident] = std::make_unique<stack::Double>(start);
       rv = eval_lambda(rpn);
     }
   }
@@ -621,9 +621,9 @@ NATIVE_WORD_DECL(private, WORDLIST) {
   for(const auto &dw : p->_rtDictionary) {
     keys.insert(dw.first);
   }
-  StArray res;
+  stack::Array res;
   for(const auto &k : keys) {
-    res.add_value(StString(k));
+    res.add_value(stack::String(k));
   }
   rpn.stack.push(res);
   return rv;
@@ -894,7 +894,7 @@ NATIVE_WORD_DECL(private, ct_UNTIL) {
   rpn::Interp::Privates *p = dynamic_cast<rpn::Interp::Privates*>(ctx);
   // Mark as UNTIL-style (exit when condition is true) before end_compile
   // so the flag is visible in the copied Progn's shared _locals.
-  p->_ctVprogn.back()._locals->emplace("__until", std::make_unique<StBoolean>(StBoolean(true)));
+  p->_ctVprogn.back()._locals->emplace("__until", std::make_unique<stack::Boolean>(stack::Boolean(true)));
   return finalize_whileloop(rpn, p);
 }
 
@@ -1003,16 +1003,16 @@ NATIVE_WORD_DECL(private, EXEC) {
 
 // ── STO / RCL / VARS / PURGE ────────────────────────────────────────────────
 
-// Extract a variable name from TOS — accepts StName ('x') or StString ("x").
+// Extract a variable name from TOS — accepts stack::Name ('x') or stack::String ("x").
 static std::string name_from_tos(rpn::Stack &stack) {
   auto obj = stack.pop();
-  if (auto *n = dynamic_cast<StName*>(obj.get()))   return std::string(*n);
-  if (auto *s = dynamic_cast<StString*>(obj.get())) return std::string(*s);
+  if (auto *n = dynamic_cast<stack::Name*>(obj.get()))   return std::string(*n);
+  if (auto *s = dynamic_cast<stack::String*>(obj.get())) return std::string(*s);
   throw std::runtime_error("expected name or string");
 }
 
 NATIVE_WORD_DECL(private, STO) {
-  // ( val name -- )  Store TOS value into global variable.  Name is StName or StString.
+  // ( val name -- )  Store TOS value into global variable.  Name is stack::Name or stack::String.
   rpn::Interp::Privates *p = dynamic_cast<rpn::Interp::Privates*>(ctx);
   std::string name;
   try { name = name_from_tos(rpn.stack); }
@@ -1024,7 +1024,7 @@ NATIVE_WORD_DECL(private, STO) {
 }
 
 NATIVE_WORD_DECL(private, RCL) {
-  // ( name -- val )  Recall a global variable.  Name is StName or StString.
+  // ( name -- val )  Recall a global variable.  Name is stack::Name or stack::String.
   rpn::Interp::Privates *p = dynamic_cast<rpn::Interp::Privates*>(ctx);
   std::string name;
   try { name = name_from_tos(rpn.stack); }
@@ -1036,18 +1036,18 @@ NATIVE_WORD_DECL(private, RCL) {
 }
 
 NATIVE_WORD_DECL(private, VARS) {
-  // ( -- array )  Push StName array of all global variable names.
+  // ( -- array )  Push stack::Name array of all global variable names.
   rpn::Interp::Privates *p = dynamic_cast<rpn::Interp::Privates*>(ctx);
-  StArray arr;
+  stack::Array arr;
   for (const auto &kv : p->_globalVars) {
-    arr.add_value(StName(kv.first));
+    arr.add_value(stack::Name(kv.first));
   }
   rpn.stack.push(arr);
   return rpn::WordDefinition::Result::ok;
 }
 
 NATIVE_WORD_DECL(private, PURGE) {
-  // ( name -- )  Remove a global variable.  Name is StName or StString.
+  // ( name -- )  Remove a global variable.  Name is stack::Name or stack::String.
   rpn::Interp::Privates *p = dynamic_cast<rpn::Interp::Privates*>(ctx);
   std::string name;
   try { name = name_from_tos(rpn.stack); }
@@ -1062,14 +1062,14 @@ rpn::Interp::Privates::add_private_words() {
   // Extended types (complex, fraction, timecode) are registered by their
   // respective addXxxWords() via rpn::Interp::registerType().
   _typeRegistry["any"]     = rpn::StrictTypeValidator::v_anytype;
-  _typeRegistry["double"]  = typeid(StDouble).hash_code();
-  _typeRegistry["integer"] = typeid(StInteger).hash_code();
-  _typeRegistry["boolean"] = typeid(StBoolean).hash_code();
-  _typeRegistry["string"]  = typeid(StString).hash_code();
-  _typeRegistry["name"]    = typeid(StName).hash_code();
-  _typeRegistry["object"]  = typeid(StObject).hash_code();
-  _typeRegistry["array"]   = typeid(StArray).hash_code();
-  _typeRegistry["json"]    = typeid(StJson).hash_code();
+  _typeRegistry["double"]  = typeid(stack::Double).hash_code();
+  _typeRegistry["integer"] = typeid(stack::Integer).hash_code();
+  _typeRegistry["boolean"] = typeid(stack::Boolean).hash_code();
+  _typeRegistry["string"]  = typeid(stack::String).hash_code();
+  _typeRegistry["name"]    = typeid(stack::Name).hash_code();
+  _typeRegistry["object"]  = typeid(stack::Object).hash_code();
+  _typeRegistry["array"]   = typeid(stack::Array).hash_code();
+  _typeRegistry["json"]    = typeid(stack::Json).hash_code();
   _typeRegistry["vec3"]    = typeid(StVec3).hash_code();
 
   _rtDictionary.emplace(":", rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, COLON), this });
@@ -1261,18 +1261,18 @@ rpn::WordDefinition::Result
 rpn::Interp::Privates::runtime_eval(const std::string &word, std::string &rest) {
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::dict_error;
 
-  // String literal: "content" → push StString (strips surrounding quotes)
+  // String literal: "content" → push stack::String (strips surrounding quotes)
   if (!word.empty() && word[0] == '"') {
     _rpn.stack.push_string(word.size() >= 2 ? word.substr(1, word.size() - 2) : "");
     return rpn::WordDefinition::Result::ok;
   }
-  // Name literal: 'identifier' → push StName.  Content must be a valid name.
+  // Name literal: 'identifier' → push stack::Name.  Content must be a valid name.
   // Invalid names (e.g. '+', '42') fall through to dict_error rather than
   // silently creating variables that shadow operators or number literals.
   if (word.size() >= 3 && word[0] == '\'' && word.back() == '\'') {
     std::string name = word.substr(1, word.size() - 2);
     if (is_valid_name(name)) {
-      _rpn.stack.push(StName(name));
+      _rpn.stack.push(stack::Name(name));
       return rpn::WordDefinition::Result::ok;
     }
     // Invalid name — fall through to dict_error
@@ -1396,12 +1396,12 @@ rpn::Interp::Privates::compiletime_eval(const std::string &word, std::string &re
       rv = cw->second.eval(_rpn, cw->second.context, rest);
 
     } else if (!word.empty() && word[0] == '"') {
-      // string literal: stored verbatim; runtime_eval detects and pushes StString
+      // string literal: stored verbatim; runtime_eval detects and pushes stack::String
       progn.addWord(word);
       rv = rpn::WordDefinition::Result::ok;
 
     } else if (word.size() >= 3 && word[0] == '\'' && word.back() == '\'') {
-      // name literal: validate then store verbatim; runtime_eval pushes StName
+      // name literal: validate then store verbatim; runtime_eval pushes stack::Name
       std::string name = word.substr(1, word.size() - 2);
       if (is_valid_name(name)) {
         progn.addWord(word);
@@ -1697,8 +1697,8 @@ rpn::StackSizeValidator::operator()(const std::vector<size_t> &types, rpn::Stack
   bool rv = false;
   if ((_n==(size_t)-1) &&
       types.size()>0 &&
-      (types[0]==typeid(StInteger).hash_code() ||
-       types[0]==typeid(StDouble).hash_code())) { // negative means to ntos - check top of stack as integer and make sure that the stack is >=
+      (types[0]==typeid(stack::Integer).hash_code() ||
+       types[0]==typeid(stack::Double).hash_code())) { // negative means to ntos - check top of stack as integer and make sure that the stack is >=
     auto nn = stack.peek_as_integer(1);
     rv = (nn && (types.size()-1) >= nn);
   } else {
@@ -1712,54 +1712,54 @@ rpn::StackSizeValidator::operator()(const std::vector<size_t> &types, rpn::Stack
  *
  */
 const size_t rpn::StrictTypeValidator::v_anytype = typeid(rpn::Stack::Object).hash_code();
-const rpn::StrictTypeValidator rpn::StrictTypeValidator::d1_double({typeid(StDouble).hash_code()},"d1_double");
-const rpn::StrictTypeValidator rpn::StrictTypeValidator::d1_integer({typeid(StInteger).hash_code()},"d1_integer");
-const rpn::StrictTypeValidator rpn::StrictTypeValidator::d1_boolean({typeid(StBoolean).hash_code()},"d1_boolean");
-const rpn::StrictTypeValidator rpn::StrictTypeValidator::d1_string({typeid(StString).hash_code()},"d1_string");
+const rpn::StrictTypeValidator rpn::StrictTypeValidator::d1_double({typeid(stack::Double).hash_code()},"d1_double");
+const rpn::StrictTypeValidator rpn::StrictTypeValidator::d1_integer({typeid(stack::Integer).hash_code()},"d1_integer");
+const rpn::StrictTypeValidator rpn::StrictTypeValidator::d1_boolean({typeid(stack::Boolean).hash_code()},"d1_boolean");
+const rpn::StrictTypeValidator rpn::StrictTypeValidator::d1_string({typeid(stack::String).hash_code()},"d1_string");
 const rpn::StrictTypeValidator rpn::StrictTypeValidator::d1_vec3({typeid(StVec3).hash_code()},"d1_vec3");
-const rpn::StrictTypeValidator rpn::StrictTypeValidator::d1_object({typeid(StObject).hash_code()},"d1_object");
-const rpn::StrictTypeValidator rpn::StrictTypeValidator::d1_array({typeid(StArray).hash_code()},"d1_array");
+const rpn::StrictTypeValidator rpn::StrictTypeValidator::d1_object({typeid(stack::Object).hash_code()},"d1_object");
+const rpn::StrictTypeValidator rpn::StrictTypeValidator::d1_array({typeid(stack::Array).hash_code()},"d1_array");
 
-const rpn::StrictTypeValidator rpn::StrictTypeValidator::d2_boolean_boolean({typeid(StBoolean).hash_code(), typeid(StBoolean).hash_code()},"d2_boolean_boolean");
-const rpn::StrictTypeValidator rpn::StrictTypeValidator::d2_double_double({typeid(StDouble).hash_code(), typeid(StDouble).hash_code()},"d2_double_double");
-const rpn::StrictTypeValidator rpn::StrictTypeValidator::d2_integer_double({typeid(StDouble).hash_code(), typeid(StInteger).hash_code()},"d2_integer_double");
-const rpn::StrictTypeValidator rpn::StrictTypeValidator::d2_double_integer({typeid(StInteger).hash_code(), typeid(StDouble).hash_code()},"d2_double_integer");
-const rpn::StrictTypeValidator rpn::StrictTypeValidator::d2_integer_integer({typeid(StInteger).hash_code(), typeid(StInteger).hash_code()},"d2_integer_integer");
+const rpn::StrictTypeValidator rpn::StrictTypeValidator::d2_boolean_boolean({typeid(stack::Boolean).hash_code(), typeid(stack::Boolean).hash_code()},"d2_boolean_boolean");
+const rpn::StrictTypeValidator rpn::StrictTypeValidator::d2_double_double({typeid(stack::Double).hash_code(), typeid(stack::Double).hash_code()},"d2_double_double");
+const rpn::StrictTypeValidator rpn::StrictTypeValidator::d2_integer_double({typeid(stack::Double).hash_code(), typeid(stack::Integer).hash_code()},"d2_integer_double");
+const rpn::StrictTypeValidator rpn::StrictTypeValidator::d2_double_integer({typeid(stack::Integer).hash_code(), typeid(stack::Double).hash_code()},"d2_double_integer");
+const rpn::StrictTypeValidator rpn::StrictTypeValidator::d2_integer_integer({typeid(stack::Integer).hash_code(), typeid(stack::Integer).hash_code()},"d2_integer_integer");
 
-const rpn::StrictTypeValidator rpn::StrictTypeValidator::d2_vec3_double({typeid(StDouble).hash_code(), typeid(StVec3).hash_code()},"d2_vec3_double");
-const rpn::StrictTypeValidator rpn::StrictTypeValidator::d2_double_vec3({typeid(StVec3).hash_code(), typeid(StDouble).hash_code()},"d2_double_vec3");
+const rpn::StrictTypeValidator rpn::StrictTypeValidator::d2_vec3_double({typeid(stack::Double).hash_code(), typeid(StVec3).hash_code()},"d2_vec3_double");
+const rpn::StrictTypeValidator rpn::StrictTypeValidator::d2_double_vec3({typeid(StVec3).hash_code(), typeid(stack::Double).hash_code()},"d2_double_vec3");
 
-const rpn::StrictTypeValidator rpn::StrictTypeValidator::d2_vec3_integer({typeid(StInteger).hash_code(), typeid(StVec3).hash_code()},"d2_vec3_integer");
-const rpn::StrictTypeValidator rpn::StrictTypeValidator::d2_integer_vec3({typeid(StVec3).hash_code(), typeid(StInteger).hash_code()},"d2_integer_vec3");
+const rpn::StrictTypeValidator rpn::StrictTypeValidator::d2_vec3_integer({typeid(stack::Integer).hash_code(), typeid(StVec3).hash_code()},"d2_vec3_integer");
+const rpn::StrictTypeValidator rpn::StrictTypeValidator::d2_integer_vec3({typeid(StVec3).hash_code(), typeid(stack::Integer).hash_code()},"d2_integer_vec3");
 
 const rpn::StrictTypeValidator rpn::StrictTypeValidator::d2_vec3_vec3({typeid(StVec3).hash_code(), typeid(StVec3).hash_code()},"d2_vec3_vec3");
 
-const rpn::StrictTypeValidator rpn::StrictTypeValidator::d2_any_string({typeid(StString).hash_code(),rpn::StrictTypeValidator::v_anytype},"d2_any_string");
-const rpn::StrictTypeValidator rpn::StrictTypeValidator::d2_string_any({rpn::StrictTypeValidator::v_anytype,typeid(StString).hash_code()},"d2_string_any");
+const rpn::StrictTypeValidator rpn::StrictTypeValidator::d2_any_string({typeid(stack::String).hash_code(),rpn::StrictTypeValidator::v_anytype},"d2_any_string");
+const rpn::StrictTypeValidator rpn::StrictTypeValidator::d2_string_any({rpn::StrictTypeValidator::v_anytype,typeid(stack::String).hash_code()},"d2_string_any");
 
-const rpn::StrictTypeValidator rpn::StrictTypeValidator::d2_any_array({typeid(StArray).hash_code(), rpn::StrictTypeValidator::v_anytype},"d2_any_array");
-const rpn::StrictTypeValidator rpn::StrictTypeValidator::d2_array_any({rpn::StrictTypeValidator::v_anytype,typeid(StArray).hash_code()},"d2_array_any");
-const rpn::StrictTypeValidator rpn::StrictTypeValidator::d2_any_object({typeid(StObject).hash_code(),rpn::StrictTypeValidator::v_anytype},"d2_any_object");
-const rpn::StrictTypeValidator rpn::StrictTypeValidator::d2_object_any({rpn::StrictTypeValidator::v_anytype,typeid(StObject).hash_code()},"d2_object_any");
+const rpn::StrictTypeValidator rpn::StrictTypeValidator::d2_any_array({typeid(stack::Array).hash_code(), rpn::StrictTypeValidator::v_anytype},"d2_any_array");
+const rpn::StrictTypeValidator rpn::StrictTypeValidator::d2_array_any({rpn::StrictTypeValidator::v_anytype,typeid(stack::Array).hash_code()},"d2_array_any");
+const rpn::StrictTypeValidator rpn::StrictTypeValidator::d2_any_object({typeid(stack::Object).hash_code(),rpn::StrictTypeValidator::v_anytype},"d2_any_object");
+const rpn::StrictTypeValidator rpn::StrictTypeValidator::d2_object_any({rpn::StrictTypeValidator::v_anytype,typeid(stack::Object).hash_code()},"d2_object_any");
 
-const rpn::StrictTypeValidator rpn::StrictTypeValidator::d3_double_double_double({typeid(StDouble).hash_code(),typeid(StDouble).hash_code(),typeid(StDouble).hash_code()},"d3_double_double_double");
-const rpn::StrictTypeValidator rpn::StrictTypeValidator::d3_double_double_integer({typeid(StInteger).hash_code(),typeid(StDouble).hash_code(),typeid(StDouble).hash_code()},"d3_double_double_integer");
-const rpn::StrictTypeValidator rpn::StrictTypeValidator::d3_double_integer_double({typeid(StDouble).hash_code(),typeid(StInteger).hash_code(),typeid(StDouble).hash_code()},"d3_double_integer_double");
-const rpn::StrictTypeValidator rpn::StrictTypeValidator::d3_integer_double_double({typeid(StDouble).hash_code(),typeid(StDouble).hash_code(),typeid(StInteger).hash_code()},"d3_integer_double_double");
+const rpn::StrictTypeValidator rpn::StrictTypeValidator::d3_double_double_double({typeid(stack::Double).hash_code(),typeid(stack::Double).hash_code(),typeid(stack::Double).hash_code()},"d3_double_double_double");
+const rpn::StrictTypeValidator rpn::StrictTypeValidator::d3_double_double_integer({typeid(stack::Integer).hash_code(),typeid(stack::Double).hash_code(),typeid(stack::Double).hash_code()},"d3_double_double_integer");
+const rpn::StrictTypeValidator rpn::StrictTypeValidator::d3_double_integer_double({typeid(stack::Double).hash_code(),typeid(stack::Integer).hash_code(),typeid(stack::Double).hash_code()},"d3_double_integer_double");
+const rpn::StrictTypeValidator rpn::StrictTypeValidator::d3_integer_double_double({typeid(stack::Double).hash_code(),typeid(stack::Double).hash_code(),typeid(stack::Integer).hash_code()},"d3_integer_double_double");
 
-const rpn::StrictTypeValidator rpn::StrictTypeValidator::d3_integer_integer_integer({typeid(StInteger).hash_code(),typeid(StInteger).hash_code(),typeid(StInteger).hash_code()},"d3_integer_integer_integer");
-const rpn::StrictTypeValidator rpn::StrictTypeValidator::d3_integer_integer_double({typeid(StDouble).hash_code(),typeid(StInteger).hash_code(),typeid(StInteger).hash_code()},"d3_integer_integer_double");
-const rpn::StrictTypeValidator rpn::StrictTypeValidator::d3_integer_double_integer({typeid(StInteger).hash_code(),typeid(StDouble).hash_code(),typeid(StInteger).hash_code()},"d3_integer_double_integer");
-const rpn::StrictTypeValidator rpn::StrictTypeValidator::d3_double_integer_integer({typeid(StInteger).hash_code(),typeid(StInteger).hash_code(),typeid(StDouble).hash_code()},"d3_double_integer_integer");
+const rpn::StrictTypeValidator rpn::StrictTypeValidator::d3_integer_integer_integer({typeid(stack::Integer).hash_code(),typeid(stack::Integer).hash_code(),typeid(stack::Integer).hash_code()},"d3_integer_integer_integer");
+const rpn::StrictTypeValidator rpn::StrictTypeValidator::d3_integer_integer_double({typeid(stack::Double).hash_code(),typeid(stack::Integer).hash_code(),typeid(stack::Integer).hash_code()},"d3_integer_integer_double");
+const rpn::StrictTypeValidator rpn::StrictTypeValidator::d3_integer_double_integer({typeid(stack::Integer).hash_code(),typeid(stack::Double).hash_code(),typeid(stack::Integer).hash_code()},"d3_integer_double_integer");
+const rpn::StrictTypeValidator rpn::StrictTypeValidator::d3_double_integer_integer({typeid(stack::Integer).hash_code(),typeid(stack::Integer).hash_code(),typeid(stack::Double).hash_code()},"d3_double_integer_integer");
 
-const rpn::StrictTypeValidator rpn::StrictTypeValidator::d3_any_string_object({typeid(StObject).hash_code(),typeid(StString).hash_code(),rpn::StrictTypeValidator::v_anytype},"d3_any_string_object");
-const rpn::StrictTypeValidator rpn::StrictTypeValidator::d3_object_any_string({typeid(StString).hash_code(),rpn::StrictTypeValidator::v_anytype,typeid(StObject).hash_code()},"d3_object_any_string");
-const rpn::StrictTypeValidator rpn::StrictTypeValidator::d3_any_any_boolean({typeid(StBoolean).hash_code(), rpn::StrictTypeValidator::v_anytype, rpn::StrictTypeValidator::v_anytype} ,"d3_any_any_boolean");
-const rpn::StrictTypeValidator rpn::StrictTypeValidator::d3_boolean_any_any({rpn::StrictTypeValidator::v_anytype, rpn::StrictTypeValidator::v_anytype, typeid(StBoolean).hash_code()}, "d3_boolean_any_any");
+const rpn::StrictTypeValidator rpn::StrictTypeValidator::d3_any_string_object({typeid(stack::Object).hash_code(),typeid(stack::String).hash_code(),rpn::StrictTypeValidator::v_anytype},"d3_any_string_object");
+const rpn::StrictTypeValidator rpn::StrictTypeValidator::d3_object_any_string({typeid(stack::String).hash_code(),rpn::StrictTypeValidator::v_anytype,typeid(stack::Object).hash_code()},"d3_object_any_string");
+const rpn::StrictTypeValidator rpn::StrictTypeValidator::d3_any_any_boolean({typeid(stack::Boolean).hash_code(), rpn::StrictTypeValidator::v_anytype, rpn::StrictTypeValidator::v_anytype} ,"d3_any_any_boolean");
+const rpn::StrictTypeValidator rpn::StrictTypeValidator::d3_boolean_any_any({rpn::StrictTypeValidator::v_anytype, rpn::StrictTypeValidator::v_anytype, typeid(stack::Boolean).hash_code()}, "d3_boolean_any_any");
 const rpn::StrictTypeValidator rpn::StrictTypeValidator::d3_vec3_vec3_vec3({typeid(StVec3).hash_code(),typeid(StVec3).hash_code(),typeid(StVec3).hash_code()},"d3_vec3_vec3_vec3");
 
-const rpn::StrictTypeValidator rpn::StrictTypeValidator::d4_integer_double_double_double({typeid(StDouble).hash_code(),typeid(StDouble).hash_code(),typeid(StDouble).hash_code(),typeid(StInteger).hash_code()},"d4_integer_double_double_double");
-const rpn::StrictTypeValidator rpn::StrictTypeValidator::d4_double_double_double_integer({typeid(StInteger).hash_code(),typeid(StDouble).hash_code(),typeid(StDouble).hash_code(),typeid(StDouble).hash_code()},"d4_double_double_double_integer");
+const rpn::StrictTypeValidator rpn::StrictTypeValidator::d4_integer_double_double_double({typeid(stack::Double).hash_code(),typeid(stack::Double).hash_code(),typeid(stack::Double).hash_code(),typeid(stack::Integer).hash_code()},"d4_integer_double_double_double");
+const rpn::StrictTypeValidator rpn::StrictTypeValidator::d4_double_double_double_integer({typeid(stack::Integer).hash_code(),typeid(stack::Double).hash_code(),typeid(stack::Double).hash_code(),typeid(stack::Double).hash_code()},"d4_double_double_double_integer");
 
 const rpn::StackSizeValidator rpn::StackSizeValidator::zero(0);
 const rpn::StackSizeValidator rpn::StackSizeValidator::one(1);

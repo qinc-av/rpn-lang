@@ -16,27 +16,26 @@
 #include <cmath>
 #include "fraction.h"
 
-using StFraction = stack::Fraction;
 
 NATIVE_WORD_DECL(fraction, to_frac_ii) {
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
   auto denom = rpn.stack.pop_integer();
   auto num = rpn.stack.pop_integer();
-  rpn.stack.push(StFraction(num, denom));
+  rpn.stack.push(stack::Fraction(num, denom));
   return rv;
 }
 
 NATIVE_WORD_DECL(fraction, to_frac_d) {
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
   auto dec = rpn.stack.pop_as_double(); // should already be double
-  rpn.stack.push(StFraction(dec));
+  rpn.stack.push(stack::Fraction(dec));
   return rv;
 }
 
 NATIVE_WORD_DECL(fraction, obj_to) {
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
   auto ofrac = rpn.stack.pop();
-  const auto &frac = POP_CAST(StFraction,ofrac);
+  const auto &frac = POP_CAST(stack::Fraction,ofrac);
   rpn.stack.push_integer(frac._numerator);
   rpn.stack.push_integer(frac._denominator);
   return rv;
@@ -45,7 +44,7 @@ NATIVE_WORD_DECL(fraction, obj_to) {
 NATIVE_WORD_DECL(fraction, to_float) {
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
   auto ofrac = rpn.stack.pop();
-  const auto &frac = POP_CAST(StFraction,ofrac);
+  const auto &frac = POP_CAST(stack::Fraction,ofrac);
   rpn.stack.push_double(frac);
   return rv;
 }
@@ -53,27 +52,27 @@ NATIVE_WORD_DECL(fraction, to_float) {
 NATIVE_WORD_DECL(fraction, inv_f) {
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
   auto ofrac = rpn.stack.pop();
-  const auto &frac = POP_CAST(StFraction,ofrac);
-  rpn.stack.push(StFraction(frac._denominator,frac._numerator));
+  const auto &frac = POP_CAST(stack::Fraction,ofrac);
+  rpn.stack.push(stack::Fraction(frac._denominator,frac._numerator));
   return rv;
 }
 
 NATIVE_WORD_DECL(fraction, add_ff) {
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
   auto o2 = rpn.stack.pop();
-  const auto &f2 = POP_CAST(StFraction,o2);
+  const auto &f2 = POP_CAST(stack::Fraction,o2);
   auto o1 = rpn.stack.pop();
-  const auto &f1 = POP_CAST(StFraction,o1);
-  rpn.stack.push(StFraction(f1 + f2));
+  const auto &f1 = POP_CAST(stack::Fraction,o1);
+  rpn.stack.push(stack::Fraction(f1 + f2));
   return rv;
 }
 
 NATIVE_WORD_DECL(fraction, add_fn) {
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
   auto o2 = rpn.stack.pop();
-  const auto &f2 = POP_CAST(StFraction,o2);
+  const auto &f2 = POP_CAST(stack::Fraction,o2);
   auto d1 = rpn.stack.pop_as_double();
-  rpn.stack.push(StFraction(d1 + f2));
+  rpn.stack.push(stack::Fraction(d1 + f2));
   return rv;
 }
 
@@ -81,27 +80,27 @@ NATIVE_WORD_DECL(fraction, add_nf) {
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
   auto d2 = rpn.stack.pop_as_double();
   auto o1 = rpn.stack.pop();
-  const auto &f1 = POP_CAST(StFraction,o1);
-  rpn.stack.push(StFraction(f1 + d2));
+  const auto &f1 = POP_CAST(stack::Fraction,o1);
+  rpn.stack.push(stack::Fraction(f1 + d2));
   return rv;
 }
 
 NATIVE_WORD_DECL(fraction, sub_ff) {
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
   auto o2 = rpn.stack.pop();
-  const auto &f2 = POP_CAST(StFraction,o2);
+  const auto &f2 = POP_CAST(stack::Fraction,o2);
   auto o1 = rpn.stack.pop();
-  const auto &f1 = POP_CAST(StFraction,o1);
-  rpn.stack.push(StFraction(f1 - f2));
+  const auto &f1 = POP_CAST(stack::Fraction,o1);
+  rpn.stack.push(stack::Fraction(f1 - f2));
   return rv;
 }
 
 NATIVE_WORD_DECL(fraction, sub_fn) {
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
   auto o2 = rpn.stack.pop();
-  const auto &f2 = POP_CAST(StFraction,o2);
+  const auto &f2 = POP_CAST(stack::Fraction,o2);
   auto d1 = rpn.stack.pop_as_double();
-  rpn.stack.push(StFraction(d1 - f2));
+  rpn.stack.push(stack::Fraction(d1 - f2));
   return rv;
 }
 
@@ -109,17 +108,17 @@ NATIVE_WORD_DECL(fraction, sub_nf) {
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
   auto d2 = rpn.stack.pop_as_double();
   auto o1 = rpn.stack.pop();
-  const auto &f1 = POP_CAST(StFraction,o1);
-  rpn.stack.push(StFraction(f1 - d2));
+  const auto &f1 = POP_CAST(stack::Fraction,o1);
+  rpn.stack.push(stack::Fraction(f1 - d2));
   return rv;
 }
 
 NATIVE_WORD_DECL(fraction, mult_fn) {
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
   auto o2 = rpn.stack.pop();
-  const auto &f2 = POP_CAST(StFraction,o2);
+  const auto &f2 = POP_CAST(stack::Fraction,o2);
   auto d1 = rpn.stack.pop_as_double();
-  rpn.stack.push(StFraction(d1 * f2));
+  rpn.stack.push(stack::Fraction(d1 * f2));
   return rv;
 }
 
@@ -127,18 +126,18 @@ NATIVE_WORD_DECL(fraction, mult_nf) {
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
   auto d2 = rpn.stack.pop_as_double();
   auto o1 = rpn.stack.pop();
-  const auto &f1 = POP_CAST(StFraction,o1);
-  rpn.stack.push(StFraction(f1 * d2));
+  const auto &f1 = POP_CAST(stack::Fraction,o1);
+  rpn.stack.push(stack::Fraction(f1 * d2));
   return rv;
 }
 
 NATIVE_WORD_DECL(fraction, mult_ff) {
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
   auto o2 = rpn.stack.pop();
-  const auto &f2 = POP_CAST(StFraction,o2);
+  const auto &f2 = POP_CAST(stack::Fraction,o2);
   auto o1 = rpn.stack.pop();
-  const auto &f1 = POP_CAST(StFraction,o1);
-  rpn.stack.push(StFraction(f1 * f2));
+  const auto &f1 = POP_CAST(stack::Fraction,o1);
+  rpn.stack.push(stack::Fraction(f1 * f2));
   return rv;
 }
 
@@ -146,9 +145,9 @@ NATIVE_WORD_DECL(fraction, mult_ff) {
 NATIVE_WORD_DECL(fraction, divide_fn) {
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
   auto o2 = rpn.stack.pop();
-  const auto &f2 = POP_CAST(StFraction,o2);
+  const auto &f2 = POP_CAST(stack::Fraction,o2);
   auto d1 = rpn.stack.pop_as_double();
-  rpn.stack.push(StFraction(d1 / f2));
+  rpn.stack.push(stack::Fraction(d1 / f2));
   return rv;
 }
 
@@ -156,43 +155,43 @@ NATIVE_WORD_DECL(fraction, divide_nf) {
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
   auto d2 = rpn.stack.pop_as_double();
   auto o1 = rpn.stack.pop();
-  const auto &f1 = POP_CAST(StFraction,o1);
-  rpn.stack.push(StFraction(f1 / d2));
+  const auto &f1 = POP_CAST(stack::Fraction,o1);
+  rpn.stack.push(stack::Fraction(f1 / d2));
   return rv;
 }
 
 NATIVE_WORD_DECL(fraction, divide_ff) {
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
   auto o2 = rpn.stack.pop();
-  const auto &f2 = POP_CAST(StFraction,o2);
+  const auto &f2 = POP_CAST(stack::Fraction,o2);
   auto o1 = rpn.stack.pop();
-  const auto &f1 = POP_CAST(StFraction,o1);
-  rpn.stack.push(StFraction(f1 / f2));
+  const auto &f1 = POP_CAST(stack::Fraction,o1);
+  rpn.stack.push(stack::Fraction(f1 / f2));
   return rv;
 }
 
 NATIVE_WORD_DECL(fraction, sq_f) {
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
   auto o = rpn.stack.pop();
-  const auto &f = POP_CAST(StFraction,o);
-  rpn.stack.push(StFraction(f * f));
+  const auto &f = POP_CAST(stack::Fraction,o);
+  rpn.stack.push(stack::Fraction(f * f));
   return rv;
 }
 
 NATIVE_WORD_DECL(fraction, sqrt_f) {
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
   auto o = rpn.stack.pop();
-  const auto &f = POP_CAST(StFraction,o);
-  rpn.stack.push(StFraction(std::sqrt(f)));
+  const auto &f = POP_CAST(stack::Fraction,o);
+  rpn.stack.push(stack::Fraction(std::sqrt(f)));
   return rv;
 }
 
 NATIVE_WORD_DECL(fraction, pow_fn) {
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
   auto o2 = rpn.stack.pop();
-  const auto &f2 = POP_CAST(StFraction,o2);
+  const auto &f2 = POP_CAST(stack::Fraction,o2);
   auto d1 = rpn.stack.pop_as_double();
-  rpn.stack.push(StFraction(std::pow(d1, double(f2))));
+  rpn.stack.push(stack::Fraction(std::pow(d1, double(f2))));
   return rv;
 }
 
@@ -200,39 +199,39 @@ NATIVE_WORD_DECL(fraction, pow_nf) {
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
   auto d2 = rpn.stack.pop_as_double();
   auto o1 = rpn.stack.pop();
-  const auto &f1 = POP_CAST(StFraction,o1);
-  rpn.stack.push(StFraction(std::pow(double(f1), d2)));
+  const auto &f1 = POP_CAST(stack::Fraction,o1);
+  rpn.stack.push(stack::Fraction(std::pow(double(f1), d2)));
   return rv;
 }
 
 NATIVE_WORD_DECL(fraction, pow_ff) {
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
   auto o2 = rpn.stack.pop();
-  double d2 = POP_CAST(StFraction,o2);
+  double d2 = POP_CAST(stack::Fraction,o2);
   auto o1 = rpn.stack.pop();
-  double d1 = POP_CAST(StFraction,o1);
+  double d1 = POP_CAST(stack::Fraction,o1);
   double result = std::pow(d1,d2);
-  rpn.stack.push(StFraction(result));
+  rpn.stack.push(stack::Fraction(result));
   return rv;
 }
 
 NATIVE_WORD_DECL(fraction, neg_f) {
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
   auto o1 = rpn.stack.pop();
-  const auto &f1 = POP_CAST(StFraction,o1);
-  rpn.stack.push(StFraction(f1.neg()));
+  const auto &f1 = POP_CAST(stack::Fraction,o1);
+  rpn.stack.push(stack::Fraction(f1.neg()));
   return rv;
 }
 
-const rpn::StrictTypeValidator frac_validator::d1_frac({typeid(StFraction).hash_code()}, "d1_frac");
-const rpn::StrictTypeValidator frac_validator::d2_frac_frac({typeid(StFraction).hash_code(),typeid(StFraction).hash_code()}, "d2_frac_frac");
-const rpn::StrictTypeValidator frac_validator::d2_int_frac({typeid(StFraction).hash_code(),typeid(StInteger).hash_code()}, "d2_int_frac");
-const rpn::StrictTypeValidator frac_validator::d2_double_frac({typeid(StFraction).hash_code(),typeid(StDouble).hash_code()}, "d2_double_frac");
-const rpn::StrictTypeValidator frac_validator::d2_frac_int({typeid(StInteger).hash_code(),typeid(StFraction).hash_code()}, "d2_frac_int");
-const rpn::StrictTypeValidator frac_validator::d2_frac_double({typeid(StDouble).hash_code(),typeid(StFraction).hash_code()}, "d2_frac_double");
+const rpn::StrictTypeValidator frac_validator::d1_frac({typeid(stack::Fraction).hash_code()}, "d1_frac");
+const rpn::StrictTypeValidator frac_validator::d2_frac_frac({typeid(stack::Fraction).hash_code(),typeid(stack::Fraction).hash_code()}, "d2_frac_frac");
+const rpn::StrictTypeValidator frac_validator::d2_int_frac({typeid(stack::Fraction).hash_code(),typeid(stack::Integer).hash_code()}, "d2_int_frac");
+const rpn::StrictTypeValidator frac_validator::d2_double_frac({typeid(stack::Fraction).hash_code(),typeid(stack::Double).hash_code()}, "d2_double_frac");
+const rpn::StrictTypeValidator frac_validator::d2_frac_int({typeid(stack::Integer).hash_code(),typeid(stack::Fraction).hash_code()}, "d2_frac_int");
+const rpn::StrictTypeValidator frac_validator::d2_frac_double({typeid(stack::Double).hash_code(),typeid(stack::Fraction).hash_code()}, "d2_frac_double");
 const rpn::StrictTypeValidator frac_validator::d5_frac_double_double_double_double({
-    typeid(StDouble).hash_code(),typeid(StDouble).hash_code(),typeid(StDouble).hash_code(),typeid(StDouble).hash_code(),
-      typeid(StFraction).hash_code()}, "d5_frac_double_double_double_double");
+    typeid(stack::Double).hash_code(),typeid(stack::Double).hash_code(),typeid(stack::Double).hash_code(),typeid(stack::Double).hash_code(),
+      typeid(stack::Fraction).hash_code()}, "d5_frac_double_double_double_double");
 
 #define ADD_FRAC_NUM_WORD(rpn, word_token, method)			\
   rpn.addDefinition(word_token, NATIVE_WORD_WDEF(fraction, frac_validator::d2_int_frac, method##_fn, nullptr)); \

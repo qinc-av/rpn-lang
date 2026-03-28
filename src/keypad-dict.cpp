@@ -15,7 +15,7 @@
 #include "../rpn.h"
 
 static const rpn::StrictTypeValidator skAssignValidator({
-    typeid(StString).hash_code(), typeid(StString).hash_code(),typeid(StInteger).hash_code(), typeid(StInteger).hash_code()
+    typeid(stack::String).hash_code(), typeid(stack::String).hash_code(),typeid(stack::Integer).hash_code(), typeid(stack::Integer).hash_code()
       }, "skAssignValidator");
 
 NATIVE_WORD_DECL(keypad, ASSIGN_KEY) {

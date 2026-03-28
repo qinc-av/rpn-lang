@@ -357,8 +357,8 @@ TEST_CASE("stack operations" "stack") {
 
   {
     CustomArray ar1;
-    ar1.add_value(StDouble(9.8));
-    ar1.add_value(StString(std::string("yyz")));
+    ar1.add_value(stack::Double(9.8));
+    ar1.add_value(stack::String(std::string("yyz")));
     g_stack.push(ar1); stackCount++;
     REQUIRE (g_stack.depth() == stackCount);
     auto ar2 = PEEK_CAST(CustomArray,g_stack.peek(1));
@@ -372,12 +372,12 @@ TEST_CASE("stack operations" "stack") {
 
 }
 
-// TEST_CASE("object-test StDouble", "[single-file]") {}
-// TEST_CASE("object-test StInteger", "[single-file]") {}
-// TEST_CASE("object-test StString", "[single-file]") {}
-// TEST_CASE("object-test StBoolean", "[single-file]") {}
-// TEST_CASE("object-test StObject", "[single-file]") {}
-// TEST_CASE("object-test StArray", "[single-file]") {}
+// TEST_CASE("object-test stack::Double", "[single-file]") {}
+// TEST_CASE("object-test stack::Integer", "[single-file]") {}
+// TEST_CASE("object-test stack::String", "[single-file]") {}
+// TEST_CASE("object-test stack::Boolean", "[single-file]") {}
+// TEST_CASE("object-test stack::Object", "[single-file]") {}
+// TEST_CASE("object-test stack::Array", "[single-file]") {}
 // TEST_CASE("object-test CustomArray", "[single-file]") {}
 // TEST_CASE("object-test CustomObject", "[single-file]") {}
 // TEST_CASE("object-test Inheritance", "[single-file]") {}
@@ -386,32 +386,32 @@ TEST_CASE("stack operations" "stack") {
 int
 rpn_main(int ac, char **av) {
 
-  //  g_stack.push(StDouble(3.1415));
+  //  g_stack.push(stack::Double(3.1415));
   g_stack.push_double(3.1415); stackCount++;
   assert (g_stack.depth() == stackCount);
   g_stack.push_string("wxyz"); stackCount++;
   assert (g_stack.depth() == stackCount);
-  //  g_stack.push(StInteger(1234));
+  //  g_stack.push(stack::Integer(1234));
   g_stack.push_integer(1234); stackCount++;
   assert (g_stack.depth() == stackCount);
   {
     CustomArray ar1;
-    ar1.add_value(StDouble(9.8));
-    ar1.add_value(StString(std::string("yyz")));
+    ar1.add_value(stack::Double(9.8));
+    ar1.add_value(stack::String(std::string("yyz")));
     g_stack.push(ar1); stackCount++;
     assert (g_stack.depth() == stackCount);
   }
 
-  g_stack.push(StString(std::string("abcdefg"))); stackCount++;
+  g_stack.push(stack::String(std::string("abcdefg"))); stackCount++;
   assert (g_stack.depth() == stackCount);
 
-  g_stack.push(StDouble(19.2)); stackCount++;
+  g_stack.push(stack::Double(19.2)); stackCount++;
   assert (g_stack.depth() == stackCount);
 
   assert (g_stack.depth() == stackCount);
 
   {
-    double v = g_stack.pop_double(); stackCount--;// std::unique_ptr<StDouble> v(static_cast<StDouble*>(g_stack.pop().release()));
+    double v = g_stack.pop_double(); stackCount--;// std::unique_ptr<stack::Double> v(static_cast<stack::Double*>(g_stack.pop().release()));
     printf("popped double (%f)\n", v);
     assert (g_stack.depth() == stackCount);
 }
@@ -435,12 +435,12 @@ rpn_main(int ac, char **av) {
   g_stack.pick(4); stackCount++;
   g_stack.print("pick(4)");
 
-  g_stack.push(StDouble(2.7)); stackCount++;
+  g_stack.push(stack::Double(2.7)); stackCount++;
   g_stack.dup(); stackCount++;
   assert (g_stack.depth() == stackCount);
   g_stack.print("push(2.7) dup");
 
-  //  g_stack.push(StString("marker"));
+  //  g_stack.push(stack::String("marker"));
   int n = g_stack.depth();
   g_stack.dupn(n);  stackCount+=n;
   assert (g_stack.depth() == stackCount);
@@ -482,7 +482,7 @@ rpn_main(int ac, char **av) {
   assert (g_stack.depth() == stackCount);
   g_stack.print("nipn(7)");
 
-  StObject obj;
+  stack::Object obj;
   n=g_stack.depth();
   for(unsigned i=0; i<n/2; i++) {
     std::string key="v"+std::to_string(i);
@@ -492,7 +492,7 @@ rpn_main(int ac, char **av) {
   g_stack.rolld();
   g_stack.print("object");
 
-  StArray arr;
+  stack::Array arr;
   n=g_stack.depth();
   for(unsigned i=0; i<(n-1); i++) {
     arr.add_value(*g_stack.pop());
@@ -501,7 +501,7 @@ rpn_main(int ac, char **av) {
   g_stack.print("array");
 
   return 0;
-  //  StDouble pi(3.1415); // std::make_unique<double>(3.14159));
+  //  stack::Double pi(3.1415); // std::make_unique<double>(3.14159));
   //  s_g_stack.push_back(TStackTypePointer<StackType>(pi));
   //  s_g_stack.push_back(new TStackType<double>(9.876e23));
   //  s_g_stack.push_back(new TStackType<int>(23));

@@ -39,22 +39,22 @@ rpn::Stack::push(const Object &ob) {
 
 void
 rpn::Stack::push_boolean(const bool &val) {
-  push(StBoolean(val));
+  push(stack::Boolean(val));
 }
 
 void
 rpn::Stack::push_string(const std::string &val) {
-  push(StString(val));
+  push(stack::String(val));
 }
 
 void
 rpn::Stack::push_integer(const int64_t &val) {
-  push(StInteger(val));
+  push(stack::Integer(val));
 }
 
 void
 rpn::Stack::push_double(const double &val) {
-  push(StDouble(val));
+  push(stack::Double(val));
 }
 
 std::unique_ptr<rpn::Stack::Object>
@@ -70,7 +70,7 @@ rpn::Stack::pop() {
 bool
 rpn::Stack::pop_boolean() {
   auto tos = pop();
-  auto *typed = dynamic_cast<StBoolean*>(tos.get());
+  auto *typed = dynamic_cast<stack::Boolean*>(tos.get());
   if (typed) {
     return bool(*typed);
   }
@@ -80,7 +80,7 @@ rpn::Stack::pop_boolean() {
 std::string
 rpn::Stack::pop_string() {
   auto tos = pop();
-  auto *typed = dynamic_cast<StString*>(tos.get());
+  auto *typed = dynamic_cast<stack::String*>(tos.get());
   if (typed) {
     return std::string(*typed);
   }
@@ -90,12 +90,12 @@ rpn::Stack::pop_string() {
 int64_t
 rpn::Stack::pop_integer() {
   auto tos = pop();
-  auto *typed = dynamic_cast<StInteger*>(tos.get());
+  auto *typed = dynamic_cast<stack::Integer*>(tos.get());
   if (typed) {
     return *typed;
   }
   auto h1 =typeid(tos.get()).hash_code();
-  auto h2 = typeid(StInteger*).hash_code();
+  auto h2 = typeid(stack::Integer*).hash_code();
   std::string msg("top of stack not double (tos ");
   msg += std::to_string(h1);
   msg += ") (needed ";
@@ -107,12 +107,12 @@ rpn::Stack::pop_integer() {
 double
 rpn::Stack::pop_double() {
   auto tos = pop();
-  auto *typed = dynamic_cast<StDouble*>(tos.get());
+  auto *typed = dynamic_cast<stack::Double*>(tos.get());
   if (typed) {
     return double(*typed);
   }
   auto h1 =typeid(tos.get()).hash_code();
-  auto h2 = typeid(StDouble*).hash_code();
+  auto h2 = typeid(stack::Double*).hash_code();
   std::string msg("top of stack not double (tos ");
   msg += std::to_string(h1);
   msg += ") (needed ";
@@ -141,10 +141,10 @@ rpn::Stack::pop_as_boolean() {
   auto raw = tos.get();
   bool val=false;
 
-  auto *bp = dynamic_cast<StBoolean*>(raw);
-  auto *sp = dynamic_cast<StString*>(raw);
-  auto *dp = dynamic_cast<StDouble*>(raw);
-  auto *ip = dynamic_cast<StInteger*>(raw);
+  auto *bp = dynamic_cast<stack::Boolean*>(raw);
+  auto *sp = dynamic_cast<stack::String*>(raw);
+  auto *dp = dynamic_cast<stack::Double*>(raw);
+  auto *ip = dynamic_cast<stack::Integer*>(raw);
 
   if (bp) {
     val = *bp;
@@ -176,13 +176,13 @@ rpn::Stack::peek(int n) const {
 
 bool
 rpn::Stack::peek_boolean(int n) const {
-  auto const &sv = dynamic_cast<const StBoolean&>(peek(n));
+  auto const &sv = dynamic_cast<const stack::Boolean&>(peek(n));
   return sv;
 }
 
 std::string
 rpn::Stack::peek_string(int n) const {
-  auto const &sv = dynamic_cast<const StString&>(peek(n));
+  auto const &sv = dynamic_cast<const stack::String&>(peek(n));
   return sv;
 }
 
@@ -193,13 +193,13 @@ rpn::Stack::peek_for_display(int n) const {
 
 int64_t
 rpn::Stack::peek_integer(int n) const {
-  auto const &sv = dynamic_cast<const StInteger&>(peek(n));
+  auto const &sv = dynamic_cast<const stack::Integer&>(peek(n));
   return sv;
 }
 
 double
 rpn::Stack::peek_double(int n) const {
-  auto const &sv = dynamic_cast<const StDouble&>(peek(n));
+  auto const &sv = dynamic_cast<const stack::Double&>(peek(n));
   return sv;
 }
 

@@ -227,7 +227,7 @@ rpn::Interp::addTimecodeWords() {
 
 const rpn::StrictTypeValidator timecode_validator::d1_tc({typeid(stack::Timecode).hash_code()}, "d1_tc");
 const rpn::StrictTypeValidator timecode_validator::d2_tc_tc({typeid(stack::Timecode).hash_code(),typeid(stack::Timecode).hash_code()}, "d2_tc_tc");
-const rpn::StrictTypeValidator timecode_validator::d2_tc_double({typeid(StDouble).hash_code(),typeid(stack::Timecode).hash_code()}, "d2_tc_double");
-const rpn::StrictTypeValidator timecode_validator::d2_double_tc({typeid(stack::Timecode).hash_code(),typeid(StDouble).hash_code()}, "d2_double_tc");
+const rpn::StrictTypeValidator timecode_validator::d2_tc_double({typeid(stack::Double).hash_code(),typeid(stack::Timecode).hash_code()}, "d2_tc_double");
+const rpn::StrictTypeValidator timecode_validator::d2_double_tc({typeid(stack::Timecode).hash_code(),typeid(stack::Double).hash_code()}, "d2_double_tc");
 
 /* end of QInc/Projects/color-calc/src/libs/rpn-lang/src/timecode-dict.cpp */

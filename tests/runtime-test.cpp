@@ -997,12 +997,12 @@ NEXT
 #include "validator-tests.h"
 
 static const std::map<std::size_t,std::string> sk_hashMap = {
-  { typeid(StDouble).hash_code(), "Double" },
-  { typeid(StInteger).hash_code(), "Integer" },
-  { typeid(StBoolean).hash_code(), "Boolean" },
-  { typeid(StString).hash_code(), "String" },
-  { typeid(StObject).hash_code(), "Object" },
-  { typeid(StArray).hash_code(), "Array" },
+  { typeid(stack::Double).hash_code(), "Double" },
+  { typeid(stack::Integer).hash_code(), "Integer" },
+  { typeid(stack::Boolean).hash_code(), "Boolean" },
+  { typeid(stack::String).hash_code(), "String" },
+  { typeid(stack::Object).hash_code(), "Object" },
+  { typeid(stack::Array).hash_code(), "Array" },
   { typeid(stack::Fraction).hash_code(), "Fraction" },
   { typeid(stack::Timecode).hash_code(), "Timecode" },
 };
@@ -1095,7 +1095,7 @@ TEST_CASE( "object", "types" ) {
     g_rpn.stack.clear();
     auto st = g_rpn.sync_eval(line);
     auto &so = g_rpn.stack.peek(1);
-    REQUIRE_THROWS_AS( dynamic_cast<StObject&>(so),
+    REQUIRE_THROWS_AS( dynamic_cast<stack::Object&>(so),
 		       std::bad_cast);
   }
 
@@ -1311,7 +1311,7 @@ TEST_CASE("while/until loops", "control") {
 
 TEST_CASE("literal syntax", "types") {
 
-  // String literal "..." pushes StString
+  // String literal "..." pushes stack::String
   {
     g_rpn.stack.clear();
     auto st = g_rpn.sync_eval("\"hello\"");
@@ -1338,13 +1338,13 @@ TEST_CASE("literal syntax", "types") {
     REQUIRE( "abcdefg" == g_rpn.stack.peek_string(1) );
   }
 
-  // Name literal 'x' pushes StName
+  // Name literal 'x' pushes stack::Name
   {
     g_rpn.stack.clear();
     auto st = g_rpn.sync_eval("'myvar'");
     REQUIRE( st == rpn::WordDefinition::Result::ok );
     REQUIRE( 1 == g_rpn.stack.depth() );
-    // StName operator string() returns the name
+    // stack::Name operator string() returns the name
     REQUIRE( "myvar" == std::string(g_rpn.stack.peek(1)) );
   }
 
@@ -1394,7 +1394,7 @@ TEST_CASE("literal syntax", "types") {
 
 TEST_CASE("global variables STO/RCL", "variables") {
 
-  // STO and RCL with StName ('x' syntax)
+  // STO and RCL with stack::Name ('x' syntax)
   {
     g_rpn.stack.clear();
     auto st = g_rpn.sync_eval("42. 'x' STO");
@@ -1407,7 +1407,7 @@ TEST_CASE("global variables STO/RCL", "variables") {
     REQUIRE( 42.0 == g_rpn.stack.peek_double(1) );
   }
 
-  // STO and RCL also accept StString ("x" syntax — backward compat for embedders)
+  // STO and RCL also accept stack::String ("x" syntax — backward compat for embedders)
   {
     g_rpn.stack.clear();
     auto st = g_rpn.sync_eval("99. \"mystr\" STO");
@@ -1430,7 +1430,7 @@ TEST_CASE("global variables STO/RCL", "variables") {
     g_rpn.sync_eval("'myvar' PURGE");
   }
 
-  // VARS returns StName array of all global variable names
+  // VARS returns stack::Name array of all global variable names
   {
     g_rpn.stack.clear();
     g_rpn.sync_eval("'x' PURGE");
@@ -1635,7 +1635,7 @@ TEST_CASE("deparse round-trips", "display") {
     g_rpn.sync_eval("'myvar' DEPARSE EVAL");
     REQUIRE( g_rpn.stack.depth() == 1 );
     auto obj = g_rpn.stack.pop();
-    auto *n = dynamic_cast<StName*>(obj.get());
+    auto *n = dynamic_cast<stack::Name*>(obj.get());
     REQUIRE( n != nullptr );
     REQUIRE( std::string(*n) == "myvar" );
   }
@@ -1667,7 +1667,7 @@ TEST_CASE("deparse round-trips", "display") {
     g_rpn.sync_eval("1. 2. 3. 3 ->ARRAY DEPARSE EVAL");
     REQUIRE( g_rpn.stack.depth() == 1 );
     auto obj = g_rpn.stack.pop();
-    auto *arr = dynamic_cast<StArray*>(obj.get());
+    auto *arr = dynamic_cast<stack::Array*>(obj.get());
     REQUIRE( arr != nullptr );
     REQUIRE( arr->val().size() == 3 );
   }
@@ -1847,46 +1847,46 @@ TEST_CASE("word introspection", "API") {
 TEST_CASE("json type and words", "types") {
   rpn::Interp rpn(false);
 
-  // ->JSON on a double produces a StJson containing the number
+  // ->JSON on a double produces a stack::Json containing the number
   {
     rpn.sync_eval("3.14 ->JSON");
     REQUIRE( rpn.stack.depth() == 1 );
     auto jobj = rpn.stack.pop();
-    auto *j = dynamic_cast<StJson *>(jobj.get());
+    auto *j = dynamic_cast<stack::Json *>(jobj.get());
     REQUIRE( j != nullptr );
     REQUIRE( j->is_number_float() );
     REQUIRE_THAT( j->get<double>(), Catch::Matchers::WithinAbs(3.14, 1e-10) );
   }
 
-  // ->JSON on an integer produces a StJson containing the integer
+  // ->JSON on an integer produces a stack::Json containing the integer
   {
     rpn.sync_eval("0d42 ->JSON");
     REQUIRE( rpn.stack.depth() == 1 );
     auto jobj = rpn.stack.pop();
-    auto *j = dynamic_cast<StJson *>(jobj.get());
+    auto *j = dynamic_cast<stack::Json *>(jobj.get());
     REQUIRE( j != nullptr );
     REQUIRE( j->is_number_integer() );
     REQUIRE( j->get<int64_t>() == 42 );
   }
 
-  // ->JSON on a boolean produces a StJson boolean
+  // ->JSON on a boolean produces a stack::Json boolean
   {
     rpn.sync_eval("TRUE ->JSON");
     REQUIRE( rpn.stack.depth() == 1 );
     auto jobj = rpn.stack.pop();
-    auto *j = dynamic_cast<StJson *>(jobj.get());
+    auto *j = dynamic_cast<stack::Json *>(jobj.get());
     REQUIRE( j != nullptr );
     REQUIRE( j->is_boolean() );
     REQUIRE( j->get<bool>() == true );
   }
 
-  // ->JSON on a string produces a StJson string
+  // ->JSON on a string produces a stack::Json string
   {
     rpn.stack.push_string("hello");
     rpn.sync_eval("->JSON");
     REQUIRE( rpn.stack.depth() == 1 );
     auto jobj = rpn.stack.pop();
-    auto *j = dynamic_cast<StJson *>(jobj.get());
+    auto *j = dynamic_cast<stack::Json *>(jobj.get());
     REQUIRE( j != nullptr );
     REQUIRE( j->is_string() );
     REQUIRE( j->get<std::string>() == "hello" );
@@ -1894,7 +1894,7 @@ TEST_CASE("json type and words", "types") {
 
   // JSON-> on a scalar float unpacks to native double
   {
-    rpn.stack.push(StJson(nlohmann::json(2.718)));
+    rpn.stack.push(stack::Json(nlohmann::json(2.718)));
     rpn.sync_eval("JSON->");
     REQUIRE( rpn.stack.depth() == 1 );
     REQUIRE_THAT( rpn.stack.peek_as_double(1).value(), Catch::Matchers::WithinAbs(2.718, 1e-10) );
@@ -1903,7 +1903,7 @@ TEST_CASE("json type and words", "types") {
 
   // JSON-> on a scalar integer unpacks to native integer
   {
-    rpn.stack.push(StJson(nlohmann::json(int64_t(99))));
+    rpn.stack.push(stack::Json(nlohmann::json(int64_t(99))));
     rpn.sync_eval("JSON->");
     REQUIRE( rpn.stack.depth() == 1 );
     REQUIRE( rpn.stack.peek_integer(1) == 99 );
@@ -1912,7 +1912,7 @@ TEST_CASE("json type and words", "types") {
 
   // JSON-> on a scalar bool unpacks to native boolean
   {
-    rpn.stack.push(StJson(nlohmann::json(false)));
+    rpn.stack.push(stack::Json(nlohmann::json(false)));
     rpn.sync_eval("JSON->");
     REQUIRE( rpn.stack.depth() == 1 );
     REQUIRE( rpn.stack.peek_boolean(1) == false );
@@ -1921,43 +1921,43 @@ TEST_CASE("json type and words", "types") {
 
   // JSON-> on a scalar string unpacks to native string
   {
-    rpn.stack.push(StJson(nlohmann::json(std::string("world"))));
+    rpn.stack.push(stack::Json(nlohmann::json(std::string("world"))));
     rpn.sync_eval("JSON->");
     REQUIRE( rpn.stack.depth() == 1 );
     REQUIRE( rpn.stack.peek_string(1) == "world" );
     rpn.stack.drop();
   }
 
-  // JSON-> on a JSON array unpacks elements (as StJson) plus integer count.
+  // JSON-> on a JSON array unpacks elements (as stack::Json) plus integer count.
   // [10, 20, 30] → stack (bottom→top): 30, 20, 10, count=3
   // TOS = count; first element of original array is just below count.
   {
     nlohmann::json arr = nlohmann::json::array({10, 20, 30});
-    rpn.stack.push(StJson(arr));
+    rpn.stack.push(stack::Json(arr));
     rpn.sync_eval("JSON->");
     REQUIRE( rpn.stack.depth() == 4 );
     REQUIRE( rpn.stack.peek_integer(1) == 3 );  // TOS = count
     rpn.stack.drop();  // drop count
     // Now TOS = first element (10), then 20, then 30 (bottom)
     auto jobj = rpn.stack.pop();
-    REQUIRE( dynamic_cast<StJson *>(jobj.get())->get<int>() == 10 );  // first element on TOS
+    REQUIRE( dynamic_cast<stack::Json *>(jobj.get())->get<int>() == 10 );  // first element on TOS
     rpn.stack.clear();
   }
 
   // JSON-> on a JSON object unpacks (value, key) pairs plus count.
-  // {"a":42} → stack (bottom→top): value(StJson=42), key("a"), count=1
+  // {"a":42} → stack (bottom→top): value(stack::Json=42), key("a"), count=1
   {
     nlohmann::json obj = {{"a", 42}};
-    rpn.stack.push(StJson(obj));
+    rpn.stack.push(stack::Json(obj));
     rpn.sync_eval("JSON->");
-    // depth = 3: value(StJson), key(StString), count(StInteger)
+    // depth = 3: value(stack::Json), key(stack::String), count(stack::Integer)
     REQUIRE( rpn.stack.depth() == 3 );
     REQUIRE( rpn.stack.peek_integer(1) == 1 );   // TOS = count
     REQUIRE( rpn.stack.peek_string(2) == "a" );  // NOS = key
     rpn.stack.drop();  // drop count
     rpn.stack.drop();  // drop key
     auto vobj = rpn.stack.pop();
-    REQUIRE( dynamic_cast<StJson *>(vobj.get())->get<int>() == 42 );
+    REQUIRE( dynamic_cast<stack::Json *>(vobj.get())->get<int>() == 42 );
     rpn.stack.clear();
   }
 

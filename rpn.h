@@ -22,6 +22,7 @@
 #include <deque>
 #include <map>
 #include <cmath>
+#include <complex>
 #include <format>
 #include <stdexcept>
 #include <functional>
@@ -714,16 +715,41 @@ public:
     return {{"type",type_name()},{"display",dump()},{"deparse",deparse()},{"data",static_cast<const nlohmann::json &>(*this)}};
   }
 };
-} // namespace stack
+class Complex : public rpn::Stack::Object, public std::complex<double> {
+public:
+  Complex() = delete;
+  Complex(double re, double im) : std::complex<double>(re,im) {}
+  Complex(const Complex &cx) : std::complex<double>(cx) {}
+  Complex(const std::complex<double> &cx) : std::complex<double>(cx) {}
+  virtual bool operator==(const rpn::Stack::Object &orhs) const override {
+    auto &rhs = PEEK_CAST(const Complex, orhs);
+    return ((const std::complex<double> &)*this) == ((const std::complex<double> &)rhs);
+  }
+  virtual std::unique_ptr<rpn::Stack::Object> deep_copy() const override { return std::make_unique<Complex>(*this); };
+  virtual operator std::string() const override {
+    std::string rv = rpn::to_string(this->real());
+    if (this->imag() > 0) rv += "+";
+    rv += rpn::to_string(this->imag());
+    rv += "i";
+    return rv;
+  }
+  virtual std::string deparse() const override {
+    auto dp = [](double v) {
+      auto s = std::format("{:.17g}", v);
+      if (s.find_first_not_of("-0123456789") == std::string::npos) s += ".";
+      return s;
+    };
+    return dp(this->real()) + " " + dp(this->imag()) + " ->COMPLEX";
+  }
+  virtual std::string to_latex() const override { return (std::string)(*this); }
+  virtual std::string type_name() const override { return "complex"; }
+  virtual nlohmann::json to_json() const override {
+    return {{"type",type_name()},{"display",(std::string)(*this)},{"deparse",deparse()},
+            {"data",{{"re",this->real()},{"im",this->imag()}}}};
+  }
+};
 
-using StDouble = stack::Double;
-using StInteger = stack::Integer;
-using StBoolean = stack::Boolean;
-using StString = stack::String;
-using StName = stack::Name;
-using StObject = stack::Object;
-using StArray = stack::Array;
-using StJson = stack::Json;
+} // namespace stack
 
 class StVec3 : public rpn::Stack::Object {
 public:
