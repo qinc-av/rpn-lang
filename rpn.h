@@ -201,8 +201,15 @@ namespace rpn {
     static const StrictTypeValidator d4_integer_double_double_double;
     static const StrictTypeValidator d4_double_double_double_integer;
 
-    static const size_t v_anytype;
-    //    static const size_t v_numbertype;  // is harder than it sounds...
+    // "number" validators — match either stack::Double or stack::Integer.
+    // Use these for count/index parameters where the caller uses pop_as_integer()
+    // or pop_as_double() to coerce.  Do NOT use for words that require strictly
+    // integer semantics (binary ops, radix, wordsize — keep d1_integer there).
+    static const StrictTypeValidator d1_number;
+    static const StrictTypeValidator d2_number_number;
+
+    static const size_t v_anytype;    // matches any type (base class hash, never instantiated directly)
+    static const size_t v_numbertype; // matches stack::Double or stack::Integer (sentinel value 1)
 
   StrictTypeValidator(const std::vector<size_t> &types, const std::string name) : StackValidator(name),  _types(types) {}
     virtual bool operator()(const std::vector<size_t> &types, rpn::Stack &stack) const override;

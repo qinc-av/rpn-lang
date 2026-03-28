@@ -1062,6 +1062,7 @@ rpn::Interp::Privates::add_private_words() {
   // Extended types (complex, fraction, timecode) are registered by their
   // respective addXxxWords() via rpn::Interp::registerType().
   _typeRegistry["any"]     = rpn::StrictTypeValidator::v_anytype;
+  _typeRegistry["number"]  = rpn::StrictTypeValidator::v_numbertype;
   _typeRegistry["double"]  = typeid(stack::Double).hash_code();
   _typeRegistry["integer"] = typeid(stack::Integer).hash_code();
   _typeRegistry["boolean"] = typeid(stack::Boolean).hash_code();
@@ -1658,9 +1659,13 @@ rpn::Interp::parseFile(const std::string &path, std::function<void(rpn::WordDefi
 
 bool
 rpn::StrictTypeValidator::operator()(const std::vector<size_t> &types, rpn::Stack &stack) const {
+  static const size_t dbl_h = typeid(stack::Double).hash_code();
+  static const size_t int_h = typeid(stack::Integer).hash_code();
   bool rv = types.size() >= _types.size();
   for(auto si=types.cbegin(), wi=_types.cbegin(); rv==true && wi!=_types.cend(); si++, wi++) {
-    rv &= ((*wi==v_anytype) || (*si == *wi));
+    rv &= ((*wi == v_anytype)
+        || (*wi == v_numbertype && (*si == dbl_h || *si == int_h))
+        || (*si == *wi));
   }
   return rv;
 }
@@ -1711,7 +1716,8 @@ rpn::StackSizeValidator::operator()(const std::vector<size_t> &types, rpn::Stack
  * canned validators for common stack depth/types
  *
  */
-const size_t rpn::StrictTypeValidator::v_anytype = typeid(rpn::Stack::Object).hash_code();
+const size_t rpn::StrictTypeValidator::v_anytype   = typeid(rpn::Stack::Object).hash_code();
+const size_t rpn::StrictTypeValidator::v_numbertype = 1; // sentinel: matches stack::Double or stack::Integer
 const rpn::StrictTypeValidator rpn::StrictTypeValidator::d1_double({typeid(stack::Double).hash_code()},"d1_double");
 const rpn::StrictTypeValidator rpn::StrictTypeValidator::d1_integer({typeid(stack::Integer).hash_code()},"d1_integer");
 const rpn::StrictTypeValidator rpn::StrictTypeValidator::d1_boolean({typeid(stack::Boolean).hash_code()},"d1_boolean");
@@ -1760,6 +1766,12 @@ const rpn::StrictTypeValidator rpn::StrictTypeValidator::d3_vec3_vec3_vec3({type
 
 const rpn::StrictTypeValidator rpn::StrictTypeValidator::d4_integer_double_double_double({typeid(stack::Double).hash_code(),typeid(stack::Double).hash_code(),typeid(stack::Double).hash_code(),typeid(stack::Integer).hash_code()},"d4_integer_double_double_double");
 const rpn::StrictTypeValidator rpn::StrictTypeValidator::d4_double_double_double_integer({typeid(stack::Integer).hash_code(),typeid(stack::Double).hash_code(),typeid(stack::Double).hash_code(),typeid(stack::Double).hash_code()},"d4_double_double_double_integer");
+
+// "number" validators — match stack::Double or stack::Integer via v_numbertype sentinel.
+#define NUM rpn::StrictTypeValidator::v_numbertype
+const rpn::StrictTypeValidator rpn::StrictTypeValidator::d1_number({NUM},"d1_number");
+const rpn::StrictTypeValidator rpn::StrictTypeValidator::d2_number_number({NUM,NUM},"d2_number_number");
+#undef NUM
 
 const rpn::StackSizeValidator rpn::StackSizeValidator::zero(0);
 const rpn::StackSizeValidator rpn::StackSizeValidator::one(1);
