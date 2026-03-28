@@ -60,6 +60,10 @@ const rpn::StrictTypeValidator math_validator::d1_complex({typeid(stack::Complex
 #define ADD_MATH_UNARY_NUMBER_WDEF(r, symbol, double_func, integer_func) \
   ADD_NATIVE_1_NUMBER_WDEF(math, r, symbol, double_func, integer_func, nullptr)
 
+// For unary math words that accept integer or double and always return double (e.g. transcendentals).
+#define ADD_MATH_UNARY_FLOAT_WDEF(r, symbol, func) \
+  ADD_NATIVE_1_FLOAT_WDEF(math, r, symbol, func, nullptr)
+
 static double deg_to_rad(const double &deg) {
   return deg * (M_PI / 180.);
 }
@@ -313,37 +317,27 @@ rpn::Interp::addMathWords() {
   ADD_MATH_BINARY_NUMBER_WDEF(rpn, "*", multiply, imultiply);
   ADD_MATH_BINARY_NUMBER_WDEF(rpn, "/", divide, idivide);
   ADD_MATH_BINARY_NUMBER_WDEF(rpn, "^", pow, ipow);
-  // ATAN2 accepts any two numeric types; both paths use the mode-aware body.
-  rpn.addDefinition("ATAN2", { rpn::StrictTypeValidator::d2_double_double,   NATIVE_WORD_FN(math, trig_atan2), nullptr });
-  rpn.addDefinition("ATAN2", { rpn::StrictTypeValidator::d2_integer_double,  NATIVE_WORD_FN(math, trig_atan2), nullptr });
-  rpn.addDefinition("ATAN2", { rpn::StrictTypeValidator::d2_double_integer,  NATIVE_WORD_FN(math, trig_atan2), nullptr });
-  rpn.addDefinition("ATAN2", { rpn::StrictTypeValidator::d2_integer_integer, NATIVE_WORD_FN(math, trig_atan2), nullptr });
+  ADD_NATIVE_2_FLOAT_WDEF(math, rpn, "ATAN2", trig_atan2, nullptr);
   ADD_MATH_BINARY_NUMBER_WDEF(rpn, "MIN", fmin, imin);
   ADD_MATH_BINARY_NUMBER_WDEF(rpn, "MAX", fmax, imax);
   ADD_MATH_BINARY_NUMBER_WDEF(rpn, "MOD", dmod, imod);
   ADD_MATH_UNARY_NUMBER_WDEF(rpn, "ABS", dabs, iabs);
 
-  ADD_MATH_UNARY_NUMBER_WDEF(rpn, "INV", inverse, inverse);
-  ADD_MATH_UNARY_NUMBER_WDEF(rpn, "SQRT", sqrt, sqrt);
-  // Mode-aware trig words: both double and integer inputs accepted (pop_as_double handles cast).
-#define ADD_TRIG_WDEF(sym, fn) \
-  rpn.addDefinition(sym, { rpn::StrictTypeValidator::d1_double,  NATIVE_WORD_FN(math, fn), nullptr }); \
-  rpn.addDefinition(sym, { rpn::StrictTypeValidator::d1_integer, NATIVE_WORD_FN(math, fn), nullptr })
-  ADD_TRIG_WDEF("COS",  trig_cos);
-  ADD_TRIG_WDEF("SIN",  trig_sin);
-  ADD_TRIG_WDEF("TAN",  trig_tan);
-  ADD_TRIG_WDEF("ACOS", trig_acos);
-  ADD_TRIG_WDEF("ASIN", trig_asin);
-  ADD_TRIG_WDEF("ATAN", trig_atan);
-#undef ADD_TRIG_WDEF
-  ADD_MATH_UNARY_NUMBER_WDEF(rpn, "EXP", exp, exp);
-  ADD_MATH_UNARY_NUMBER_WDEF(rpn, "LN", log, log);
-  ADD_MATH_UNARY_NUMBER_WDEF(rpn, "LN2", ln2, ln2);
-  ADD_MATH_UNARY_NUMBER_WDEF(rpn, "LOG", log10, log10);
-  ADD_MATH_UNARY_NUMBER_WDEF(rpn, "CHS", change_sign, ichange_sign);
-
-  ADD_MATH_UNARY_NUMBER_WDEF(rpn, "D->R", deg_to_rad, deg_to_rad);
-  ADD_MATH_UNARY_NUMBER_WDEF(rpn, "R->D", rad_to_deg, rad_to_deg);
+  ADD_MATH_UNARY_FLOAT_WDEF(rpn, "INV",  inverse);
+  ADD_MATH_UNARY_FLOAT_WDEF(rpn, "SQRT", sqrt);
+  ADD_MATH_UNARY_FLOAT_WDEF(rpn, "COS",  trig_cos);
+  ADD_MATH_UNARY_FLOAT_WDEF(rpn, "SIN",  trig_sin);
+  ADD_MATH_UNARY_FLOAT_WDEF(rpn, "TAN",  trig_tan);
+  ADD_MATH_UNARY_FLOAT_WDEF(rpn, "ACOS", trig_acos);
+  ADD_MATH_UNARY_FLOAT_WDEF(rpn, "ASIN", trig_asin);
+  ADD_MATH_UNARY_FLOAT_WDEF(rpn, "ATAN", trig_atan);
+  ADD_MATH_UNARY_FLOAT_WDEF(rpn, "EXP",  exp);
+  ADD_MATH_UNARY_FLOAT_WDEF(rpn, "LN",   log);
+  ADD_MATH_UNARY_FLOAT_WDEF(rpn, "LN2",  ln2);
+  ADD_MATH_UNARY_FLOAT_WDEF(rpn, "LOG",  log10);
+  ADD_MATH_UNARY_NUMBER_WDEF(rpn, "CHS", change_sign, ichange_sign);  // integer CHS preserves type
+  ADD_MATH_UNARY_FLOAT_WDEF(rpn, "D->R", deg_to_rad);
+  ADD_MATH_UNARY_FLOAT_WDEF(rpn, "R->D", rad_to_deg);
 
   // these don't really make sense on Integers, but maybe we should
   // allow it anyway?

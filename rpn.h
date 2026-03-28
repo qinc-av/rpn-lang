@@ -893,6 +893,13 @@ public:
   r.addDefinition(symbol, NATIVE_WORD_WDEF(mangler, rpn::StrictTypeValidator::d1_double, double_func, ptr)); \
   r.addDefinition(symbol, NATIVE_WORD_WDEF(mangler, rpn::StrictTypeValidator::d1_integer, integer_func, ptr))
 
+// For words that accept integer or double and always produce a double result (single registration).
+#define ADD_NATIVE_1_FLOAT_WDEF(mangler, r, symbol, func, ptr) \
+  r.addDefinition(symbol, NATIVE_WORD_WDEF(mangler, rpn::StrictTypeValidator::d1_number, func, ptr))
+
+#define ADD_NATIVE_2_FLOAT_WDEF(mangler, r, symbol, func, ptr) \
+  r.addDefinition(symbol, NATIVE_WORD_WDEF(mangler, rpn::StrictTypeValidator::d2_number_number, func, ptr))
+
 #define ADD_NATIVE_3_NUMBER_WDEF(mangler, r, symbol, double_func, integer_func, ptr) \
   r.addDefinition(symbol, NATIVE_WORD_WDEF(mangler, rpn::StrictTypeValidator::d3_double_double_double, double_func, ptr)); \
   r.addDefinition(symbol, NATIVE_WORD_WDEF(mangler, rpn::StrictTypeValidator::d3_integer_double_double, double_func, ptr)); \

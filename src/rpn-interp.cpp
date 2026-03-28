@@ -1085,10 +1085,10 @@ rpn::Interp::Privates::add_private_words() {
 
   _rtDictionary.emplace("TRUE", rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, BOOL_TRUE), this });
   _rtDictionary.emplace("FALSE", rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, BOOL_FALSE), this });
-  _rtDictionary.emplace("->PRECISION", rpn::WordDefinition { rpn::StrictTypeValidator::d1_double, NATIVE_WORD_FN(private, to_precision), this });
+  _rtDictionary.emplace("->PRECISION", rpn::WordDefinition { rpn::StrictTypeValidator::d1_number, NATIVE_WORD_FN(private, to_precision), this });
   _rtDictionary.emplace("PRECISION->", rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, precision_to), this });
 
-  _rtDictionary.emplace("->RADIX", rpn::WordDefinition { rpn::StrictTypeValidator::d1_double, NATIVE_WORD_FN(private, to_radix), this });
+  _rtDictionary.emplace("->RADIX", rpn::WordDefinition { rpn::StrictTypeValidator::d1_number, NATIVE_WORD_FN(private, to_radix), this });
   _rtDictionary.emplace("RADIX->", rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, radix_to), this });
 
   _rtDictionary.emplace("<<",    rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, LSHIFT_LAMBDA), this });
