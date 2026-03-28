@@ -11,6 +11,8 @@
 // Swift 5.9+ C++ interoperability is used directly — no ObjC bridge,
 // no bridging header, no .mm files.  The C++ RpnInterp class (the
 // #else branch of rpn-hl.h) is imported directly into Swift.
+// Consuming Swift targets set .interoperabilityMode(.cxx) in their
+// own swiftSettings.
 //
 // The RP-42 Xcode project uses rpn-hl.mm (ObjC++ bridge) for its own
 // reasons; that is separate from and unaffected by this package.
@@ -30,9 +32,7 @@
 //   2. Decide whether the Swift layer calls RpnInterp directly or wraps
 //      it in a @MainActor Swift class for async/UI use.
 //
-//   3. Add .build/ to .gitignore (done).
-//
-//   4. Verify CXX_STANDARD 20 is honoured on all target platforms.
+//   3. Verify CXX_STANDARD 20 is honoured on all target platforms.
 
 import PackageDescription
 
@@ -61,28 +61,17 @@ let package = Package(
         .macOS(.v13),
     ],
     products: [
-        .library(name: "RpnLang", targets: ["RpnLangCXX", "RpnLang"]),
+        .library(name: "RpnLang", targets: ["RpnLang"]),
     ],
     targets: [
-        // C++ library — all rpn-lang sources
         .target(
-            name: "RpnLangCXX",
+            name: "RpnLang",
             path: ".",
             sources: sources,
             publicHeadersPath: "swiftpm-include", // TODO: create — see TODO #1 above
             cxxSettings: [
                 .headerSearchPath("."),            // rpn.h, rpn-hl.h
                 .headerSearchPath("third_party"),  // nlohmann/json
-            ]
-        ),
-        // Swift wrapper — imports RpnLangCXX via C++ interop
-        // TODO: add Sources/RpnLang/ with Swift files as needed
-        .target(
-            name: "RpnLang",
-            dependencies: ["RpnLangCXX"],
-            path: "Sources/RpnLang",  // TODO: create
-            swiftSettings: [
-                .interoperabilityMode(.cxx),
             ]
         ),
     ],
