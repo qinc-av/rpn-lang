@@ -10,8 +10,7 @@
  *
  * @brief   ::stack::Vector and ::stack::Matrix words for rpn-lang.
  *
- * Types (stack::Vector, stack::Matrix) are defined locally here, backed by
- * math::matrix<double> (Techsoft Matrix TCL Lite v1.13, src/matrix.h).
+ * Types (stack::Vector, stack::Matrix) are defined in rpn-matrix.h (Eigen backend).
  * Validators use a local matrix_validator:: namespace (same pattern as
  * stack::Complex in math-dict.cpp).
  *
