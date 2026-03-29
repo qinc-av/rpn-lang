@@ -25,6 +25,7 @@
 namespace matrix_validator {
   const rpn::StrictTypeValidator d1_vector({typeid(::stack::Vector).hash_code()}, "d1_vector");
   const rpn::StrictTypeValidator d1_matrix({typeid(::stack::Matrix).hash_code()}, "d1_matrix");
+  const rpn::StrictTypeValidator d1_mx3(   {typeid(::stack::Mx3).hash_code()},    "d1_mx3");
   const rpn::StrictTypeValidator d2_vector_vector({typeid(::stack::Vector).hash_code(), typeid(::stack::Vector).hash_code()}, "d2_vector_vector");
   const rpn::StrictTypeValidator d2_matrix_matrix({typeid(::stack::Matrix).hash_code(), typeid(::stack::Matrix).hash_code()}, "d2_matrix_matrix");
   const rpn::StrictTypeValidator d2_vector_matrix({typeid(::stack::Matrix).hash_code(), typeid(::stack::Vector).hash_code()}, "d2_vector_matrix");
@@ -320,12 +321,46 @@ NATIVE_WORD_DECL(matrix, mat_trans) {
   return rpn::WordDefinition::Result::ok;
 }
 
+// DET  ( mx3 -- d )  determinant
+NATIVE_WORD_DECL(matrix, mx3_det) {
+  auto sm = rpn.stack.pop();
+  const auto &m = PEEK_CAST(stack::Mx3, *sm);
+  double d =
+    m(0,0) * (m(1,1)*m(2,2) - m(1,2)*m(2,1))
+  - m(0,1) * (m(1,0)*m(2,2) - m(1,2)*m(2,0))
+  + m(0,2) * (m(1,0)*m(2,1) - m(1,1)*m(2,0));
+  rpn.stack.push_double(d);
+  return rpn::WordDefinition::Result::ok;
+}
+
+// TRANS  ( mx3 -- mx3' )  transpose
+NATIVE_WORD_DECL(matrix, mx3_trans) {
+  auto sm = rpn.stack.pop();
+  const auto &m = PEEK_CAST(stack::Mx3, *sm);
+  stack::Mx3 t(m);
+  t.q::Mx3::transpose();
+  rpn.stack.push(t);
+  return rpn::WordDefinition::Result::ok;
+}
+
 // INV  ( matrix -- matrix )  inverse; square non-singular required
 NATIVE_WORD_DECL(matrix, mat_inv) {
   auto sm = rpn.stack.pop();
   const auto &m = PEEK_CAST(::stack::Matrix, *sm);
   if (m.rows() != m.cols()) return rpn::WordDefinition::Result::param_error;
   rpn.stack.push(::stack::Matrix(m.mat().inverse().eval()));
+  return rpn::WordDefinition::Result::ok;
+}
+
+// INV  ( mx3 -- mx3 )  3×3 inverse
+NATIVE_WORD_DECL(matrix, mx3_inv) {
+  auto sm = rpn.stack.pop();
+  const auto &m = PEEK_CAST(stack::Mx3, *sm);
+  q::Mx3 inv = m.q::Mx3::inverse();
+  rpn.stack.push(stack::Mx3(
+    inv(0,0), inv(0,1), inv(0,2),
+    inv(1,0), inv(1,1), inv(1,2),
+    inv(2,0), inv(2,1), inv(2,2)));
   return rpn::WordDefinition::Result::ok;
 }
 
@@ -403,8 +438,11 @@ rpn::Interp::addMatrixWords() {
 
   // ------- Matrix operations -------
   rpn.addDefinition("DET",      MV_WDEF(d1_matrix, mat_det));
+  rpn.addDefinition("DET",      MV_WDEF(d1_mx3,    mx3_det));
   rpn.addDefinition("TRANS",    MV_WDEF(d1_matrix, mat_trans));
+  rpn.addDefinition("TRANS",    MV_WDEF(d1_mx3,    mx3_trans));
   rpn.addDefinition("INV",      MV_WDEF(d1_matrix, mat_inv));
+  rpn.addDefinition("INV",      MV_WDEF(d1_mx3,    mx3_inv));
   rpn.addDefinition("IDENTITY", {rpn::StackSizeValidator::one, MAT_FUNC(mat_identity), nullptr});
 
   addWordMetadata("->MATRIX", "Build N×M matrix. Stack: v[0][0]...v[N-1][M-1] rows cols (row-major, TOS=last element).");

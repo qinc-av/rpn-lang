@@ -7,9 +7,10 @@
  * @copyright (C) Copyright Eric L. Hernes 2026
  * @copyright (C) Copyright Q, Inc. 2026
  *
- * @brief   Mx3 words: ->MX3, MX3->, MX3ID, MX3DIAG, MX3INV, MX3TRANS, MX3DET, MX3*V, MX3*M.
+ * @brief   Mx3 words: ->MX3, MX3->, MX3ID, MX3DIAG, *, and overloads for DET/TRANS/INV.
  *
  * Stack::Mx3 wraps q::Mx3 (vecmx3.h).  All operations create new Mx3 objects.
+ * DET, TRANS, and INV are overloaded in matrix-dict.cpp to dispatch on type.
  *
  */
 
@@ -68,48 +69,6 @@ NATIVE_WORD_DECL(mx3m, mx3diag) {
 }
 
 // ---------------------------------------------------------------------------
-// MX3INV  ( mx3 -- mx3' )  inverse
-// ---------------------------------------------------------------------------
-NATIVE_WORD_DECL(mx3m, mx3inv) {
-  auto sm = rpn.stack.pop();
-  const auto &m = PEEK_CAST(stack::Mx3, *sm);
-  q::Mx3 inv = m.q::Mx3::inverse();
-  rpn.stack.push(stack::Mx3(
-    inv(0,0), inv(0,1), inv(0,2),
-    inv(1,0), inv(1,1), inv(1,2),
-    inv(2,0), inv(2,1), inv(2,2)));
-  return rpn::WordDefinition::Result::ok;
-}
-
-// ---------------------------------------------------------------------------
-// MX3TRANS  ( mx3 -- mx3' )  transpose
-// ---------------------------------------------------------------------------
-NATIVE_WORD_DECL(mx3m, mx3trans) {
-  auto sm = rpn.stack.pop();
-  const auto &m = PEEK_CAST(stack::Mx3, *sm);
-  // q::Mx3::transpose() mutates in place; copy first
-  stack::Mx3 t(m);
-  t.q::Mx3::transpose();
-  rpn.stack.push(t);
-  return rpn::WordDefinition::Result::ok;
-}
-
-// ---------------------------------------------------------------------------
-// MX3DET  ( mx3 -- det )  determinant
-// ---------------------------------------------------------------------------
-NATIVE_WORD_DECL(mx3m, mx3det) {
-  auto sm = rpn.stack.pop();
-  const auto &m = PEEK_CAST(stack::Mx3, *sm);
-  // det via cofactor expansion along first row
-  double d =
-    m(0,0) * (m(1,1)*m(2,2) - m(1,2)*m(2,1))
-  - m(0,1) * (m(1,0)*m(2,2) - m(1,2)*m(2,0))
-  + m(0,2) * (m(1,0)*m(2,1) - m(1,1)*m(2,0));
-  rpn.stack.push_double(d);
-  return rpn::WordDefinition::Result::ok;
-}
-
-// ---------------------------------------------------------------------------
 // *  ( mx3 vec3 -- vec3 )  matrix × vector
 // ---------------------------------------------------------------------------
 NATIVE_WORD_DECL(mx3m, mx3_mul_vec3) {
@@ -123,7 +82,7 @@ NATIVE_WORD_DECL(mx3m, mx3_mul_vec3) {
 }
 
 // ---------------------------------------------------------------------------
-// MX3*MX3  ( m1 m2 -- m3 )  matrix × matrix  (NOS=m1, TOS=m2 → m1*m2)
+// *  ( m1 m2 -- m3 )  matrix × matrix  (NOS=m1, TOS=m2 → m1*m2)
 // ---------------------------------------------------------------------------
 NATIVE_WORD_DECL(mx3m, mx3_mul_mx3) {
   auto sm2 = rpn.stack.pop();
@@ -152,24 +111,18 @@ void
 rpn::Interp::addMx3Words() {
   setWordCategory("mx3");
 
-  addDefinition("->MX3",    { mx3_validator::nine,                    NATIVE_WORD_FN(mx3m, to_mx3),     nullptr });
-  addDefinition("MX3->",    MX3_WDEF(d1_mx3,                          mx3_to));
-  addDefinition("MX3ID",    { rpn::StackSizeValidator::zero,          NATIVE_WORD_FN(mx3m, mx3id),      nullptr });
-  addDefinition("MX3DIAG",  MX3_WDEF(d1_vec3,                         mx3diag));
-  addDefinition("MX3INV",   MX3_WDEF(d1_mx3,                          mx3inv));
-  addDefinition("MX3TRANS", MX3_WDEF(d1_mx3,                          mx3trans));
-  addDefinition("MX3DET",   MX3_WDEF(d1_mx3,                          mx3det));
-  addDefinition("*",        MX3_WDEF(d2_mx3_vec3,                     mx3_mul_vec3));
-  addDefinition("*",        { mx3_validator::d2_mx3_mx3,              NATIVE_WORD_FN(mx3m, mx3_mul_mx3), nullptr });
+  addDefinition("->MX3",   { mx3_validator::nine,       NATIVE_WORD_FN(mx3m, to_mx3),      nullptr });
+  addDefinition("MX3->",   MX3_WDEF(d1_mx3,              mx3_to));
+  addDefinition("MX3ID",   { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(mx3m, mx3id),   nullptr });
+  addDefinition("MX3DIAG", MX3_WDEF(d1_vec3,              mx3diag));
+  addDefinition("*",       MX3_WDEF(d2_mx3_vec3,          mx3_mul_vec3));
+  addDefinition("*",       { mx3_validator::d2_mx3_mx3,  NATIVE_WORD_FN(mx3m, mx3_mul_mx3), nullptr });
 
-  addWordMetadata("->MX3",    "Create a 3×3 matrix from 9 doubles (row-major: e11..e33).");
-  addWordMetadata("MX3->",    "Explode a 3×3 matrix to 9 doubles (row-major).");
-  addWordMetadata("MX3ID",    "Push the 3×3 identity matrix.");
-  addWordMetadata("MX3DIAG",  "Create a diagonal 3×3 matrix from a Vec3.");
-  addWordMetadata("MX3INV",   "Invert a 3×3 matrix.");
-  addWordMetadata("MX3TRANS", "Transpose a 3×3 matrix.");
-  addWordMetadata("MX3DET",   "Determinant of a 3×3 matrix.");
-  addWordMetadata("*",        "Multiply: Mx3 × Vec3 → Vec3, or Mx3 × Mx3 → Mx3.");
+  addWordMetadata("->MX3",   "Create a 3×3 matrix from 9 doubles (row-major: e11..e33).");
+  addWordMetadata("MX3->",   "Explode a 3×3 matrix to 9 doubles (row-major).");
+  addWordMetadata("MX3ID",   "Push the 3×3 identity matrix.");
+  addWordMetadata("MX3DIAG", "Create a diagonal 3×3 matrix from a Vec3.");
+  addWordMetadata("*",       "Multiply: Mx3 × Vec3 → Vec3, or Mx3 × Mx3 → Mx3.");
 
   setWordCategory("");
 }
