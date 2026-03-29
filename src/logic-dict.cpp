@@ -139,6 +139,32 @@ NATIVE_WORD_DECL(logic, b_rshift) {
   return rpn::WordDefinition::Result::ok;
 }
 
+// Circular rotate left by n bits within the current wordsize.
+NATIVE_WORD_DECL(logic, b_rleft) {
+  int n = (int)(rpn.stack.pop_as_integer() % rpn.binaryWordsize());
+  if (n < 0) n += rpn.binaryWordsize();
+  int64_t value = rpn.stack.pop_as_integer();
+  int ws = rpn.binaryWordsize();
+  uint64_t mask = (uint64_t)wordsize_mask(ws);
+  uint64_t uval = (uint64_t)value & mask;
+  int64_t result = n == 0 ? (int64_t)uval : (int64_t)(((uval << n) | (uval >> (ws - n))) & mask);
+  rpn.stack.push_integer(result);
+  return rpn::WordDefinition::Result::ok;
+}
+
+// Circular rotate right by n bits within the current wordsize.
+NATIVE_WORD_DECL(logic, b_rright) {
+  int n = (int)(rpn.stack.pop_as_integer() % rpn.binaryWordsize());
+  if (n < 0) n += rpn.binaryWordsize();
+  int64_t value = rpn.stack.pop_as_integer();
+  int ws = rpn.binaryWordsize();
+  uint64_t mask = (uint64_t)wordsize_mask(ws);
+  uint64_t uval = (uint64_t)value & mask;
+  int64_t result = n == 0 ? (int64_t)uval : (int64_t)(((uval >> n) | (uval << (ws - n))) & mask);
+  rpn.stack.push_integer(result);
+  return rpn::WordDefinition::Result::ok;
+}
+
 NATIVE_WORD_DECL(logic, push_true) {
   rpn.stack.push_boolean(true);
   return rpn::WordDefinition::Result::ok;
@@ -177,14 +203,28 @@ rpn::Interp::addLogicWords() {
   addDefinition("LSHIFT", NATIVE_WORD_WDEF(logic, rpn::StrictTypeValidator::d2_integer_double,  b_lshift, nullptr));
   addDefinition("RSHIFT", NATIVE_WORD_WDEF(logic, rpn::StrictTypeValidator::d2_integer_integer, b_rshift, nullptr));
   addDefinition("RSHIFT", NATIVE_WORD_WDEF(logic, rpn::StrictTypeValidator::d2_integer_double,  b_rshift, nullptr));
+  addDefinition("RLEFT",  NATIVE_WORD_WDEF(logic, rpn::StrictTypeValidator::d2_integer_integer, b_rleft,  nullptr));
+  addDefinition("RLEFT",  NATIVE_WORD_WDEF(logic, rpn::StrictTypeValidator::d2_integer_double,  b_rleft,  nullptr));
+  addDefinition("RRIGHT", NATIVE_WORD_WDEF(logic, rpn::StrictTypeValidator::d2_integer_integer, b_rright, nullptr));
+  addDefinition("RRIGHT", NATIVE_WORD_WDEF(logic, rpn::StrictTypeValidator::d2_integer_double,  b_rright, nullptr));
 
-  // Binary wordsize: ->WORDSIZE sets (TOS integer, 1–64); WORDSIZE-> queries.
+  // Binary wordsize: ->WORDSIZE / STWS sets (TOS integer, 1–64); WORDSIZE-> / RCWS queries.
   addDefinition("->WORDSIZE", { rpn::StrictTypeValidator::d1_integer,
     [](rpn::Interp &rpn, rpn::WordContext *, std::string &) {
       rpn.setBinaryWordsize((int)rpn.stack.pop_integer());
       return rpn::WordDefinition::Result::ok;
     }, nullptr });
+  addDefinition("STWS", { rpn::StrictTypeValidator::d1_integer,
+    [](rpn::Interp &rpn, rpn::WordContext *, std::string &) {
+      rpn.setBinaryWordsize((int)rpn.stack.pop_integer());
+      return rpn::WordDefinition::Result::ok;
+    }, nullptr });
   addDefinition("WORDSIZE->", { rpn::StackSizeValidator::zero,
+    [](rpn::Interp &rpn, rpn::WordContext *, std::string &) {
+      rpn.stack.push_integer(rpn.binaryWordsize());
+      return rpn::WordDefinition::Result::ok;
+    }, nullptr });
+  addDefinition("RCWS", { rpn::StackSizeValidator::zero,
     [](rpn::Interp &rpn, rpn::WordContext *, std::string &) {
       rpn.stack.push_integer(rpn.binaryWordsize());
       return rpn::WordDefinition::Result::ok;
@@ -207,8 +247,12 @@ rpn::Interp::addLogicWords() {
   addWordMetadata("XOR",        "Bitwise XOR of two integers, masked to current wordsize.");
   addWordMetadata("LSHIFT",     "Logical left shift. `value shift LSHIFT`. Result masked to wordsize.");
   addWordMetadata("RSHIFT",     "Logical right shift. `value shift RSHIFT`. Result masked to wordsize.");
+  addWordMetadata("RLEFT",      "Circular rotate left. `value n RLEFT`. Rotates within current wordsize.");
+  addWordMetadata("RRIGHT",     "Circular rotate right. `value n RRIGHT`. Rotates within current wordsize.");
   addWordMetadata("->WORDSIZE", "Set binary operation wordsize (1–64). Default 64 = no masking.");
+  addWordMetadata("STWS",       "HP48 alias for ->WORDSIZE.");
   addWordMetadata("WORDSIZE->", "Push the current binary wordsize.");
+  addWordMetadata("RCWS",       "HP48 alias for WORDSIZE->.");
   addWordMetadata("<true>",     "Push boolean true.");
   addWordMetadata("<false>",    "Push boolean false.");
 }

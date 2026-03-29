@@ -558,6 +558,55 @@ TEST_CASE("binary wordsize", "binary logic") {
     g_rpn.setBinaryWordsize(64);
   }
 
+  // RLEFT: 0x01 rotated left 1 in 8-bit = 0x02
+  {
+    g_rpn.setBinaryWordsize(8);
+    g_rpn.stack.clear();
+    g_rpn.sync_eval("0x01 1 RLEFT");
+    REQUIRE( g_rpn.stack.peek_as_integer(1) == 0x02 );
+  }
+
+  // RLEFT: MSB wraps to LSB: 0x80 rotated left 1 in 8-bit = 0x01
+  {
+    g_rpn.stack.clear();
+    g_rpn.sync_eval("0x80 1 RLEFT");
+    REQUIRE( g_rpn.stack.peek_as_integer(1) == 0x01 );
+    g_rpn.setBinaryWordsize(64);
+  }
+
+  // RRIGHT: 0x80 rotated right 1 in 8-bit = 0x40
+  {
+    g_rpn.setBinaryWordsize(8);
+    g_rpn.stack.clear();
+    g_rpn.sync_eval("0x80 1 RRIGHT");
+    REQUIRE( g_rpn.stack.peek_as_integer(1) == 0x40 );
+  }
+
+  // RRIGHT: LSB wraps to MSB: 0x01 rotated right 1 in 8-bit = 0x80
+  {
+    g_rpn.stack.clear();
+    g_rpn.sync_eval("0x01 1 RRIGHT");
+    REQUIRE( g_rpn.stack.peek_as_integer(1) == 0x80 );
+    g_rpn.setBinaryWordsize(64);
+  }
+
+  // RLEFT by 0 is identity
+  {
+    g_rpn.setBinaryWordsize(8);
+    g_rpn.stack.clear();
+    g_rpn.sync_eval("0xA5 0 RLEFT");
+    REQUIRE( g_rpn.stack.peek_as_integer(1) == 0xA5 );
+    g_rpn.setBinaryWordsize(64);
+  }
+
+  // STWS / RCWS HP48 aliases
+  {
+    g_rpn.stack.clear();
+    g_rpn.sync_eval("16 STWS RCWS");
+    REQUIRE( g_rpn.stack.peek_as_integer(1) == 16 );
+    g_rpn.setBinaryWordsize(64);
+  }
+
   // Clamping: wordsize < 1 → clamped to 1; > 64 → clamped to 64
   {
     g_rpn.setBinaryWordsize(0);
