@@ -11,6 +11,7 @@ set(RPN_LANG_SRCS
   fraction.cpp
   timecode-dict.cpp
   matrix-dict.cpp
+  stats-dict.cpp
   geometry.cpp
   geometry-dict.cpp
   keypad-dict.cpp

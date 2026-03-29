@@ -1455,6 +1455,7 @@ rpn::Interp::Interp(bool async) {
   addFractionWords();
   addTimecodeWords();
   addMatrixWords();
+  addStatsWords();
   geometry::addWords(*this);
   addStdlibWords();
   setWordCategory(""); // reset so embedder-added words don't inherit a built-in category

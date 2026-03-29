@@ -357,6 +357,7 @@ namespace rpn {
     void addFractionWords();
     void addTimecodeWords();
     void addMatrixWords();
+    void addStatsWords();
     void addStdlibWords();
   };
 
@@ -552,10 +553,10 @@ public:
   void add_value(const std::string &name, const rpn::Stack::Object &val) {
     _v.emplace(name, val.deep_copy());
   }
-  bool has_member(const std::string &name) {
+  bool has_member(const std::string &name) const {
     return (_v.find(name) != _v.end());
   }
-  rpn::Stack::Object &member(const std::string &name) {
+  const rpn::Stack::Object &member(const std::string &name) const {
     auto v = _v.find(name);
     if (v != _v.end()) {
       return *v->second;

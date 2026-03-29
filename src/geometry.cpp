@@ -13,7 +13,7 @@
  */
 
 #include "geometry.h"
-#include "matrix.h"
+#include "../rpn-matrix.h"
 
 /*
  * Estimate (or calculate) a circle based on points. Here we use an OLS regression model
@@ -48,21 +48,21 @@
 
 bool
 geometry::estimate_circle(double &r, double &xc, double &yc, const std::vector<StVec3> &points) {
+  int n = (int)points.size();
+  Eigen::MatrixXd xx(n, 3);
+  Eigen::VectorXd yy(n);
 
-  math::matrix<double> xx(points.size(),3), yy(points.size(), 1);
-
-  for(size_t r=0; r< points.size(); r++) {
-    double x=points[r]._x, y=points[r]._y;
-
-    xx(r, 0) = 1; xx(r,1) = x; xx(r,2) = y;
-    yy(r,0) = x*x+y*y;
+  for (int i = 0; i < n; i++) {
+    double x = points[i]._x, y = points[i]._y;
+    xx(i, 0) = 1.0;  xx(i, 1) = x;  xx(i, 2) = y;
+    yy(i) = x*x + y*y;
   }
 
-  math::matrix<double> beta = (~xx * xx).Inv() * (~xx * yy);
+  Eigen::VectorXd beta = (xx.transpose() * xx).inverse() * (xx.transpose() * yy);
 
-  xc = beta(1,0)/2.;
-  yc = beta(2,0)/2.;
-  r = sqrt(beta(0,0) + xc*xc + yc*yc);
+  xc = beta(1) / 2.0;
+  yc = beta(2) / 2.0;
+  r = std::sqrt(beta(0) + xc*xc + yc*yc);
 
   return true;
 }
