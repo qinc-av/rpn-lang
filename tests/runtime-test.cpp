@@ -1010,9 +1010,9 @@ NEXT
     int i=0;
     for(const auto &p : positions) {
       auto &so = g_rpn.stack.peek(i+1);
-      const StVec3 &v3 = dynamic_cast<const StVec3&>(so);
-      REQUIRE_THAT(v3._x, Catch::Matchers::WithinAbs(p.first, 0.000001));
-      REQUIRE_THAT(v3._y, Catch::Matchers::WithinAbs(p.second, 0.000001));
+      const stack::Vec3 &v3 = dynamic_cast<const stack::Vec3&>(so);
+      REQUIRE_THAT(v3[0], Catch::Matchers::WithinAbs(p.first, 0.000001));
+      REQUIRE_THAT(v3[1], Catch::Matchers::WithinAbs(p.second, 0.000001));
       i++;
     }
   }
@@ -1036,9 +1036,9 @@ NEXT
     int i=0;
     for(const auto &p : positions) {
       auto &so = g_rpn.stack.peek(i+1);
-      const StVec3 &v3 = dynamic_cast<const StVec3&>(so);
-      REQUIRE_THAT(v3._x, Catch::Matchers::WithinAbs(p.first, 0.000001));
-      REQUIRE_THAT(v3._y, Catch::Matchers::WithinAbs(p.second, 0.000001));
+      const stack::Vec3 &v3 = dynamic_cast<const stack::Vec3&>(so);
+      REQUIRE_THAT(v3[0], Catch::Matchers::WithinAbs(p.first, 0.000001));
+      REQUIRE_THAT(v3[1], Catch::Matchers::WithinAbs(p.second, 0.000001));
       i++;
     }
   }
@@ -1696,11 +1696,11 @@ TEST_CASE("deparse round-trips", "display") {
     g_rpn.sync_eval("1.5 2.25 -3.125 ->VEC3 DEPARSE EVAL");
     REQUIRE( g_rpn.stack.depth() == 1 );
     auto obj = g_rpn.stack.pop();
-    auto *v = dynamic_cast<const StVec3*>(obj.get());
+    auto *v = dynamic_cast<const stack::Vec3*>(obj.get());
     REQUIRE( v != nullptr );
-    REQUIRE( v->_x == 1.5 );
-    REQUIRE( v->_y == 2.25 );
-    REQUIRE( v->_z == -3.125 );
+    REQUIRE( (*v)[0] == 1.5 );
+    REQUIRE( (*v)[1] == 2.25 );
+    REQUIRE( (*v)[2] == -3.125 );
   }
 
   // Fraction (use 0d prefix to create integers — ->FRAC expects d2_integer_integer)

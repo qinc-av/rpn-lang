@@ -10,10 +10,13 @@ set(RPN_LANG_SRCS
   fraction-dict.cpp
   fraction.cpp
   timecode-dict.cpp
+  vecmx3.cpp
   matrix-dict.cpp
   stats-dict.cpp
   geometry.cpp
   geometry-dict.cpp
+  vec3-dict.cpp
+  mx3-dict.cpp
   keypad-dict.cpp
   rpn-stdlib.cpp
   rpn-hl.cpp

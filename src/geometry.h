@@ -14,12 +14,12 @@
 
 #pragma once
 
-#include "../rpn.h"
+#include "../rpn-matrix.h"
 
 namespace geometry {
   void addWords(rpn::Interp &rpn);
 
-  bool estimate_circle(double &r, double &xc, double &yc, const std::vector<StVec3> &points);
+  bool estimate_circle(double &r, double &xc, double &yc, const std::vector<stack::Vec3> &points);
 }
 
 /* end of QInc/Projects/rpn-lang/src/geometry.h */

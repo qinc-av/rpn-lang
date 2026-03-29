@@ -176,8 +176,8 @@ NATIVE_WORD_DECL(matrix, colvec_to_vec) {
 // VEC3->VEC  ( vec3 -- vec )  3-element vector
 NATIVE_WORD_DECL(matrix, vec3_to_vec) {
   auto sv3 = rpn.stack.pop();
-  const auto &v3 = PEEK_CAST(StVec3, *sv3);
-  std::vector<double> vals = {v3._x, v3._y, v3._z};
+  const auto &v3 = PEEK_CAST(stack::Vec3, *sv3);
+  std::vector<double> vals = {v3[0], v3[1], v3[2]};
   rpn.stack.push(::stack::Vector(vals));
   return rpn::WordDefinition::Result::ok;
 }
@@ -187,7 +187,7 @@ NATIVE_WORD_DECL(matrix, vec_to_vec3) {
   auto sv = rpn.stack.pop();
   const auto &v = PEEK_CAST(::stack::Vector, *sv);
   if (v.size() != 3) return rpn::WordDefinition::Result::param_error;
-  rpn.stack.push(StVec3(v.get(0), v.get(1), v.get(2)));
+  rpn.stack.push(stack::Vec3(v.get(0), v.get(1), v.get(2)));
   return rpn::WordDefinition::Result::ok;
 }
 

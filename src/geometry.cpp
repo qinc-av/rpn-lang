@@ -47,13 +47,13 @@
  */
 
 bool
-geometry::estimate_circle(double &r, double &xc, double &yc, const std::vector<StVec3> &points) {
+geometry::estimate_circle(double &r, double &xc, double &yc, const std::vector<stack::Vec3> &points) {
   int n = (int)points.size();
   Eigen::MatrixXd xx(n, 3);
   Eigen::VectorXd yy(n);
 
   for (int i = 0; i < n; i++) {
-    double x = points[i]._x, y = points[i]._y;
+    double x = points[i][0], y = points[i][1];
     xx(i, 0) = 1.0;  xx(i, 1) = x;  xx(i, 2) = y;
     yy(i) = x*x + y*y;
   }

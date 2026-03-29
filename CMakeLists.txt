@@ -17,7 +17,7 @@ target_sources(rpn-lang
   PUBLIC FILE_SET HEADERS
 #  BASE_DIRS
   FILES
-  rpn.h rpn-hl.h
+  rpn.h rpn-hl.h vecmx3.h rpn-matrix.h
 )
 
 target_include_directories(rpn-lang

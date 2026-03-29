@@ -28,6 +28,7 @@
 #include <format>
 
 #include "../rpn.h"
+#include "../rpn-matrix.h"
 #include "geometry.h"
 
 // Thread-local display context for rpn::to_string() free functions used by stack
@@ -1072,7 +1073,7 @@ rpn::Interp::Privates::add_private_words() {
   _typeRegistry["object"]  = typeid(stack::Object).hash_code();
   _typeRegistry["array"]   = typeid(stack::Array).hash_code();
   _typeRegistry["json"]    = typeid(stack::Json).hash_code();
-  _typeRegistry["vec3"]    = typeid(StVec3).hash_code();
+  _typeRegistry["vec3"]    = typeid(stack::Vec3).hash_code();
 
   _rtDictionary.emplace(":", rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, COLON), this });
   _rtDictionary.emplace("(", rpn::WordDefinition { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(private, OPAREN), this });
@@ -1456,6 +1457,8 @@ rpn::Interp::Interp(bool async) {
   addTimecodeWords();
   addMatrixWords();
   addStatsWords();
+  addVec3Words();
+  addMx3Words();
   geometry::addWords(*this);
   addStdlibWords();
   setWordCategory(""); // reset so embedder-added words don't inherit a built-in category
@@ -1724,7 +1727,8 @@ const rpn::StrictTypeValidator rpn::StrictTypeValidator::d1_double({typeid(stack
 const rpn::StrictTypeValidator rpn::StrictTypeValidator::d1_integer({typeid(stack::Integer).hash_code()},"d1_integer");
 const rpn::StrictTypeValidator rpn::StrictTypeValidator::d1_boolean({typeid(stack::Boolean).hash_code()},"d1_boolean");
 const rpn::StrictTypeValidator rpn::StrictTypeValidator::d1_string({typeid(stack::String).hash_code()},"d1_string");
-const rpn::StrictTypeValidator rpn::StrictTypeValidator::d1_vec3({typeid(StVec3).hash_code()},"d1_vec3");
+const rpn::StrictTypeValidator rpn::StrictTypeValidator::d1_vec3({typeid(stack::Vec3).hash_code()},"d1_vec3");
+const rpn::StrictTypeValidator rpn::StrictTypeValidator::d1_mx3({typeid(stack::Mx3).hash_code()},"d1_mx3");
 const rpn::StrictTypeValidator rpn::StrictTypeValidator::d1_object({typeid(stack::Object).hash_code()},"d1_object");
 const rpn::StrictTypeValidator rpn::StrictTypeValidator::d1_array({typeid(stack::Array).hash_code()},"d1_array");
 
@@ -1734,13 +1738,14 @@ const rpn::StrictTypeValidator rpn::StrictTypeValidator::d2_integer_double({type
 const rpn::StrictTypeValidator rpn::StrictTypeValidator::d2_double_integer({typeid(stack::Integer).hash_code(), typeid(stack::Double).hash_code()},"d2_double_integer");
 const rpn::StrictTypeValidator rpn::StrictTypeValidator::d2_integer_integer({typeid(stack::Integer).hash_code(), typeid(stack::Integer).hash_code()},"d2_integer_integer");
 
-const rpn::StrictTypeValidator rpn::StrictTypeValidator::d2_vec3_double({typeid(stack::Double).hash_code(), typeid(StVec3).hash_code()},"d2_vec3_double");
-const rpn::StrictTypeValidator rpn::StrictTypeValidator::d2_double_vec3({typeid(StVec3).hash_code(), typeid(stack::Double).hash_code()},"d2_double_vec3");
+const rpn::StrictTypeValidator rpn::StrictTypeValidator::d2_vec3_double({typeid(stack::Double).hash_code(), typeid(stack::Vec3).hash_code()},"d2_vec3_double");
+const rpn::StrictTypeValidator rpn::StrictTypeValidator::d2_double_vec3({typeid(stack::Vec3).hash_code(), typeid(stack::Double).hash_code()},"d2_double_vec3");
 
-const rpn::StrictTypeValidator rpn::StrictTypeValidator::d2_vec3_integer({typeid(stack::Integer).hash_code(), typeid(StVec3).hash_code()},"d2_vec3_integer");
-const rpn::StrictTypeValidator rpn::StrictTypeValidator::d2_integer_vec3({typeid(StVec3).hash_code(), typeid(stack::Integer).hash_code()},"d2_integer_vec3");
+const rpn::StrictTypeValidator rpn::StrictTypeValidator::d2_mx3_vec3({typeid(stack::Vec3).hash_code(), typeid(stack::Mx3).hash_code()},"d2_mx3_vec3");
+const rpn::StrictTypeValidator rpn::StrictTypeValidator::d2_vec3_integer({typeid(stack::Integer).hash_code(), typeid(stack::Vec3).hash_code()},"d2_vec3_integer");
+const rpn::StrictTypeValidator rpn::StrictTypeValidator::d2_integer_vec3({typeid(stack::Vec3).hash_code(), typeid(stack::Integer).hash_code()},"d2_integer_vec3");
 
-const rpn::StrictTypeValidator rpn::StrictTypeValidator::d2_vec3_vec3({typeid(StVec3).hash_code(), typeid(StVec3).hash_code()},"d2_vec3_vec3");
+const rpn::StrictTypeValidator rpn::StrictTypeValidator::d2_vec3_vec3({typeid(stack::Vec3).hash_code(), typeid(stack::Vec3).hash_code()},"d2_vec3_vec3");
 
 const rpn::StrictTypeValidator rpn::StrictTypeValidator::d2_any_string({typeid(stack::String).hash_code(),rpn::StrictTypeValidator::v_anytype},"d2_any_string");
 const rpn::StrictTypeValidator rpn::StrictTypeValidator::d2_string_any({rpn::StrictTypeValidator::v_anytype,typeid(stack::String).hash_code()},"d2_string_any");
@@ -1764,7 +1769,7 @@ const rpn::StrictTypeValidator rpn::StrictTypeValidator::d3_any_string_object({t
 const rpn::StrictTypeValidator rpn::StrictTypeValidator::d3_object_any_string({typeid(stack::String).hash_code(),rpn::StrictTypeValidator::v_anytype,typeid(stack::Object).hash_code()},"d3_object_any_string");
 const rpn::StrictTypeValidator rpn::StrictTypeValidator::d3_any_any_boolean({typeid(stack::Boolean).hash_code(), rpn::StrictTypeValidator::v_anytype, rpn::StrictTypeValidator::v_anytype} ,"d3_any_any_boolean");
 const rpn::StrictTypeValidator rpn::StrictTypeValidator::d3_boolean_any_any({rpn::StrictTypeValidator::v_anytype, rpn::StrictTypeValidator::v_anytype, typeid(stack::Boolean).hash_code()}, "d3_boolean_any_any");
-const rpn::StrictTypeValidator rpn::StrictTypeValidator::d3_vec3_vec3_vec3({typeid(StVec3).hash_code(),typeid(StVec3).hash_code(),typeid(StVec3).hash_code()},"d3_vec3_vec3_vec3");
+const rpn::StrictTypeValidator rpn::StrictTypeValidator::d3_vec3_vec3_vec3({typeid(stack::Vec3).hash_code(),typeid(stack::Vec3).hash_code(),typeid(stack::Vec3).hash_code()},"d3_vec3_vec3_vec3");
 
 const rpn::StrictTypeValidator rpn::StrictTypeValidator::d4_integer_double_double_double({typeid(stack::Double).hash_code(),typeid(stack::Double).hash_code(),typeid(stack::Double).hash_code(),typeid(stack::Integer).hash_code()},"d4_integer_double_double_double");
 const rpn::StrictTypeValidator rpn::StrictTypeValidator::d4_double_double_double_integer({typeid(stack::Integer).hash_code(),typeid(stack::Double).hash_code(),typeid(stack::Double).hash_code(),typeid(stack::Double).hash_code()},"d4_double_double_double_integer");

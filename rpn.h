@@ -160,8 +160,10 @@ namespace rpn {
     static const StrictTypeValidator d1_string;
     static const StrictTypeValidator d1_array;
     static const StrictTypeValidator d1_vec3;
+    static const StrictTypeValidator d1_mx3;
 
     static const StrictTypeValidator d2_vec3_vec3;
+    static const StrictTypeValidator d2_mx3_vec3;
     static const StrictTypeValidator d2_double_double;
     static const StrictTypeValidator d2_integer_double;
     static const StrictTypeValidator d2_double_integer;
@@ -358,6 +360,8 @@ namespace rpn {
     void addTimecodeWords();
     void addMatrixWords();
     void addStatsWords();
+    void addVec3Words();
+    void addMx3Words();
     void addStdlibWords();
   };
 
@@ -758,77 +762,6 @@ public:
 };
 
 } // namespace stack
-
-class StVec3 : public rpn::Stack::Object {
-public:
-  StVec3(const StVec3 &other) : _x(other._x), _y(other._y), _z(other._z) {};
-  StVec3(const double &x=std::nan(""), const double &y=std::nan(""), const double &z=std::nan("")) : _x(x), _y(y), _z(z) {};
-  virtual ~StVec3() {};
-  virtual bool operator==(const Object &orhs) const override {
-    const StVec3 &rhs = PEEK_CAST(StVec3,orhs);
-    // we might need to include some abs epsilon calculation here
-    return (((_x == rhs._x) || (std::isnan(_x) && std::isnan(rhs._x))) &&
-	    ((_y == rhs._y) || (std::isnan(_y) && std::isnan(rhs._y))) &&
-	    ((_z == rhs._z) || (std::isnan(_z) && std::isnan(rhs._z))));
-  };
-
-  virtual operator std::string() const override {
-    std::string rv = "<";
-    if (!std::isnan(_x)) {
-      rv += " x:";
-      rv += rpn::to_string(_x);
-    }
-    if (!std::isnan(_y)) {
-      rv += " y:";
-      rv += rpn::to_string(_y);
-    }
-    if (!std::isnan(_z)) {
-      rv += " z:";
-      rv += rpn::to_string(_z);
-    }
-    rv += " >";
-    return rv;
-  }
-  virtual std::unique_ptr<Object> deep_copy() const override { return std::make_unique<StVec3>(*this); }
-  virtual std::string deparse() const override {
-    auto dp = [](double v) {
-      auto s = std::format("{:.17g}", v);
-      if (s.find_first_not_of("-0123456789") == std::string::npos) s += ".";
-      return s;
-    };
-    return dp(_x) + " " + dp(_y) + " " + dp(_z) + " ->VEC3";
-  }
-  // default to_text()
-  virtual std::string to_latex() const override {
-    std::string rv = "[";
-    if (!std::isnan(_x)) {
-      rv += rpn::to_string(_x);
-      rv += "_x";
-    }
-    if (!std::isnan(_y)) {
-      rv += rpn::to_string(_y);
-      rv += "_y";
-    }
-    if (!std::isnan(_z)) {
-      rv += rpn::to_string(_z);
-      rv += "_z";
-    }
-    rv += "]";
-    return rv;
-  }
-  virtual std::string type_name() const override { return "vec3"; }
-  virtual nlohmann::json to_json() const override {
-    return {{"type",type_name()},{"display",(std::string)(*this)},{"deparse",deparse()},
-            {"data",{{"x",_x},{"y",_y},{"z",_z}}}};
-  }
-
-public:
-  // should these be public or private?
-  // we'll make them public so that the rpn words can work with them more easily
-  double _x;
-  double _y;
-  double _z;
-};
 
 // convenience macros for adding native methods
 #define NATIVE_WORD_FN(mangler, op) mangler##_func_##op

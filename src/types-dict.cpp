@@ -12,7 +12,7 @@
  *
  */
 
-#include "../rpn.h"
+#include "../rpn-matrix.h"
 
 #include <cmath>
 
@@ -230,9 +230,9 @@ NATIVE_WORD_DECL(vec3, add_vec3) {
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
   auto o1 = rpn.stack.pop();
   auto o2 = rpn.stack.pop();
-  const auto &v1 = POP_CAST(StVec3,o1);
-  const auto &v2 = POP_CAST(StVec3,o2);
-  rpn.stack.push(StVec3(nan_add_0(v1._x, v2._x), nan_add_0(v1._y, v2._y), nan_add_0(v1._z, v2._z)));
+  const auto &v1 = POP_CAST(stack::Vec3,o1);
+  const auto &v2 = POP_CAST(stack::Vec3,o2);
+  rpn.stack.push(stack::Vec3(nan_add_0(v1[0], v2[0]), nan_add_0(v1[1], v2[1]), nan_add_0(v1[2], v2[2])));
   return rv;
 }
 
@@ -241,8 +241,8 @@ NATIVE_WORD_DECL(vec3, add_num_vec3) {
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
   double n1 = rpn.stack.pop_as_double();
   auto o2 = rpn.stack.pop();
-  const auto &v2 = POP_CAST(StVec3,o2);
-  rpn.stack.push(StVec3(nan_add(n1, v2._x), nan_add(n1, v2._y), nan_add(n1, v2._z)));
+  const auto &v2 = POP_CAST(stack::Vec3,o2);
+  rpn.stack.push(stack::Vec3(nan_add(n1, v2[0]), nan_add(n1, v2[1]), nan_add(n1, v2[2])));
   return rv;
 }
 
@@ -251,8 +251,8 @@ NATIVE_WORD_DECL(vec3, add_vec3_num) {
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
   auto o1 = rpn.stack.pop();
   double n2 = rpn.stack.pop_as_double();
-  const auto &v1 = POP_CAST(StVec3,o1);
-  rpn.stack.push(StVec3(nan_add(v1._x, n2), nan_add(v1._y, n2), nan_add(v1._z, n2)));
+  const auto &v1 = POP_CAST(stack::Vec3,o1);
+  rpn.stack.push(stack::Vec3(nan_add(v1[0], n2), nan_add(v1[1], n2), nan_add(v1[2], n2)));
   return rv;
 }
 
@@ -260,9 +260,9 @@ NATIVE_WORD_DECL(vec3, sub_vec3) {
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
   auto o2 = rpn.stack.pop();
   auto o1 = rpn.stack.pop();
-  const auto &v1 = POP_CAST(StVec3,o1);
-  const auto &v2 = POP_CAST(StVec3,o2);
-  rpn.stack.push(StVec3(nan_sub_0(v1._x, v2._x), nan_sub_0(v1._y, v2._y), nan_sub_0(v1._z, v2._z)));
+  const auto &v1 = POP_CAST(stack::Vec3,o1);
+  const auto &v2 = POP_CAST(stack::Vec3,o2);
+  rpn.stack.push(stack::Vec3(nan_sub_0(v1[0], v2[0]), nan_sub_0(v1[1], v2[1]), nan_sub_0(v1[2], v2[2])));
   return rv;
 }
 
@@ -271,8 +271,8 @@ NATIVE_WORD_DECL(vec3, sub_num_vec3) {
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
   double n1 = rpn.stack.pop_as_double();
   auto o2 = rpn.stack.pop();
-  const auto &v2 = POP_CAST(StVec3,o2);
-  rpn.stack.push(StVec3(nan_sub(n1, v2._x), nan_sub(n1, v2._y), nan_sub(n1, v2._z)));
+  const auto &v2 = POP_CAST(stack::Vec3,o2);
+  rpn.stack.push(stack::Vec3(nan_sub(n1, v2[0]), nan_sub(n1, v2[1]), nan_sub(n1, v2[2])));
   return rv;
 }
 
@@ -281,8 +281,8 @@ NATIVE_WORD_DECL(vec3, sub_vec3_num) {
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
   auto o1 = rpn.stack.pop();
   double n2 = rpn.stack.pop_as_double();
-  const auto &v1 = POP_CAST(StVec3,o1);
-  rpn.stack.push(StVec3(nan_sub(v1._x, n2), nan_sub(v1._y, n2), nan_sub(v1._z, n2)));
+  const auto &v1 = POP_CAST(stack::Vec3,o1);
+  rpn.stack.push(stack::Vec3(nan_sub(v1[0], n2), nan_sub(v1[1], n2), nan_sub(v1[2], n2)));
   return rv;
 }
 
@@ -292,7 +292,7 @@ NATIVE_WORD_DECL(vec3, to_vec3) {
   double z = rpn.stack.pop_as_double();
   double y = rpn.stack.pop_as_double();
   double x = rpn.stack.pop_as_double();
-  rpn.stack.push(StVec3(x,y,z));
+  rpn.stack.push(stack::Vec3(x,y,z));
   return rv;
 }
 
@@ -300,10 +300,10 @@ NATIVE_WORD_DECL(vec3, to_vec3) {
 NATIVE_WORD_DECL(vec3, vec3_to) {
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
   auto o1 = rpn.stack.pop();
-  const auto &v1 = POP_CAST(StVec3,o1);
-  rpn.stack.push_double(v1._x);
-  rpn.stack.push_double(v1._y);
-  rpn.stack.push_double(v1._z);
+  const auto &v1 = POP_CAST(stack::Vec3,o1);
+  rpn.stack.push_double(v1[0]);
+  rpn.stack.push_double(v1[1]);
+  rpn.stack.push_double(v1[2]);
   return rv;
 }
 
@@ -311,7 +311,7 @@ NATIVE_WORD_DECL(vec3, vec3_to) {
 NATIVE_WORD_DECL(vec3, to_vec3x) {
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
   double n1 = rpn.stack.pop_as_double();
-  rpn.stack.push(StVec3(n1,std::nan(""),std::nan("")));
+  rpn.stack.push(stack::Vec3(n1,std::nan(""),std::nan("")));
   return rv;
 }
 
@@ -319,7 +319,7 @@ NATIVE_WORD_DECL(vec3, to_vec3x) {
 NATIVE_WORD_DECL(vec3, to_vec3y) {
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
   double n1 = rpn.stack.pop_as_double();
-  rpn.stack.push(StVec3(std::nan(""),n1,std::nan("")));
+  rpn.stack.push(stack::Vec3(std::nan(""),n1,std::nan("")));
   return rv;
 }
 
@@ -327,7 +327,7 @@ NATIVE_WORD_DECL(vec3, to_vec3y) {
 NATIVE_WORD_DECL(vec3, to_vec3z) {
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
   double n1 = rpn.stack.pop_as_double();
-  rpn.stack.push(StVec3(std::nan(""),std::nan(""),n1));
+  rpn.stack.push(stack::Vec3(std::nan(""),std::nan(""),n1));
   return rv;
 }
 

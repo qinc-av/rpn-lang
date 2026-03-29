@@ -20,10 +20,10 @@ NATIVE_WORD_DECL(geometry, circle_a) {
   const auto &array = POP_CAST(stack::Array,oo);
   const auto &vals = array.val();
 
-  std::vector<StVec3> points;
+  std::vector<stack::Vec3> points;
 
   for(size_t i=0; i<vals.size() && rv == rpn::WordDefinition::Result::ok; i++) {
-    auto *vp = OBJECTP_CAST(const StVec3)(vals[i].get());
+    auto *vp = OBJECTP_CAST(const stack::Vec3)(vals[i].get());
     if (vp) {
       points.push_back(*vp);
     } else {
@@ -38,7 +38,7 @@ NATIVE_WORD_DECL(geometry, circle_a) {
     if (st) {
       rv = rpn::WordDefinition::Result::ok;
       rpn.stack.push_double(r);
-      rpn.stack.push(StVec3(xc,yc));
+      rpn.stack.push(stack::Vec3(xc,yc));
 
     } else {
       rv = rpn::WordDefinition::Result::eval_error;
@@ -50,10 +50,10 @@ NATIVE_WORD_DECL(geometry, circle_a) {
 
 NATIVE_WORD_DECL(geometry, circle_vvv) {
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
-  std::vector<StVec3> points;
+  std::vector<stack::Vec3> points;
   for(size_t i=0; i<3; i++) {
     auto o = rpn.stack.pop();
-    points.push_back(POP_CAST(StVec3,o));
+    points.push_back(POP_CAST(stack::Vec3,o));
   }
 
   double r=0., xc=0., yc=0.;
@@ -62,7 +62,7 @@ NATIVE_WORD_DECL(geometry, circle_vvv) {
   if (st) {
     rv = rpn::WordDefinition::Result::ok;
     rpn.stack.push_double(r);
-    rpn.stack.push(StVec3(xc,yc));
+    rpn.stack.push(stack::Vec3(xc,yc));
 
   } else {
     rv = rpn::WordDefinition::Result::eval_error;
