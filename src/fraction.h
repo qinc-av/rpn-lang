@@ -105,7 +105,7 @@ namespace stack {
     Fraction(int64_t n, int64_t d) : q::Fraction(n,d) {}
     Fraction(const q::Fraction &f) : q::Fraction(f) {}
     virtual bool operator==(const rpn::Stack::Object &orhs) const override {
-      auto &rhs = PEEK_CAST(const Fraction, orhs);
+      auto &rhs = PEEK_CAST(Fraction, orhs);
       return ((const q::Fraction &)*this) == ((const q::Fraction &)rhs);
     }
     virtual std::unique_ptr<rpn::Stack::Object> deep_copy() const override { return std::make_unique<Fraction>(*this); };

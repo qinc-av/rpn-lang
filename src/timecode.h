@@ -53,7 +53,7 @@ public:
     Timecode(const q::Timecode &tc) : q::Timecode(tc) {}
     virtual ~Timecode() {};
     virtual bool operator==(const Object &orhs) const override {
-      const stack::Timecode &rhs = PEEK_CAST(const stack::Timecode,orhs);
+      const stack::Timecode &rhs = PEEK_CAST(stack::Timecode,orhs);
       return ((const q::Timecode &)*this) == ((const q::Timecode &)rhs);
     };
 

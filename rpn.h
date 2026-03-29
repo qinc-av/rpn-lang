@@ -388,15 +388,15 @@ class Double : public rpn::Stack::Object {
   virtual operator std::string() const override { return rpn::to_string(_v); };
   operator double() const override { return _v; };
   virtual bool operator==(const Object &orhs) const override {
-    const auto &rhs = PEEK_CAST(const Double,orhs);
+    const auto &rhs = PEEK_CAST(Double,orhs);
     return (_v == rhs._v);
   }
   virtual bool operator>(const Object &orhs) const override {
-    auto &rhs = PEEK_CAST(const Double,orhs);
+    auto &rhs = PEEK_CAST(Double,orhs);
     return (_v > rhs._v);
   }
   virtual bool operator<(const Object &orhs) const override {
-    auto &rhs = PEEK_CAST(const Double,orhs);
+    auto &rhs = PEEK_CAST(Double,orhs);
     return (_v < rhs._v);
   }
   virtual std::string deparse() const override {
@@ -426,17 +426,17 @@ Integer(const int64_t &v) : _v(v) {}
   virtual operator std::string() const override { return rpn::to_string(_v); };
   virtual operator double() const override { return double(_v); };
   virtual bool operator==(const Object &orhs) const override {
-    const auto &rhs = PEEK_CAST(const Integer,orhs);
+    const auto &rhs = PEEK_CAST(Integer,orhs);
     return (_v == rhs._v);
   }
   operator int64_t() const { return _v; };
   operator uint64_t() const { return _v; };
   virtual bool operator>(const Object &orhs) const override {
-    const auto &rhs = PEEK_CAST(const Integer,orhs);
+    const auto &rhs = PEEK_CAST(Integer,orhs);
     return (_v > rhs._v);
   }
   virtual bool operator<(const Object &orhs) const override {
-    const auto &rhs = PEEK_CAST(const Integer,orhs);
+    const auto &rhs = PEEK_CAST(Integer,orhs);
     return (_v < rhs._v);
   }
   virtual std::string deparse() const override {
@@ -464,15 +464,15 @@ class Boolean : public rpn::Stack::Object {
   operator bool() const { return _v; };
   virtual operator double() const override { return double(_v); };
   virtual bool operator==(const Object &orhs) const override {
-    const auto &rhs = PEEK_CAST(const Boolean,orhs);
+    const auto &rhs = PEEK_CAST(Boolean,orhs);
     return (_v == rhs._v);
   }
   virtual bool operator>(const Object &orhs) const override {
-    const auto &rhs = PEEK_CAST(const Boolean,orhs);
+    const auto &rhs = PEEK_CAST(Boolean,orhs);
     return (_v > rhs._v);
   }
   virtual bool operator<(const Object &orhs) const override {
-    const auto &rhs = PEEK_CAST(const Boolean,orhs);
+    const auto &rhs = PEEK_CAST(Boolean,orhs);
     return (_v < rhs._v);
   }
   virtual std::string deparse() const override {
@@ -493,15 +493,15 @@ class String : public rpn::Stack::Object {
   virtual operator std::string() const override { return _v; };
   virtual std::unique_ptr<rpn::Stack::Object> deep_copy() const override { return std::make_unique<String>(_v); };
   virtual bool operator==(const Object &orhs) const override {
-    const auto &rhs = PEEK_CAST(const String,orhs);
+    const auto &rhs = PEEK_CAST(String,orhs);
     return (_v == rhs._v);
   }
   virtual bool operator>(const Object &orhs) const override {
-    auto &rhs = PEEK_CAST(const String,orhs);
+    auto &rhs = PEEK_CAST(String,orhs);
     return (_v > rhs._v);
   }
   virtual bool operator<(const Object &orhs) const override {
-    auto &rhs = PEEK_CAST(const String,orhs);
+    auto &rhs = PEEK_CAST(String,orhs);
     return (_v < rhs._v);
   }
   virtual std::string deparse() const override {
@@ -532,7 +532,7 @@ public:
     return std::make_unique<stack::Object>(*this);
   }
   virtual bool operator==(const rpn::Stack::Object &orhs) const override {
-    const auto &rhs = PEEK_CAST(const Object,orhs);
+    const auto &rhs = PEEK_CAST(Object,orhs);
     bool rv = _v.size() == rhs._v.size();
     for(auto i=_v.cbegin(), j=rhs._v.cbegin(); rv && i!= _v.cend(); i++,j++) {
       rv &= (i->first == j->first) && (*(i->second) == *(j->second));
@@ -540,12 +540,12 @@ public:
     return rv;
   }
   virtual bool operator>(const rpn::Stack::Object &orhs) const override {
-    auto &rhs = PEEK_CAST(const stack::Object,orhs);
+    auto &rhs = PEEK_CAST(stack::Object,orhs);
     // XXX-ELH: todo
     return false;
   }
   virtual bool operator<(const rpn::Stack::Object &orhs) const override {
-    auto &rhs = PEEK_CAST(const stack::Object,orhs);
+    auto &rhs = PEEK_CAST(stack::Object,orhs);
     // XXX-ELH: todo
     return false;
   }
@@ -611,7 +611,7 @@ public:
     return std::make_unique<Array>(*this);
   }
   virtual bool operator==(const rpn::Stack::Object &orhs) const override {
-    const auto &rhs = PEEK_CAST(const Array,orhs);
+    const auto &rhs = PEEK_CAST(Array,orhs);
     bool rv = _v.size() == rhs._v.size();
     for(auto i=_v.cbegin(), j=rhs._v.cbegin(); rv && i!= _v.cend(); i++,j++) {
       rv &= (*i == *j);
@@ -619,12 +619,12 @@ public:
     return rv;
   }
   virtual bool operator>(const rpn::Stack::Object &orhs) const override {
-    const auto &rhs = PEEK_CAST(const Array,orhs);
+    const auto &rhs = PEEK_CAST(Array,orhs);
     // XXX-ELH: todo
     return false;
   }
   virtual bool operator<(const rpn::Stack::Object &orhs) const override {
-    const auto &rhs = PEEK_CAST(const Array,orhs);
+    const auto &rhs = PEEK_CAST(Array,orhs);
     // XXX-ELH: todo
     return false;
   }
@@ -676,15 +676,15 @@ public:
     return std::make_unique<Name>(_v);
   }
   virtual bool operator==(const Object &orhs) const override {
-    const auto &rhs = PEEK_CAST(const Name, orhs);
+    const auto &rhs = PEEK_CAST(Name, orhs);
     return (_v == rhs._v);
   }
   virtual bool operator>(const Object &orhs) const override {
-    const auto &rhs = PEEK_CAST(const Name, orhs);
+    const auto &rhs = PEEK_CAST(Name, orhs);
     return (_v > rhs._v);
   }
   virtual bool operator<(const Object &orhs) const override {
-    const auto &rhs = PEEK_CAST(const Name, orhs);
+    const auto &rhs = PEEK_CAST(Name, orhs);
     return (_v < rhs._v);
   }
   virtual std::string deparse() const override { return "'" + _v + "'"; }
@@ -709,7 +709,7 @@ public:
     return std::make_unique<Json>(*this);
   }
   virtual bool operator==(const rpn::Stack::Object &orhs) const override {
-    const auto &rhs = PEEK_CAST(const Json, orhs);
+    const auto &rhs = PEEK_CAST(Json, orhs);
     return nlohmann::json::operator==(static_cast<const nlohmann::json &>(rhs));
   }
   virtual std::string deparse() const override {
@@ -729,7 +729,7 @@ public:
   Complex(const Complex &cx) : std::complex<double>(cx) {}
   Complex(const std::complex<double> &cx) : std::complex<double>(cx) {}
   virtual bool operator==(const rpn::Stack::Object &orhs) const override {
-    auto &rhs = PEEK_CAST(const Complex, orhs);
+    auto &rhs = PEEK_CAST(Complex, orhs);
     return ((const std::complex<double> &)*this) == ((const std::complex<double> &)rhs);
   }
   virtual std::unique_ptr<rpn::Stack::Object> deep_copy() const override { return std::make_unique<Complex>(*this); };
@@ -764,7 +764,7 @@ public:
   StVec3(const double &x=std::nan(""), const double &y=std::nan(""), const double &z=std::nan("")) : _x(x), _y(y), _z(z) {};
   virtual ~StVec3() {};
   virtual bool operator==(const Object &orhs) const override {
-    const StVec3 &rhs = PEEK_CAST(const StVec3,orhs);
+    const StVec3 &rhs = PEEK_CAST(StVec3,orhs);
     // we might need to include some abs epsilon calculation here
     return (((_x == rhs._x) || (std::isnan(_x) && std::isnan(rhs._x))) &&
 	    ((_y == rhs._y) || (std::isnan(_y) && std::isnan(rhs._y))) &&

@@ -130,7 +130,7 @@ public:
   }
 
   virtual bool operator==(const Object &orhs) const override {
-    auto &rhs = PEEK_CAST(const Progn,orhs);
+    auto &rhs = PEEK_CAST(Progn,orhs);
     return ((_type == rhs._type) &&
 	    (_wordlist == rhs._wordlist) &&
 	    (_locals == rhs._locals));

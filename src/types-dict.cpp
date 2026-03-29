@@ -76,7 +76,7 @@ NATIVE_WORD_DECL(t_object, to_object) {
 
 NATIVE_WORD_DECL(t_object, object_to) {
   auto sob = rpn.stack.pop();
-  const auto &obj = PEEK_CAST(const stack::Object, *sob);
+  const auto &obj = PEEK_CAST(stack::Object, *sob);
   for (const auto &m : obj.val()) {
     rpn.stack.push(*m.second);
     rpn.stack.push_string(m.first);
@@ -90,7 +90,7 @@ NATIVE_WORD_DECL(t_object, add_string_any_object) {
   std::string ident = rpn.stack.pop_string();
   auto val = rpn.stack.pop();
   auto sob = rpn.stack.pop();
-  stack::Object obj = PEEK_CAST(const stack::Object, *sob);
+  stack::Object obj = PEEK_CAST(stack::Object, *sob);
   obj.add_value(ident, *val.get());
   rpn.stack.push(obj);
   return rv;
@@ -119,7 +119,7 @@ NATIVE_WORD_DECL(t_array, to_array) {
 NATIVE_WORD_DECL(t_array, array_to) {
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
   auto sob = rpn.stack.pop();
-  const auto &v = PEEK_CAST(const stack::Array,*sob).val();
+  const auto &v = PEEK_CAST(stack::Array,*sob).val();
   for(auto ri = v.rbegin(); ri != v.rend(); ri++) {
     rpn.stack.push(**ri);
   }
@@ -131,7 +131,7 @@ NATIVE_WORD_DECL(t_array, add_array_any) {
   // d2_any_array: TOS=any, NOS=array → append any to array
   auto any = rpn.stack.pop();
   auto sob = rpn.stack.pop();
-  stack::Array arr = PEEK_CAST(const stack::Array, *sob);
+  stack::Array arr = PEEK_CAST(stack::Array, *sob);
   arr.add_value(*any);
   rpn.stack.push(arr);
   return rpn::WordDefinition::Result::ok;
@@ -140,7 +140,7 @@ NATIVE_WORD_DECL(t_array, add_array_any) {
 NATIVE_WORD_DECL(t_array, add_any_array) {
   // d2_array_any: TOS=array, NOS=any → prepend any to array
   auto sob = rpn.stack.pop();
-  const stack::Array &src = PEEK_CAST(const stack::Array, *sob);
+  const stack::Array &src = PEEK_CAST(stack::Array, *sob);
   auto any = rpn.stack.pop();
   stack::Array result;
   result.add_value(*any);
@@ -334,7 +334,7 @@ NATIVE_WORD_DECL(vec3, to_vec3z) {
 NATIVE_WORD_DECL(t_array, reverse) {
   rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
   auto sob = rpn.stack.pop();
-  stack::Array arr = PEEK_CAST(const stack::Array, *sob);
+  stack::Array arr = PEEK_CAST(stack::Array, *sob);
   arr.reverse();
   rpn.stack.push(arr);
   return rv;
