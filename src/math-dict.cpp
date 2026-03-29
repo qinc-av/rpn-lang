@@ -259,7 +259,7 @@ NATIVE_WORD_DECL(math,to_complex) {
 
 NATIVE_WORD_DECL(math,complex_to) {
   auto sob = rpn.stack.pop();
-  const auto &cx = PEEK_CAST(const stack::Complex,*sob);
+  const auto &cx = PEEK_CAST(stack::Complex,*sob);
   rpn.stack.push_double(cx.real());
   rpn.stack.push_double(cx.imag());
   return rpn::WordDefinition::Result::ok;

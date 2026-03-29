@@ -31,7 +31,7 @@ public:
     return rv;
   }
   virtual bool operator==(const rpn::Stack::Object &orhs) const override {
-    auto &rhs = PEEK_CAST(const CustomArray,orhs);
+    auto &rhs = PEEK_CAST(CustomArray,orhs);
     return (*this == rhs);
   }
   virtual std::unique_ptr<rpn::Stack::Object> deep_copy() const override { return std::make_unique<CustomArray>(*this); };
