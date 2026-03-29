@@ -362,6 +362,7 @@ namespace rpn {
     void addStatsWords();
     void addVec3Words();
     void addMx3Words();
+    void addMarkerWords();
     void addStdlibWords();
   };
 
@@ -700,6 +701,31 @@ public:
   }
 private:
   std::string _v;
+};
+
+// Marker — a stack sentinel used to mark the base of a collection literal.
+// Pushed by `[` and `{`; consumed by the matching close word (`]` or `}`).
+class Marker : public rpn::Stack::Object {
+public:
+  explicit Marker(const std::string &label) : _label(label) {}
+  const std::string &label() const { return _label; }
+  virtual bool operator==(const rpn::Stack::Object &orhs) const override {
+    const auto &rhs = PEEK_CAST(Marker, orhs);
+    return _label == rhs._label;
+  }
+  virtual std::unique_ptr<rpn::Stack::Object> deep_copy() const override {
+    return std::make_unique<Marker>(*this);
+  }
+  virtual operator std::string() const override { return _label + "..."; }
+  virtual std::string deparse() const override { return _label; }
+  virtual std::string to_latex() const override { return _label; }
+  virtual std::string type_name() const override { return "marker"; }
+  virtual nlohmann::json to_json() const override {
+    return {{"type", type_name()}, {"display", (std::string)(*this)},
+            {"deparse", deparse()}, {"data", _label}};
+  }
+private:
+  std::string _label;
 };
 
 // Json — a JSON value on the stack. Uses MI: IS-A nlohmann::json and IS-A Stack::Object.

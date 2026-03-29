@@ -1460,6 +1460,7 @@ rpn::Interp::Interp(bool async) {
   addVec3Words();
   addMx3Words();
   geometry::addWords(*this);
+  addMarkerWords();
   addStdlibWords();
   setWordCategory(""); // reset so embedder-added words don't inherit a built-in category
 }

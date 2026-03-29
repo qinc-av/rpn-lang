@@ -124,6 +124,21 @@ rpn::Interp::addStdlibWords() {
   addWordMetadata("->{xy}",     "Create a VEC3 from x (NOS) and y (TOS) components.");
 
   setWordCategory(""); // reset
+
+  // -------------------------------------------------------------------------
+  // Collection literal close words — consume marker and build collection
+  setWordCategory("types");
+
+  // ]  ( [... v1..vn -- vec )
+  // FIND-MARK returns count above marker; ->VEC pops count+elements; SWAP/DROP removes marker.
+  addCompiledWord("]", "( [... v1..vn -- vec ) \"[\" FIND-MARK ->VEC SWAP DROP");
+  addWordMetadata("]", "Close a vector literal started with `[`.  Collects all items above the `[` marker into a vector.");
+
+  // }  ( {... k1 v1 .. kn vn -- obj )
+  addCompiledWord("}", "( -- obj ) \"{\" FIND-MARK ->OBJECT SWAP DROP");
+  addWordMetadata("}", "Close an object literal started with `{`.  Collects key/value pairs above the `{` marker into an object.");
+
+  setWordCategory(""); // reset
 }
 
 /* end of qinc/rpn-lang/src/rpn-stdlib.cpp */

@@ -1062,7 +1062,7 @@ TEST_CASE("validators", "strict-type") {
     { rpn::StrictTypeValidator::d1_double, "12.34" },
     { rpn::StrictTypeValidator::d1_integer, "0x1234" },
     { rpn::StrictTypeValidator::d1_boolean, "<true>" },
-    { rpn::StrictTypeValidator::d1_object, "<true> .\" flag\" ->OBJ" },
+    { rpn::StrictTypeValidator::d1_object, ".\" flag\" <true> ->OBJ" },
     { rpn::StrictTypeValidator::d1_string, ".\" string 1\"" },
     { rpn::StrictTypeValidator::d1_array, "1. 2 .\" string\" 3 ->ARRAY" },
     { rpn::StrictTypeValidator::d1_vec3, "12.34 23.45 34.56 ->VEC3" },
@@ -1079,9 +1079,9 @@ TEST_CASE("validators", "strict-type") {
     { rpn::StrictTypeValidator::d2_any_array, "<true> <true> 1 ->ARRAY" },
     { rpn::StrictTypeValidator::d2_array_any, "1 2 3 3 ->ARRAY 4.5" },
     { rpn::StrictTypeValidator::d2_any_string, "<true> .\" flag\"" },
-    { rpn::StrictTypeValidator::d2_string_any, ".\" abc\" <true> .\" flag\" ->OBJ" },
-    { rpn::StrictTypeValidator::d2_any_object, "<true> .\" flag\" ->OBJ DUP" },
-    { rpn::StrictTypeValidator::d2_object_any, "<true> .\" flag\" ->OBJ DUP" },
+    { rpn::StrictTypeValidator::d2_string_any, ".\" abc\" .\" flag\" <true> ->OBJ" },
+    { rpn::StrictTypeValidator::d2_any_object, ".\" flag\" <true> ->OBJ DUP" },
+    { rpn::StrictTypeValidator::d2_object_any, ".\" flag\" <true> ->OBJ DUP" },
 
     { rpn::StrictTypeValidator::d3_double_double_double, "2.3 2.3 4" },
     { rpn::StrictTypeValidator::d3_integer_double_double, "0x2 3 4." },
@@ -1094,8 +1094,8 @@ TEST_CASE("validators", "strict-type") {
     { rpn::StrictTypeValidator::d3_integer_integer_integer, "2_10 0x3 4_16" },
 
     { rpn::StrictTypeValidator::d3_boolean_any_any, "<true> 1 .\" string\"" },
-    { rpn::StrictTypeValidator::d3_any_string_object, "99 .\" bottles\" 44 .\" xyz\" ->OBJ" },
-    { rpn::StrictTypeValidator::d3_object_any_string, ".\" football\" .\" life\" ->OBJ 42 .\" meaning\"" },
+    { rpn::StrictTypeValidator::d3_any_string_object, "99 .\" bottles\" .\" xyz\" 44 ->OBJ" },
+    { rpn::StrictTypeValidator::d3_object_any_string, ".\" life\" .\" football\" ->OBJ 42 .\" meaning\"" },
     { rpn::StrictTypeValidator::d4_integer_double_double_double, "0x5 1.2 2.3 3.4" },
     { rpn::StrictTypeValidator::d4_double_double_double_integer, "2.2 3.3 4.4 0x5" },
     { timecode_validator::d1_tc, "60000_ 1001_ ->FRAC 12345 ->TC" },
@@ -1134,7 +1134,7 @@ TEST_CASE("validators", "strict-type") {
 TEST_CASE( "object", "types" ) {
   std::string line;
   {
-    line = ("3.6 .\" abc\" ->OBJ 2.8 .\" def\" +");
+    line = (".\" abc\" 3.6 ->OBJ 2.8 .\" def\" +");
     g_rpn.stack.clear();
     auto st = g_rpn.sync_eval(line);
     REQUIRE( (st == rpn::WordDefinition::Result::ok) );
@@ -2163,8 +2163,8 @@ TEST_CASE("stdlib migrated words", "stdlib") {
   // DUP2 / DROP2
   REQUIRE( ev("1. 2. DUP2") == rpn::WordDefinition::Result::ok );
   REQUIRE( rpn.stack.depth() == 4 );
-  REQUIRE_THAT( rpn.stack.peek_double(1), WithinAbs(2., eps) );
-  REQUIRE_THAT( rpn.stack.peek_double(2), WithinAbs(1., eps) );
+  REQUIRE_THAT( rpn.stack.peek_double(1), Catch::Matchers::WithinAbs(2., eps) );
+  REQUIRE_THAT( rpn.stack.peek_double(2), Catch::Matchers::WithinAbs(1., eps) );
   REQUIRE( ev("DROP2") == rpn::WordDefinition::Result::ok );
   REQUIRE( rpn.stack.depth() == 2 );
   REQUIRE( ev("DROP2") == rpn::WordDefinition::Result::ok );
@@ -2172,12 +2172,12 @@ TEST_CASE("stdlib migrated words", "stdlib") {
 
   // SQ — double
   REQUIRE( ev("3. SQ") == rpn::WordDefinition::Result::ok );
-  REQUIRE_THAT( rpn.stack.peek_double(1), WithinAbs(9., eps) );
+  REQUIRE_THAT( rpn.stack.peek_double(1), Catch::Matchers::WithinAbs(9., eps) );
   rpn.stack.drop();
 
   // HYPOT
   REQUIRE( ev("3. 4. HYPOT") == rpn::WordDefinition::Result::ok );
-  REQUIRE_THAT( rpn.stack.peek_double(1), WithinAbs(5., eps) );
+  REQUIRE_THAT( rpn.stack.peek_double(1), Catch::Matchers::WithinAbs(5., eps) );
   rpn.stack.drop();
 }
 
@@ -2189,92 +2189,92 @@ TEST_CASE("RPL stdlib", "stdlib") {
 
   // GAMMA: n! = GAMMA(n+1)
   REQUIRE( ev("5. GAMMA") == rpn::WordDefinition::Result::ok );
-  REQUIRE_THAT( rpn.stack.peek_double(1), WithinAbs(std::tgamma(5.), eps) ); // 24
+  REQUIRE_THAT( rpn.stack.peek_double(1), Catch::Matchers::WithinAbs(std::tgamma(5.), eps) ); // 24
   rpn.stack.drop();
 
   // LGAMMA
   REQUIRE( ev("5. LGAMMA") == rpn::WordDefinition::Result::ok );
-  REQUIRE_THAT( rpn.stack.peek_double(1), WithinAbs(std::lgamma(5.), eps) );
+  REQUIRE_THAT( rpn.stack.peek_double(1), Catch::Matchers::WithinAbs(std::lgamma(5.), eps) );
   rpn.stack.drop();
 
   // Hyperbolic trig against std:: functions
   for (double x : {-1.5, 0., 0.5, 1.5}) {
     REQUIRE( ev(std::to_string(x) + " SINH") == rpn::WordDefinition::Result::ok );
-    REQUIRE_THAT( rpn.stack.peek_double(1), WithinAbs(std::sinh(x), 1e-9) );
+    REQUIRE_THAT( rpn.stack.peek_double(1), Catch::Matchers::WithinAbs(std::sinh(x), 1e-9) );
     rpn.stack.drop();
 
     REQUIRE( ev(std::to_string(x) + " COSH") == rpn::WordDefinition::Result::ok );
-    REQUIRE_THAT( rpn.stack.peek_double(1), WithinAbs(std::cosh(x), 1e-9) );
+    REQUIRE_THAT( rpn.stack.peek_double(1), Catch::Matchers::WithinAbs(std::cosh(x), 1e-9) );
     rpn.stack.drop();
 
     REQUIRE( ev(std::to_string(x) + " TANH") == rpn::WordDefinition::Result::ok );
-    REQUIRE_THAT( rpn.stack.peek_double(1), WithinAbs(std::tanh(x), 1e-9) );
+    REQUIRE_THAT( rpn.stack.peek_double(1), Catch::Matchers::WithinAbs(std::tanh(x), 1e-9) );
     rpn.stack.drop();
   }
 
   // Inverse hyperbolic trig
   for (double x : {0., 0.5, 1.5}) {
     REQUIRE( ev(std::to_string(x) + " ASINH") == rpn::WordDefinition::Result::ok );
-    REQUIRE_THAT( rpn.stack.peek_double(1), WithinAbs(std::asinh(x), 1e-9) );
+    REQUIRE_THAT( rpn.stack.peek_double(1), Catch::Matchers::WithinAbs(std::asinh(x), 1e-9) );
     rpn.stack.drop();
   }
   for (double x : {1.0, 2.0, 3.5}) {
     REQUIRE( ev(std::to_string(x) + " ACOSH") == rpn::WordDefinition::Result::ok );
-    REQUIRE_THAT( rpn.stack.peek_double(1), WithinAbs(std::acosh(x), 1e-9) );
+    REQUIRE_THAT( rpn.stack.peek_double(1), Catch::Matchers::WithinAbs(std::acosh(x), 1e-9) );
     rpn.stack.drop();
   }
   for (double x : {-0.9, 0., 0.9}) {
     REQUIRE( ev(std::to_string(x) + " ATANH") == rpn::WordDefinition::Result::ok );
-    REQUIRE_THAT( rpn.stack.peek_double(1), WithinAbs(std::atanh(x), 1e-9) );
+    REQUIRE_THAT( rpn.stack.peek_double(1), Catch::Matchers::WithinAbs(std::atanh(x), 1e-9) );
     rpn.stack.drop();
   }
 
   // Factorial: n! = GAMMA(n+1)
   for (double n : {0., 1., 2., 3., 5., 10.}) {
     REQUIRE( ev(std::to_string(n) + " !") == rpn::WordDefinition::Result::ok );
-    REQUIRE_THAT( rpn.stack.peek_double(1), WithinAbs(std::tgamma(n + 1.), eps) );
+    REQUIRE_THAT( rpn.stack.peek_double(1), Catch::Matchers::WithinAbs(std::tgamma(n + 1.), eps) );
     rpn.stack.drop();
   }
 
   // nCr: C(5,2) = 10, C(6,3) = 20
   REQUIRE( ev("5. 2. nCr") == rpn::WordDefinition::Result::ok );
-  REQUIRE_THAT( rpn.stack.peek_double(1), WithinAbs(10., eps) );
+  REQUIRE_THAT( rpn.stack.peek_double(1), Catch::Matchers::WithinAbs(10., eps) );
   rpn.stack.drop();
 
   REQUIRE( ev("6. 3. nCr") == rpn::WordDefinition::Result::ok );
-  REQUIRE_THAT( rpn.stack.peek_double(1), WithinAbs(20., eps) );
+  REQUIRE_THAT( rpn.stack.peek_double(1), Catch::Matchers::WithinAbs(20., eps) );
   rpn.stack.drop();
 
   // nPr: P(5,2) = 20, P(6,3) = 120
   REQUIRE( ev("5. 2. nPr") == rpn::WordDefinition::Result::ok );
-  REQUIRE_THAT( rpn.stack.peek_double(1), WithinAbs(20., eps) );
+  REQUIRE_THAT( rpn.stack.peek_double(1), Catch::Matchers::WithinAbs(20., eps) );
   rpn.stack.drop();
 
   REQUIRE( ev("6. 3. nPr") == rpn::WordDefinition::Result::ok );
-  REQUIRE_THAT( rpn.stack.peek_double(1), WithinAbs(120., eps) );
+  REQUIRE_THAT( rpn.stack.peek_double(1), Catch::Matchers::WithinAbs(120., eps) );
   rpn.stack.drop();
 
   // GCD
   REQUIRE( ev("12. 8. GCD") == rpn::WordDefinition::Result::ok );
-  REQUIRE_THAT( rpn.stack.peek_double(1), WithinAbs(4., eps) );
+  REQUIRE_THAT( rpn.stack.peek_double(1), Catch::Matchers::WithinAbs(4., eps) );
   rpn.stack.drop();
 
   REQUIRE( ev("35. 14. GCD") == rpn::WordDefinition::Result::ok );
-  REQUIRE_THAT( rpn.stack.peek_double(1), WithinAbs(7., eps) );
+  REQUIRE_THAT( rpn.stack.peek_double(1), Catch::Matchers::WithinAbs(7., eps) );
   rpn.stack.drop();
 
   // GCD with zero
   REQUIRE( ev("8. 0. GCD") == rpn::WordDefinition::Result::ok );
-  REQUIRE_THAT( rpn.stack.peek_double(1), WithinAbs(8., eps) );
+  REQUIRE_THAT( rpn.stack.peek_double(1), Catch::Matchers::WithinAbs(8., eps) );
   rpn.stack.drop();
 
   // LCM
   REQUIRE( ev("4. 6. LCM") == rpn::WordDefinition::Result::ok );
-  REQUIRE_THAT( rpn.stack.peek_double(1), WithinAbs(12., eps) );
+  REQUIRE_THAT( rpn.stack.peek_double(1), Catch::Matchers::WithinAbs(12., eps) );
   rpn.stack.drop();
 
   REQUIRE( ev("5. 7. LCM") == rpn::WordDefinition::Result::ok );
-  REQUIRE_THAT( rpn.stack.peek_double(1), WithinAbs(35., eps) );
+  REQUIRE_THAT( rpn.stack.peek_double(1), Catch::Matchers::WithinAbs(35., eps) );
   rpn.stack.drop();
 }
 
@@ -2291,9 +2291,9 @@ TEST_CASE("vector type", "matrix") {
   REQUIRE( ev("VEC->") == ok );
   REQUIRE( rpn.stack.depth() == 4 );
   REQUIRE( rpn.stack.peek_as_integer(1) == 3 );          // count
-  REQUIRE_THAT( rpn.stack.peek_double(2), WithinAbs(3., eps) ); // v[2]
-  REQUIRE_THAT( rpn.stack.peek_double(3), WithinAbs(2., eps) ); // v[1]
-  REQUIRE_THAT( rpn.stack.peek_double(4), WithinAbs(1., eps) ); // v[0]
+  REQUIRE_THAT( rpn.stack.peek_double(2), Catch::Matchers::WithinAbs(3., eps) ); // v[2]
+  REQUIRE_THAT( rpn.stack.peek_double(3), Catch::Matchers::WithinAbs(2., eps) ); // v[1]
+  REQUIRE_THAT( rpn.stack.peek_double(4), Catch::Matchers::WithinAbs(1., eps) ); // v[0]
   rpn.stack.clear();
 
   // SIZE
@@ -2304,51 +2304,51 @@ TEST_CASE("vector type", "matrix") {
   // ------- operations -------
   // VDOT
   REQUIRE( ev("1. 2. 3. 3 ->VEC  4. 5. 6. 3 ->VEC VDOT") == ok );
-  REQUIRE_THAT( rpn.stack.peek_double(1), WithinAbs(32., eps) ); // 1*4+2*5+3*6
+  REQUIRE_THAT( rpn.stack.peek_double(1), Catch::Matchers::WithinAbs(32., eps) ); // 1*4+2*5+3*6
   rpn.stack.clear();
 
   // VNORM: [3, 4] → 5
   REQUIRE( ev("3. 4. 2 ->VEC VNORM") == ok );
-  REQUIRE_THAT( rpn.stack.peek_double(1), WithinAbs(5., eps) );
+  REQUIRE_THAT( rpn.stack.peek_double(1), Catch::Matchers::WithinAbs(5., eps) );
   rpn.stack.clear();
 
   // + element-wise
   REQUIRE( ev("1. 2. 3. 3 ->VEC  10. 20. 30. 3 ->VEC + VEC->") == ok );
   REQUIRE( rpn.stack.peek_as_integer(1) == 3 );
-  REQUIRE_THAT( rpn.stack.peek_double(2), WithinAbs(33., eps) );
-  REQUIRE_THAT( rpn.stack.peek_double(3), WithinAbs(22., eps) );
-  REQUIRE_THAT( rpn.stack.peek_double(4), WithinAbs(11., eps) );
+  REQUIRE_THAT( rpn.stack.peek_double(2), Catch::Matchers::WithinAbs(33., eps) );
+  REQUIRE_THAT( rpn.stack.peek_double(3), Catch::Matchers::WithinAbs(22., eps) );
+  REQUIRE_THAT( rpn.stack.peek_double(4), Catch::Matchers::WithinAbs(11., eps) );
   rpn.stack.clear();
 
   // - element-wise
   REQUIRE( ev("10. 20. 30. 3 ->VEC  1. 2. 3. 3 ->VEC - VEC->") == ok );
-  REQUIRE_THAT( rpn.stack.peek_double(2), WithinAbs(27., eps) );
-  REQUIRE_THAT( rpn.stack.peek_double(3), WithinAbs(18., eps) );
-  REQUIRE_THAT( rpn.stack.peek_double(4), WithinAbs(9., eps) );
+  REQUIRE_THAT( rpn.stack.peek_double(2), Catch::Matchers::WithinAbs(27., eps) );
+  REQUIRE_THAT( rpn.stack.peek_double(3), Catch::Matchers::WithinAbs(18., eps) );
+  REQUIRE_THAT( rpn.stack.peek_double(4), Catch::Matchers::WithinAbs(9., eps) );
   rpn.stack.clear();
 
   // * scalar (vec * scalar)
   REQUIRE( ev("1. 2. 3. 3 ->VEC 2. * VEC->") == ok );
-  REQUIRE_THAT( rpn.stack.peek_double(2), WithinAbs(6., eps) );
-  REQUIRE_THAT( rpn.stack.peek_double(3), WithinAbs(4., eps) );
-  REQUIRE_THAT( rpn.stack.peek_double(4), WithinAbs(2., eps) );
+  REQUIRE_THAT( rpn.stack.peek_double(2), Catch::Matchers::WithinAbs(6., eps) );
+  REQUIRE_THAT( rpn.stack.peek_double(3), Catch::Matchers::WithinAbs(4., eps) );
+  REQUIRE_THAT( rpn.stack.peek_double(4), Catch::Matchers::WithinAbs(2., eps) );
   rpn.stack.clear();
 
   // ------- interop -------
   // VEC->COLVEC, COLVEC->VEC
   REQUIRE( ev("1. 2. 3. 3 ->VEC VEC->COLVEC COLVEC->VEC VEC->") == ok );
   REQUIRE( rpn.stack.peek_as_integer(1) == 3 );
-  REQUIRE_THAT( rpn.stack.peek_double(2), WithinAbs(3., eps) );
-  REQUIRE_THAT( rpn.stack.peek_double(3), WithinAbs(2., eps) );
-  REQUIRE_THAT( rpn.stack.peek_double(4), WithinAbs(1., eps) );
+  REQUIRE_THAT( rpn.stack.peek_double(2), Catch::Matchers::WithinAbs(3., eps) );
+  REQUIRE_THAT( rpn.stack.peek_double(3), Catch::Matchers::WithinAbs(2., eps) );
+  REQUIRE_THAT( rpn.stack.peek_double(4), Catch::Matchers::WithinAbs(1., eps) );
   rpn.stack.clear();
 
   // VEC3->VEC, VEC->VEC3
   REQUIRE( ev("1. 2. 3. ->VEC3 VEC3->VEC VEC->") == ok );
   REQUIRE( rpn.stack.peek_as_integer(1) == 3 );
-  REQUIRE_THAT( rpn.stack.peek_double(2), WithinAbs(3., eps) );
-  REQUIRE_THAT( rpn.stack.peek_double(3), WithinAbs(2., eps) );
-  REQUIRE_THAT( rpn.stack.peek_double(4), WithinAbs(1., eps) );
+  REQUIRE_THAT( rpn.stack.peek_double(2), Catch::Matchers::WithinAbs(3., eps) );
+  REQUIRE_THAT( rpn.stack.peek_double(3), Catch::Matchers::WithinAbs(2., eps) );
+  REQUIRE_THAT( rpn.stack.peek_double(4), Catch::Matchers::WithinAbs(1., eps) );
   rpn.stack.clear();
 }
 
@@ -2367,10 +2367,10 @@ TEST_CASE("matrix type", "matrix") {
   REQUIRE( rpn.stack.depth() == 6 );
   REQUIRE( rpn.stack.peek_as_integer(1) == 2 );                   // cols
   REQUIRE( rpn.stack.peek_as_integer(2) == 2 );                   // rows
-  REQUIRE_THAT( rpn.stack.peek_double(3), WithinAbs(4., eps) );   // [1][1]
-  REQUIRE_THAT( rpn.stack.peek_double(4), WithinAbs(3., eps) );   // [1][0]
-  REQUIRE_THAT( rpn.stack.peek_double(5), WithinAbs(2., eps) );   // [0][1]
-  REQUIRE_THAT( rpn.stack.peek_double(6), WithinAbs(1., eps) );   // [0][0]
+  REQUIRE_THAT( rpn.stack.peek_double(3), Catch::Matchers::WithinAbs(4., eps) );   // [1][1]
+  REQUIRE_THAT( rpn.stack.peek_double(4), Catch::Matchers::WithinAbs(3., eps) );   // [1][0]
+  REQUIRE_THAT( rpn.stack.peek_double(5), Catch::Matchers::WithinAbs(2., eps) );   // [0][1]
+  REQUIRE_THAT( rpn.stack.peek_double(6), Catch::Matchers::WithinAbs(1., eps) );   // [0][0]
   rpn.stack.clear();
 
   // ROWS / COLS
@@ -2385,59 +2385,59 @@ TEST_CASE("matrix type", "matrix") {
   // ------- operations -------
   // DET: det([[1,2],[3,4]]) = 4 - 6 = -2
   REQUIRE( ev("1. 2. 3. 4. 2 2 ->MATRIX DET") == ok );
-  REQUIRE_THAT( rpn.stack.peek_double(1), WithinAbs(-2., eps) );
+  REQUIRE_THAT( rpn.stack.peek_double(1), Catch::Matchers::WithinAbs(-2., eps) );
   rpn.stack.clear();
 
   // TRANS: [[1,2],[3,4]]^T = [[1,3],[2,4]]
   REQUIRE( ev("1. 2. 3. 4. 2 2 ->MATRIX TRANS MATRIX->") == ok );
-  REQUIRE_THAT( rpn.stack.peek_double(3), WithinAbs(4., eps) );   // [1][1]=4
-  REQUIRE_THAT( rpn.stack.peek_double(4), WithinAbs(2., eps) );   // [1][0]=2
-  REQUIRE_THAT( rpn.stack.peek_double(5), WithinAbs(3., eps) );   // [0][1]=3
-  REQUIRE_THAT( rpn.stack.peek_double(6), WithinAbs(1., eps) );   // [0][0]=1
+  REQUIRE_THAT( rpn.stack.peek_double(3), Catch::Matchers::WithinAbs(4., eps) );   // [1][1]=4
+  REQUIRE_THAT( rpn.stack.peek_double(4), Catch::Matchers::WithinAbs(2., eps) );   // [1][0]=2
+  REQUIRE_THAT( rpn.stack.peek_double(5), Catch::Matchers::WithinAbs(3., eps) );   // [0][1]=3
+  REQUIRE_THAT( rpn.stack.peek_double(6), Catch::Matchers::WithinAbs(1., eps) );   // [0][0]=1
   rpn.stack.clear();
 
   // INV: inv([[1,2],[3,4]]) = [[-2,1],[1.5,-0.5]]
   REQUIRE( ev("1. 2. 3. 4. 2 2 ->MATRIX INV MATRIX->") == ok );
-  REQUIRE_THAT( rpn.stack.peek_double(3), WithinAbs(-0.5, eps) ); // [1][1]
-  REQUIRE_THAT( rpn.stack.peek_double(4), WithinAbs(1.5,  eps) ); // [1][0]
-  REQUIRE_THAT( rpn.stack.peek_double(5), WithinAbs(1.,   eps) ); // [0][1]
-  REQUIRE_THAT( rpn.stack.peek_double(6), WithinAbs(-2.,  eps) ); // [0][0]
+  REQUIRE_THAT( rpn.stack.peek_double(3), Catch::Matchers::WithinAbs(-0.5, eps) ); // [1][1]
+  REQUIRE_THAT( rpn.stack.peek_double(4), Catch::Matchers::WithinAbs(1.5,  eps) ); // [1][0]
+  REQUIRE_THAT( rpn.stack.peek_double(5), Catch::Matchers::WithinAbs(1.,   eps) ); // [0][1]
+  REQUIRE_THAT( rpn.stack.peek_double(6), Catch::Matchers::WithinAbs(-2.,  eps) ); // [0][0]
   rpn.stack.clear();
 
   // IDENTITY: 3×3
   REQUIRE( ev("3 IDENTITY MATRIX->") == ok );
   REQUIRE( rpn.stack.peek_as_integer(1) == 3 );  // cols
   REQUIRE( rpn.stack.peek_as_integer(2) == 3 );  // rows
-  REQUIRE_THAT( rpn.stack.peek_double(3), WithinAbs(1., eps) );   // [2][2]
-  REQUIRE_THAT( rpn.stack.peek_double(4), WithinAbs(0., eps) );   // [2][1]
-  REQUIRE_THAT( rpn.stack.peek_double(5), WithinAbs(0., eps) );   // [2][0]
+  REQUIRE_THAT( rpn.stack.peek_double(3), Catch::Matchers::WithinAbs(1., eps) );   // [2][2]
+  REQUIRE_THAT( rpn.stack.peek_double(4), Catch::Matchers::WithinAbs(0., eps) );   // [2][1]
+  REQUIRE_THAT( rpn.stack.peek_double(5), Catch::Matchers::WithinAbs(0., eps) );   // [2][0]
   rpn.stack.clear();
 
   // + add two matrices
   REQUIRE( ev("1. 2. 3. 4. 2 2 ->MATRIX  10. 20. 30. 40. 2 2 ->MATRIX + MATRIX->") == ok );
-  REQUIRE_THAT( rpn.stack.peek_double(3), WithinAbs(44., eps) );
-  REQUIRE_THAT( rpn.stack.peek_double(6), WithinAbs(11., eps) );
+  REQUIRE_THAT( rpn.stack.peek_double(3), Catch::Matchers::WithinAbs(44., eps) );
+  REQUIRE_THAT( rpn.stack.peek_double(6), Catch::Matchers::WithinAbs(11., eps) );
   rpn.stack.clear();
 
   // * matrix-matrix: [[1,2],[3,4]] * [[5,6],[7,8]] = [[19,22],[43,50]]
   REQUIRE( ev("1. 2. 3. 4. 2 2 ->MATRIX  5. 6. 7. 8. 2 2 ->MATRIX  * MATRIX->") == ok );
-  REQUIRE_THAT( rpn.stack.peek_double(3), WithinAbs(50., eps) ); // [1][1]
-  REQUIRE_THAT( rpn.stack.peek_double(4), WithinAbs(43., eps) ); // [1][0]
-  REQUIRE_THAT( rpn.stack.peek_double(5), WithinAbs(22., eps) ); // [0][1]
-  REQUIRE_THAT( rpn.stack.peek_double(6), WithinAbs(19., eps) ); // [0][0]
+  REQUIRE_THAT( rpn.stack.peek_double(3), Catch::Matchers::WithinAbs(50., eps) ); // [1][1]
+  REQUIRE_THAT( rpn.stack.peek_double(4), Catch::Matchers::WithinAbs(43., eps) ); // [1][0]
+  REQUIRE_THAT( rpn.stack.peek_double(5), Catch::Matchers::WithinAbs(22., eps) ); // [0][1]
+  REQUIRE_THAT( rpn.stack.peek_double(6), Catch::Matchers::WithinAbs(19., eps) ); // [0][0]
   rpn.stack.clear();
 
   // * matrix-vector: [[1,2],[3,4]] * [5,6] = [17,39]
   REQUIRE( ev("1. 2. 3. 4. 2 2 ->MATRIX  5. 6. 2 ->VEC  * VEC->") == ok );
   REQUIRE( rpn.stack.peek_as_integer(1) == 2 );
-  REQUIRE_THAT( rpn.stack.peek_double(2), WithinAbs(39., eps) ); // v[1]
-  REQUIRE_THAT( rpn.stack.peek_double(3), WithinAbs(17., eps) ); // v[0]
+  REQUIRE_THAT( rpn.stack.peek_double(2), Catch::Matchers::WithinAbs(39., eps) ); // v[1]
+  REQUIRE_THAT( rpn.stack.peek_double(3), Catch::Matchers::WithinAbs(17., eps) ); // v[0]
   rpn.stack.clear();
 
   // * scalar scale
   REQUIRE( ev("1. 2. 3. 4. 2 2 ->MATRIX 2. * MATRIX->") == ok );
-  REQUIRE_THAT( rpn.stack.peek_double(3), WithinAbs(8., eps) );
-  REQUIRE_THAT( rpn.stack.peek_double(6), WithinAbs(2., eps) );
+  REQUIRE_THAT( rpn.stack.peek_double(3), Catch::Matchers::WithinAbs(8., eps) );
+  REQUIRE_THAT( rpn.stack.peek_double(6), Catch::Matchers::WithinAbs(2., eps) );
   rpn.stack.clear();
 }
 
@@ -2450,35 +2450,35 @@ TEST_CASE("stats words", "stats") {
 
   // MEAN: [1,2,3,4,5] → 3.0
   REQUIRE( ev("1. 2. 3. 4. 5. 5 ->VEC MEAN") == ok );
-  REQUIRE_THAT( rpn.stack.peek_double(1), WithinAbs(3.0, eps) );
+  REQUIRE_THAT( rpn.stack.peek_double(1), Catch::Matchers::WithinAbs(3.0, eps) );
   rpn.stack.clear();
 
   // VARIANCE: [2,4,4,4,5,5,7,9] → 4.571428... (sample)
   REQUIRE( ev("2. 4. 4. 4. 5. 5. 7. 9. 8 ->VEC VARIANCE") == ok );
-  REQUIRE_THAT( rpn.stack.peek_double(1), WithinAbs(32.0/7.0, eps) );
+  REQUIRE_THAT( rpn.stack.peek_double(1), Catch::Matchers::WithinAbs(32.0/7.0, eps) );
   rpn.stack.clear();
 
   // STDDEV: same data → sqrt(4.5714...)
   REQUIRE( ev("2. 4. 4. 4. 5. 5. 7. 9. 8 ->VEC STDDEV") == ok );
-  REQUIRE_THAT( rpn.stack.peek_double(1), WithinAbs(std::sqrt(32.0/7.0), eps) );
+  REQUIRE_THAT( rpn.stack.peek_double(1), Catch::Matchers::WithinAbs(std::sqrt(32.0/7.0), eps) );
   rpn.stack.clear();
 
   // CORRELATION: perfect positive correlation
   REQUIRE( ev("1. 2. 3. 4. 5. 5 ->VEC  1. 2. 3. 4. 5. 5 ->VEC  CORRELATION") == ok );
-  REQUIRE_THAT( rpn.stack.peek_double(1), WithinAbs(1.0, eps) );
+  REQUIRE_THAT( rpn.stack.peek_double(1), Catch::Matchers::WithinAbs(1.0, eps) );
   rpn.stack.clear();
 
   // CORRELATION: perfect negative correlation
   REQUIRE( ev("1. 2. 3. 4. 5. 5 ->VEC  5. 4. 3. 2. 1. 5 ->VEC  CORRELATION") == ok );
-  REQUIRE_THAT( rpn.stack.peek_double(1), WithinAbs(-1.0, eps) );
+  REQUIRE_THAT( rpn.stack.peek_double(1), Catch::Matchers::WithinAbs(-1.0, eps) );
   rpn.stack.clear();
 
   // LINFIT: y = 2x + 1 → slope=2, intercept=1
   // x=[1,2,3,4,5], y=[3,5,7,9,11]
   REQUIRE( ev("1. 2. 3. 4. 5. 5 ->VEC  3. 5. 7. 9. 11. 5 ->VEC  LINFIT") == ok );
   REQUIRE( rpn.stack.depth() == 2 );
-  REQUIRE_THAT( rpn.stack.peek_double(1), WithinAbs(2.0, eps) );   // slope  (TOS)
-  REQUIRE_THAT( rpn.stack.peek_double(2), WithinAbs(1.0, eps) );   // intercept (NOS)
+  REQUIRE_THAT( rpn.stack.peek_double(1), Catch::Matchers::WithinAbs(2.0, eps) );   // slope  (TOS)
+  REQUIRE_THAT( rpn.stack.peek_double(2), Catch::Matchers::WithinAbs(1.0, eps) );   // intercept (NOS)
   rpn.stack.clear();
 
   // OLS: same as LINFIT but via matrix interface
@@ -2489,10 +2489,110 @@ TEST_CASE("stats words", "stats") {
     auto obj = rpn.stack.pop();
     auto &res = POP_CAST(stack::Object, obj);
     const auto &beta_v = PEEK_CAST(::stack::Vector, res.member("beta"));
-    REQUIRE_THAT( beta_v.get(0), WithinAbs(1.0, eps) );  // intercept
-    REQUIRE_THAT( beta_v.get(1), WithinAbs(2.0, eps) );  // slope
-    REQUIRE_THAT( PEEK_CAST(stack::Double, res.member("rsq")).operator double(), WithinAbs(1.0, eps) );
-    REQUIRE_THAT( PEEK_CAST(stack::Double, res.member("ess")).operator double(), WithinAbs(0.0, 1e-8) );
+    REQUIRE_THAT( beta_v.get(0), Catch::Matchers::WithinAbs(1.0, eps) );  // intercept
+    REQUIRE_THAT( beta_v.get(1), Catch::Matchers::WithinAbs(2.0, eps) );  // slope
+    REQUIRE_THAT( PEEK_CAST(stack::Double, res.member("rsq")).operator double(), Catch::Matchers::WithinAbs(1.0, eps) );
+    REQUIRE_THAT( PEEK_CAST(stack::Double, res.member("ess")).operator double(), Catch::Matchers::WithinAbs(0.0, 1e-8) );
+  }
+  rpn.stack.clear();
+}
+
+TEST_CASE("marker and collection literals", "types") {
+  auto &rpn = g_rpn;
+  rpn.stack.clear();
+  auto ok = rpn::WordDefinition::Result::ok;
+  auto ev = [&](const std::string &s) { return rpn.sync_eval(s); };
+
+  // --- MARK / FIND-MARK primitives ---
+
+  // MARK creates a marker from a string label
+  REQUIRE( ev("\"[\" MARK") == ok );
+  REQUIRE( rpn.stack.depth() == 1 );
+  {
+    auto m = rpn.stack.pop();
+    REQUIRE( dynamic_cast<const stack::Marker*>(m.get()) != nullptr );
+    REQUIRE( dynamic_cast<const stack::Marker*>(m.get())->label() == "[" );
+  }
+
+  // FIND-MARK returns count of items above marker
+  REQUIRE( ev("\"[\" MARK 1. 2. 3. \"[\" FIND-MARK") == ok );
+  REQUIRE( rpn.stack.depth() == 5 );           // marker + 3 values + count
+  REQUIRE( rpn.stack.peek_integer(1) == 3 );   // 3 items above marker
+  rpn.stack.clear();
+
+  // FIND-MARK throws on missing marker
+  REQUIRE( ev("\"[\" FIND-MARK") != ok );
+  rpn.stack.clear();
+
+  // --- [ ] vector literal ---
+
+  REQUIRE( ev("[ 1. 2. 3. ]") == ok );
+  REQUIRE( rpn.stack.depth() == 1 );
+  {
+    auto sv = rpn.stack.pop();
+    auto &vec = POP_CAST(stack::Vector, sv);
+    REQUIRE( vec.size() == 3 );
+    REQUIRE_THAT( vec.get(0), Catch::Matchers::WithinAbs(1.0, 1e-12) );
+    REQUIRE_THAT( vec.get(1), Catch::Matchers::WithinAbs(2.0, 1e-12) );
+    REQUIRE_THAT( vec.get(2), Catch::Matchers::WithinAbs(3.0, 1e-12) );
+  }
+
+  // Single-element vector
+  REQUIRE( ev("[ 42. ]") == ok );
+  REQUIRE( rpn.stack.depth() == 1 );
+  {
+    auto sv = rpn.stack.pop();
+    auto &vec = POP_CAST(stack::Vector, sv);
+    REQUIRE( vec.size() == 1 );
+    REQUIRE_THAT( vec.get(0), Catch::Matchers::WithinAbs(42.0, 1e-12) );
+  }
+
+  // Values already on stack are unaffected by the literal
+  REQUIRE( ev("99. [ 1. 2. ]") == ok );
+  REQUIRE( rpn.stack.depth() == 2 );
+  REQUIRE_THAT( rpn.stack.peek_double(2), Catch::Matchers::WithinAbs(99.0, 1e-12) );
+  {
+    auto sv = rpn.stack.pop();
+    auto &vec = POP_CAST(stack::Vector, sv);
+    REQUIRE( vec.size() == 2 );
+  }
+  rpn.stack.clear();
+
+  // --- { } object literal ---
+
+  REQUIRE( ev("{ \"x\" 1. \"y\" 2. }") == ok );
+  REQUIRE( rpn.stack.depth() == 1 );
+  {
+    auto so = rpn.stack.pop();
+    auto &obj = POP_CAST(stack::Object, so);
+    REQUIRE( obj.has_member("x") );
+    REQUIRE( obj.has_member("y") );
+    REQUIRE_THAT( PEEK_CAST(stack::Double, obj.member("x")).operator double(), Catch::Matchers::WithinAbs(1.0, 1e-12) );
+    REQUIRE_THAT( PEEK_CAST(stack::Double, obj.member("y")).operator double(), Catch::Matchers::WithinAbs(2.0, 1e-12) );
+  }
+
+  // Single key/value pair
+  REQUIRE( ev("{ \"name\" \"alice\" }") == ok );
+  REQUIRE( rpn.stack.depth() == 1 );
+  {
+    auto so = rpn.stack.pop();
+    auto &obj = POP_CAST(stack::Object, so);
+    REQUIRE( obj.has_member("name") );
+    REQUIRE( std::string(PEEK_CAST(stack::String, obj.member("name"))) == "alice" );
+  }
+
+  // Odd item count → error
+  REQUIRE( ev("{ \"x\" 1. \"y\" }") != ok );
+  rpn.stack.clear();
+
+  // --- [ ] inside a compiled word ---
+
+  REQUIRE( ev(": make-vec [ 1. 2. 3. ] ; make-vec") == ok );
+  REQUIRE( rpn.stack.depth() == 1 );
+  {
+    auto sv = rpn.stack.pop();
+    auto &vec = POP_CAST(stack::Vector, sv);
+    REQUIRE( vec.size() == 3 );
   }
   rpn.stack.clear();
 }

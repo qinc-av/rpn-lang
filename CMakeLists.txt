@@ -1,5 +1,3 @@
-# for homebrew:
-# CMAKE_PREFIX_PATH=/usr/local/Cellar/qt@5/5.15.8_3/ cmake -B n -G Ninja
 
 cmake_minimum_required (VERSION 3.24)
 
@@ -25,13 +23,7 @@ target_include_directories(rpn-lang
   INTERFACE $<INSTALL_INTERFACE:include>
 )
 
-#  target_include_directories(web-bridge PUBLIC
-#  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>
-#  $<INSTALL_INTERFACE:include>  # <prefix>/include
-#)
-
-#add_subdirectory(tests)
-#add_subdirectory(ui/qt)
+add_subdirectory(tests)
 
 install(TARGETS rpn-lang
   EXPORT rpn-langConfig

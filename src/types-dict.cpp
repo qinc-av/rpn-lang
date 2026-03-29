@@ -65,13 +65,12 @@ NATIVE_WORD_DECL(types, to_string) {
  * Object
  */
 NATIVE_WORD_DECL(t_object, to_object) {
-  rpn::WordDefinition::Result rv = rpn::WordDefinition::Result::ok;
-  std::string ident = rpn.stack.pop_string();
-  auto val = rpn.stack.pop();
+  auto val = rpn.stack.pop();                  // TOS = value (any type)
+  std::string ident = rpn.stack.pop_string();  // NOS = key string
   stack::Object obj;
-  obj.add_value(ident,*val.get());
+  obj.add_value(ident, *val);
   rpn.stack.push(obj);
-  return rv;
+  return rpn::WordDefinition::Result::ok;
 }
 
 NATIVE_WORD_DECL(t_object, object_to) {
@@ -388,6 +387,10 @@ NATIVE_WORD_DECL(types, json_to) {
   return rpn::WordDefinition::Result::ok;
 }
 
+// Forward declaration: to_object_n is defined in the marker section below,
+// but referenced in addTypeWords() for the ->OBJECT registration.
+NATIVE_WORD_DECL(marker, to_object_n);
+
 void
 rpn::Interp::addTypeWords() {
   setWordCategory("types");
@@ -397,7 +400,8 @@ rpn::Interp::addTypeWords() {
   addDefinition("->FLOAT", NATIVE_WORD_WDEF(types, rpn::StrictTypeValidator::d1_integer, to_float, nullptr));
   addDefinition("->STRING", NATIVE_WORD_WDEF(types, rpn::StackSizeValidator::one, to_string, nullptr));
 
-  addDefinition("->OBJ", NATIVE_WORD_WDEF(t_object, rpn::StrictTypeValidator::d2_any_string, to_object, nullptr));
+  addDefinition("->OBJ",    NATIVE_WORD_WDEF(t_object, rpn::StrictTypeValidator::d2_string_any, to_object,    nullptr));
+  addDefinition("->OBJECT", NATIVE_WORD_WDEF(marker,   rpn::StackSizeValidator::ntos,         to_object_n,  nullptr));
   addDefinition("OBJ->", NATIVE_WORD_WDEF(t_object, rpn::StrictTypeValidator::d1_object, object_to, nullptr));
   addDefinition("->ARRAY", NATIVE_WORD_WDEF(t_array, rpn::StackSizeValidator::ntos, to_array, nullptr));
   addDefinition("OBJ->", NATIVE_WORD_WDEF(t_array, rpn::StrictTypeValidator::d1_array, array_to, nullptr));
@@ -434,7 +438,8 @@ rpn::Interp::addTypeWords() {
   addWordMetadata("->INT",    "Convert TOS to integer (rounded to nearest).");
   addWordMetadata("->FLOAT",  "Convert TOS to double.");
   addWordMetadata("->STRING", "Convert TOS to its string representation.");
-  addWordMetadata("->OBJ",    "Create a single-field object.  `value \"key\" ->OBJ`");
+  addWordMetadata("->OBJ",    "Create a single-field object.  `\"key\" value ->OBJ`");
+  addWordMetadata("->OBJECT", "Build an object from n items (even count, alternating key/value).  `\"k1\" v1 .. \"kn\" vn n ->OBJECT`");
   addWordMetadata("OBJ->",    "Explode an object, array, complex, fraction, or vec3 to its components.");
   addWordMetadata("->ARRAY",  "Collect the top n items into an array. n is on TOS.");
   addWordMetadata("ARREV",    "Reverse an array in-place.");
@@ -450,6 +455,79 @@ rpn::Interp::addTypeWords() {
   addDefinition("JSON->", NATIVE_WORD_WDEF(types, rpn::StackSizeValidator::one, json_to, nullptr));
   addWordMetadata("->JSON", "Convert TOS to a JSON value (stack::Json), using the type's data encoding.");
   addWordMetadata("JSON->", "Unpack a JSON value: array→elements+count, object→(val,key) pairs+count, scalar→native type.");
+}
+
+/***************************************************
+ * Marker words — MARK, FIND-MARK, [, {
+ * ->OBJ n-field  ( "k1" v1 .. "kn" vn n -- obj )
+ */
+
+// MARK  ( string -- marker )  — push a Marker with the given label
+NATIVE_WORD_DECL(marker, mark) {
+  std::string label = rpn.stack.pop_string();
+  rpn.stack.push(stack::Marker(label));
+  return rpn::WordDefinition::Result::ok;
+}
+
+// FIND-MARK  ( label -- n )  — find marker by label, push count of items above it
+NATIVE_WORD_DECL(marker, find_mark) {
+  std::string target = rpn.stack.pop_string();
+  size_t depth = rpn.stack.depth();
+  for (size_t i = 1; i <= depth; i++) {
+    const auto *m = dynamic_cast<const stack::Marker*>(&rpn.stack.peek(i));
+    if (m && m->label() == target) {
+      rpn.stack.push_integer((int64_t)(i - 1));
+      return rpn::WordDefinition::Result::ok;
+    }
+  }
+  throw std::runtime_error("unmatched '" + target + "': no matching marker on stack");
+}
+
+// [  ( -- marker )  — push Marker("["), opening a vector literal
+NATIVE_WORD_DECL(marker, open_vec) {
+  rpn.stack.push(stack::Marker("["));
+  return rpn::WordDefinition::Result::ok;
+}
+
+// {  ( -- marker )  — push Marker("{"), opening an object literal
+NATIVE_WORD_DECL(marker, open_obj) {
+  rpn.stack.push(stack::Marker("{"));
+  return rpn::WordDefinition::Result::ok;
+}
+
+// ->OBJ  ( "k1" v1 .. "kn" vn n -- obj )
+// Takes n items from TOS (n must be even): alternating "key" string / value pairs,
+// key pushed before value so TOS order is ..., "k", v, n.
+NATIVE_WORD_DECL(marker, to_object_n) {
+  size_t n = (size_t)rpn.stack.pop_as_integer();
+  if (n % 2 != 0)
+    throw std::runtime_error("->OBJ: item count must be even (key/value pairs)");
+  stack::Object obj;
+  for (size_t i = 0; i < n / 2; i++) {
+    auto val = rpn.stack.pop();   // TOS = value
+    auto key = rpn.stack.pop();   // NOS = key string
+    const auto &ks = PEEK_CAST(stack::String, *key);
+    obj.add_value(std::string(ks), *val);
+  }
+  rpn.stack.push(obj);
+  return rpn::WordDefinition::Result::ok;
+}
+
+void
+rpn::Interp::addMarkerWords() {
+  setWordCategory("types");
+
+  addDefinition("MARK",      { rpn::StrictTypeValidator::d1_string, NATIVE_WORD_FN(marker, mark),         nullptr });
+  addDefinition("FIND-MARK", { rpn::StrictTypeValidator::d1_string, NATIVE_WORD_FN(marker, find_mark),    nullptr });
+  addDefinition("[",         { rpn::StackSizeValidator::zero,        NATIVE_WORD_FN(marker, open_vec),     nullptr });
+  addDefinition("{",         { rpn::StackSizeValidator::zero,        NATIVE_WORD_FN(marker, open_obj),     nullptr });
+
+  addWordMetadata("MARK",      "Push a marker onto the stack with the given label.  `\"[\" MARK`");
+  addWordMetadata("FIND-MARK", "Find a marker by label; push count of items above it.  `\"[\" FIND-MARK`");
+  addWordMetadata("[",         "Push a vector-open marker.  Close with `]`.");
+  addWordMetadata("{",         "Push an object-open marker.  Close with `}`.");
+
+  setWordCategory("");
 }
 
 /* end of qinc/rpn-lang/src/types-dict.cpp */
