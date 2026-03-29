@@ -17,7 +17,7 @@
 #include <string>
 #include <vector>
 #include <functional>
-#include "rpn.h"  // for rpn::WordHelp, nlohmann::json (transitively)
+#include "nlohmann/json.hpp"
 
 namespace rpn {
   class Interp;
@@ -97,7 +97,7 @@ public:
   // Returns a JSON array; each element is the to_json() descriptor for one stack item (TOS first).
   nlohmann::json describeStack();
 
-  rpn::WordHelp wordHelp(const std::string &word) const;
+  nlohmann::json wordHelp(const std::string &word) const;
   std::vector<std::string> wordList() const;
 
   void cancel();

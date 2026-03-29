@@ -26,7 +26,7 @@
 #include <format>
 #include <stdexcept>
 #include <functional>
-#include <nlohmann/json.hpp>
+#include "nlohmann/json.hpp"
 
 namespace rpn {
   std::string to_string(const double &dv);

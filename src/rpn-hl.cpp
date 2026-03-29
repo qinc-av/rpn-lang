@@ -73,9 +73,15 @@ RpnInterp::describeStack() {
   return arr;
 }
 
-rpn::WordHelp
+nlohmann::json
 RpnInterp::wordHelp(const std::string &word) const {
-  return _interp->wordHelp(word);
+  auto wh = _interp->wordHelp(word);
+  nlohmann::json help = nlohmann::json::object();
+  help["name"] = wh.name;
+  help["description"] = wh.description;
+  help["category"] = wh.category;
+  help["effects"] = wh.effects;
+  return help;
 }
 
 std::vector<std::string>

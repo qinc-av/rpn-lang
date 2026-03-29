@@ -1,4 +1,6 @@
-static const std::map<std::pair<rpn::StrictTypeValidator,rpn::StrictTypeValidator>, bool> sk_validatorTests = {
+static const std::map<std::pair<rpn::StrictTypeValidator,rpn::StrictTypeValidator>, bool>& sk_validatorTests() {
+  using M = std::map<std::pair<rpn::StrictTypeValidator,rpn::StrictTypeValidator>, bool>;
+  static const M m = {
   { { rpn::StrictTypeValidator::d1_double, rpn::StrictTypeValidator::d1_double }, true },
   { { rpn::StrictTypeValidator::d1_double, rpn::StrictTypeValidator::d1_integer }, false },
   { { rpn::StrictTypeValidator::d1_double, rpn::StrictTypeValidator::d1_boolean }, false },
@@ -2208,4 +2210,6 @@ static const std::map<std::pair<rpn::StrictTypeValidator,rpn::StrictTypeValidato
   { { frac_validator::d5_frac_double_double_double_double, frac_validator::d2_frac_int }, false },
   { { frac_validator::d5_frac_double_double_double_double, frac_validator::d2_frac_double }, false },
   { { frac_validator::d5_frac_double_double_double_double, frac_validator::d5_frac_double_double_double_double }, true },
-};
+  };
+  return m;
+}

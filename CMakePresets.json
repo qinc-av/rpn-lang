@@ -3,26 +3,36 @@
   "cmakeMinimumRequired": { "major": 3, "minor": 24, "patch": 0 },
   "configurePresets": [
     {
-      "name": "lib",
-      "displayName": "Library (debug)",
-      "description": "Build the rpn-lang static library",
+      "name": "debug",
+      "displayName": "Debug",
+      "description": "Build library and tests (debug)",
       "binaryDir": "${sourceDir}/build",
+      "generator": "Ninja",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug"
       }
     },
     {
-      "name": "lib-release",
-      "displayName": "Library (release)",
-      "inherits": "lib",
+      "name": "release",
+      "displayName": "Release",
+      "description": "Build library and tests (release)",
       "binaryDir": "${sourceDir}/build-release",
+      "generator": "Ninja",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release"
       }
+    },
+    {
+      "name": "xcode",
+      "displayName": "Xcode",
+      "description": "Build library and tests (Xcode)",
+      "binaryDir": "${sourceDir}/build-xcode",
+      "generator": "Xcode"
     }
   ],
   "buildPresets": [
-    { "name": "lib",         "configurePreset": "lib"         },
-    { "name": "lib-release", "configurePreset": "lib-release" }
+    { "name": "debug",   "configurePreset": "debug"   },
+    { "name": "release", "configurePreset": "release" },
+    { "name": "xcode",   "configurePreset": "xcode"   }
   ]
 }

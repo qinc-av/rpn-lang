@@ -13,7 +13,7 @@
  */
 
 #include <catch2/catch_test_macros.hpp>
-#include "rpn.h"
+#include "../rpn.h"
 
 class CustomArray : public rpn::Stack::Object {
 public:
