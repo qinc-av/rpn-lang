@@ -1,0 +1,5 @@
+module RpnLangCXX {
+  header "rpn-hl.h"
+  requires cplusplus
+  export *
+}

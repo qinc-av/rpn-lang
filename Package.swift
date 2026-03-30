@@ -60,7 +60,7 @@ let package = Package(
             dependencies: ["RpnLangCXX"],
             path: "swift",
             swiftSettings: [
-                .interoperabilityMode(.Cxx),
+              .interoperabilityMode(.Cxx)
             ]
         ),
     ],

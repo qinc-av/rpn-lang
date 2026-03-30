@@ -16,10 +16,16 @@
 #include <string>
 #include <vector>
 #include <functional>
-#include "rpn-wordhelp.h"
 
 namespace rpn {
   class Interp;
+
+  struct WordHelp {
+    std::string name;
+    std::string description;
+    std::string category;
+    std::vector<std::string> effects;  // one entry per overload
+  };
 }
 
 // One stack item as returned by RpnInterp::describeStack().

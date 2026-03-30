@@ -27,7 +27,7 @@
 #include <stdexcept>
 #include <functional>
 #include "nlohmann/json.hpp"
-#include "rpn-wordhelp.h"
+#include "rpn-hl.h"
 
 namespace rpn {
   std::string to_string(const double &dv);
