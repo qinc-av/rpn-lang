@@ -1,5 +1,5 @@
 // swift/RpnLang.swift — Swift wrapper for RpnLangCXX
-import RpnLangCXX
+@_exported import RpnLangCXX
 
 public struct StackItem {
     public let type: String
