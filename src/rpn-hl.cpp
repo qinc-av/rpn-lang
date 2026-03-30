@@ -13,29 +13,29 @@
  */
 
 #include "../rpn-hl.h"
+#define JSON_NO_IO
+#include "nlohmann/json.hpp"
 #include "../rpn.h"
 
-/***********************************************************************
- * C++ version
- */
 RpnInterp::RpnInterp(bool async) : _interp(new rpn::Interp(async)) {
 }
+
 RpnInterp::~RpnInterp() {
   delete _interp;
 }
 
 void
-RpnInterp::eval(std::string line, std::function<void(Result)>completionHandler) {
-  _interp->eval(line, [&](rpn::WordDefinition::Result r1) {
-      completionHandler((Result)r1);
-    });
+RpnInterp::eval(std::string line, std::function<void(Result)> completionHandler) {
+  _interp->eval(line, [completionHandler](rpn::WordDefinition::Result r1) {
+    completionHandler((Result)r1);
+  });
 }
 
 void
-RpnInterp::parseFile(const std::string &path, std::function<void(Result)>completionHandler) {
-  _interp->parseFile(path, [&](rpn::WordDefinition::Result r1) {
-      completionHandler((Result)r1);
-    });
+RpnInterp::parseFile(const std::string &path, std::function<void(Result)> completionHandler) {
+  _interp->parseFile(path, [completionHandler](rpn::WordDefinition::Result r1) {
+    completionHandler((Result)r1);
+  });
 }
 
 bool
@@ -57,31 +57,26 @@ std::vector<std::string>
 RpnInterp::displayStack() {
   std::vector<std::string> rv;
   size_t n = _interp->stack.depth();
-  for(size_t i=0; i<n; i++) {
-    rv.push_back(_interp->stack.peek_for_display(i+1));
+  for (size_t i = 0; i < n; i++) {
+    rv.push_back(_interp->stack.peek_for_display(i + 1));
   }
   return rv;
 }
 
-nlohmann::json
+std::vector<StackItem>
 RpnInterp::describeStack() {
-  nlohmann::json arr = nlohmann::json::array();
+  std::vector<StackItem> rv;
   size_t n = _interp->stack.depth();
   for (size_t i = 0; i < n; i++) {
-    arr.push_back(_interp->stack.peek((int)(i + 1)).to_json());
+    const auto &obj = _interp->stack.peek((int)(i + 1));
+    rv.push_back({ obj.type_name(), (std::string)obj, obj.deparse() });
   }
-  return arr;
+  return rv;
 }
 
-nlohmann::json
+rpn::WordHelp
 RpnInterp::wordHelp(const std::string &word) const {
-  auto wh = _interp->wordHelp(word);
-  nlohmann::json help = nlohmann::json::object();
-  help["name"] = wh.name;
-  help["description"] = wh.description;
-  help["category"] = wh.category;
-  help["effects"] = wh.effects;
-  return help;
+  return _interp->wordHelp(word);
 }
 
 std::vector<std::string>
@@ -101,6 +96,25 @@ RpnInterp::setProgressHandler(std::function<void(const std::string &, double)> h
 void
 RpnInterp::reportProgress(const std::string &message, double fraction) {
   _interp->reportProgress(message, fraction);
+}
+
+rpn::Interp &
+RpnInterp::interp() {
+  return *_interp;
+}
+
+void
+RpnInterp::eval(const char *line, void (*callback)(int result, void *ctx), void *ctx) {
+  _interp->eval(std::string(line), [callback, ctx](rpn::WordDefinition::Result r) {
+    callback((int)r, ctx);
+  });
+}
+
+void
+RpnInterp::parseFile(const char *path, void (*callback)(int result, void *ctx), void *ctx) {
+  _interp->parseFile(std::string(path), [callback, ctx](rpn::WordDefinition::Result r) {
+    callback((int)r, ctx);
+  });
 }
 
 /* end of QInc/Projects/RP42/rpn-lang/src/rpn-hl.cpp */

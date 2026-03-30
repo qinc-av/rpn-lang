@@ -27,6 +27,7 @@
 #include <stdexcept>
 #include <functional>
 #include "nlohmann/json.hpp"
+#include "rpn-wordhelp.h"
 
 namespace rpn {
   std::string to_string(const double &dv);
@@ -252,14 +253,7 @@ namespace rpn {
 
   enum class AngleMode { degrees, radians, gradians };
 
-  // Assembled word documentation returned by Interp::wordHelp().
-  struct WordHelp {
-    std::string name;
-    std::string description;
-    std::string category;
-    std::vector<std::string> effects;  // one entry per overload; auto-derived from validator
-                                       // or "( inputs -- return_types )" when return_types is set
-  };
+  // rpn::WordHelp — see rpn-wordhelp.h (included above, outside namespace)
 
   struct WordDefinition {
     enum class Result {
