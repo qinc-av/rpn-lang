@@ -2595,6 +2595,27 @@ TEST_CASE("marker and collection literals", "types") {
     REQUIRE( vec.size() == 3 );
   }
   rpn.stack.clear();
+
+  // --- [ [ ] [ ] ] matrix literal ---
+
+  // 2x3 matrix: [ [1 2 3] [4 5 6] ]
+  REQUIRE( ev("[ [ 1. 2. 3. ] [ 4. 5. 6. ] ]") == ok );
+  REQUIRE( rpn.stack.depth() == 1 );
+  {
+    auto sv = rpn.stack.pop();
+    auto &mat = POP_CAST(stack::Matrix, sv);
+    REQUIRE( mat.rows() == 2 );
+    REQUIRE( mat.cols() == 3 );
+    REQUIRE_THAT( mat.get(0, 0), Catch::Matchers::WithinAbs(1.0, 1e-12) );
+    REQUIRE_THAT( mat.get(0, 2), Catch::Matchers::WithinAbs(3.0, 1e-12) );
+    REQUIRE_THAT( mat.get(1, 0), Catch::Matchers::WithinAbs(4.0, 1e-12) );
+    REQUIRE_THAT( mat.get(1, 2), Catch::Matchers::WithinAbs(6.0, 1e-12) );
+  }
+  rpn.stack.clear();
+
+  // Non-conformant rows (different lengths) → error
+  REQUIRE( ev("[ [ 1. 2. ] [ 3. 4. 5. ] ]") != ok );
+  rpn.stack.clear();
 }
 
 /* end of qinc/rpn-lang/tests/runtime-test.cpp */

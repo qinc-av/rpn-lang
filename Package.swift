@@ -46,7 +46,11 @@ let sources: [String] = [
     "fraction-dict.cpp",
     "fraction.cpp",
     "timecode-dict.cpp",
+    "vecmx3.cpp",
     "matrix-dict.cpp",
+    "mx3-dict.cpp",
+    "vec3-dict.cpp",
+    "stats-dict.cpp",
     "geometry.cpp",
     "geometry-dict.cpp",
     "keypad-dict.cpp",
@@ -58,7 +62,7 @@ let package = Package(
     name: "rpn-lang",
     platforms: [
         .iOS(.v16),
-        .macOS(.v13),
+        .macOS(.v14),
     ],
     products: [
         .library(name: "RpnLang", targets: ["RpnLang"]),
@@ -68,7 +72,7 @@ let package = Package(
             name: "RpnLang",
             path: ".",
             sources: sources,
-            publicHeadersPath: "swiftpm-include", // TODO: create — see TODO #1 above
+            publicHeadersPath: "include", // TODO: create — see TODO #1 above
             cxxSettings: [
                 .headerSearchPath("."),            // rpn.h, rpn-hl.h
                 .headerSearchPath("third_party"),  // nlohmann/json

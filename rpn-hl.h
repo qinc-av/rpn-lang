@@ -17,13 +17,14 @@
 #include <string>
 #include <vector>
 #include <functional>
+#define JSON_NO_IO
 #include "nlohmann/json.hpp"
 
 namespace rpn {
   class Interp;
 }
 
-#if __OBJC__
+#if __OBJC__ && 0
 
 #import <Foundation/Foundation.h>
 

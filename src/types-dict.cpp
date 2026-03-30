@@ -489,6 +489,64 @@ NATIVE_WORD_DECL(marker, open_vec) {
   return rpn::WordDefinition::Result::ok;
 }
 
+// ]  ( [... v1..vn -- vec|matrix )
+// If all items above the "[" marker are stack::Vector of the same size → build a matrix (rows = n, cols = vec size).
+// Otherwise → collect as doubles into a stack::Vector.
+NATIVE_WORD_DECL(marker, close_vec) {
+  // Find "[" marker
+  size_t depth = rpn.stack.depth();
+  size_t marker_pos = 0;
+  for (size_t i = 1; i <= depth; i++) {
+    const auto *m = dynamic_cast<const stack::Marker*>(&rpn.stack.peek(i));
+    if (m && m->label() == "[") { marker_pos = i; break; }
+  }
+  if (!marker_pos)
+    throw std::runtime_error("unmatched ']': no '[' marker on stack");
+
+  size_t n = marker_pos - 1;  // items above marker
+
+  // Check if all items are stack::Vector of the same size
+  bool all_vec = (n > 0);
+  size_t vec_size = 0;
+  if (all_vec) {
+    const auto *v0 = dynamic_cast<const stack::Vector*>(&rpn.stack.peek(1));
+    if (v0) vec_size = v0->size(); else all_vec = false;
+  }
+  for (size_t i = 2; i <= n && all_vec; i++) {
+    const auto *v = dynamic_cast<const stack::Vector*>(&rpn.stack.peek(i));
+    if (!v || v->size() != vec_size) all_vec = false;
+  }
+
+  if (all_vec && n > 0) {
+    // Build matrix: n rows x vec_size cols
+    // peek(1) = last row pushed (bottom row of display = last row of matrix)
+    stack::Matrix mat(n, vec_size);
+    for (size_t r = n; r > 0; r--) {
+      auto sv = rpn.stack.pop();
+      const auto &v = PEEK_CAST(stack::Vector, *sv);
+      for (size_t c = 0; c < vec_size; c++)
+        mat.set(r - 1, c, v.get(c));
+    }
+    rpn.stack.pop();  // remove marker
+    rpn.stack.push(mat);
+  } else {
+    // Verify all items are numeric
+    for (size_t i = 1; i <= n; i++) {
+      const auto &item = rpn.stack.peek(i);
+      if (!dynamic_cast<const stack::Double*>(&item) &&
+          !dynamic_cast<const stack::Integer*>(&item))
+        throw std::runtime_error("']': non-numeric item in vector literal");
+    }
+    // Build vector from numeric items
+    std::vector<double> vals(n);
+    for (size_t i = n; i > 0; i--)
+      vals[i - 1] = rpn.stack.pop_as_double();
+    rpn.stack.pop();  // remove marker
+    rpn.stack.push(stack::Vector(vals));
+  }
+  return rpn::WordDefinition::Result::ok;
+}
+
 // {  ( -- marker )  — push Marker("{"), opening an object literal
 NATIVE_WORD_DECL(marker, open_obj) {
   rpn.stack.push(stack::Marker("{"));
@@ -520,11 +578,13 @@ rpn::Interp::addMarkerWords() {
   addDefinition("MARK",      { rpn::StrictTypeValidator::d1_string, NATIVE_WORD_FN(marker, mark),         nullptr });
   addDefinition("FIND-MARK", { rpn::StrictTypeValidator::d1_string, NATIVE_WORD_FN(marker, find_mark),    nullptr });
   addDefinition("[",         { rpn::StackSizeValidator::zero,        NATIVE_WORD_FN(marker, open_vec),     nullptr });
+  addDefinition("]",         { rpn::StackSizeValidator::zero,        NATIVE_WORD_FN(marker, close_vec),    nullptr });
   addDefinition("{",         { rpn::StackSizeValidator::zero,        NATIVE_WORD_FN(marker, open_obj),     nullptr });
 
   addWordMetadata("MARK",      "Push a marker onto the stack with the given label.  `\"[\" MARK`");
   addWordMetadata("FIND-MARK", "Find a marker by label; push count of items above it.  `\"[\" FIND-MARK`");
   addWordMetadata("[",         "Push a vector-open marker.  Close with `]`.");
+  addWordMetadata("]",         "Close a vector literal. Builds a vector from numeric items, or a matrix if all items are vectors of the same length.");
   addWordMetadata("{",         "Push an object-open marker.  Close with `}`.");
 
   setWordCategory("");

@@ -2,7 +2,7 @@
 
 ## Status
 
-Phase 0 complete. Phase 1 complete. Phase 2 complete. Phase 3 complete. Phase 2.3 retrofitted and complete. RPL standard library complete. C++ word audit complete. Starting Phase 4.
+Phase 0 complete. Phase 1 complete. Phase 2 complete. Phase 3 complete. Phase 2.3 retrofitted and complete. RPL standard library complete. C++ word audit complete. Phase 4 complete. CAS spun out to cas-plan.md. Units spun out to units-plan.md. Starting Phase 6 (Testing).
 
 ---
 
@@ -100,33 +100,24 @@ Hybrid architecture: C++ primitives + compiled RPL words.  The stdlib is `src/rp
 
 ---
 
-## Phase 4 — Advanced Mathematics
+## Phase 4 — Advanced Mathematics (Complete)
 
 | # | Task | Complexity | Notes |
 |---|---|---|---|
 | 4.0 | `v_numbertype` word audit: review all existing word definitions and replace patterns that use `StackSizeValidator` + `pop_as_{integer,double}` with no real type checking, or duplicate `d1_integer` / `d1_double` registrations for the same word, with `d1_number` / `d2_number_number` validators where both integer and double are semantically acceptable. Keep `d1_integer` where strictly integer semantics are required (binary ops, radix, wordsize). Validator infrastructure already in place. **Done.** Added `ADD_NATIVE_1_FLOAT_WDEF` / `ADD_NATIVE_2_FLOAT_WDEF` macros; collapsed trig, transcendentals, ATAN2, `->VEC3x/y/z`, `->PRECISION`, `->RADIX`. | S | Done |
 | 4.1 | Binary ops enhancement: RLEFT, RRIGHT (rotate), STWS. **Done.** RLEFT/RRIGHT circular rotate within wordsize; STWS/RCWS HP48 aliases for ->WORDSIZE/WORDSIZE->. | S | Done |
-| 4.2 | Matrix type: `stack::Matrix` (NxM), `->MATRIX`, `+`, `-`, `*`, determinant, transpose, inverse, scale. Connect to `StVec3`. **Partially done:** `stack::Matrix` / `stack::Vector` in `src/rpn-matrix-types.h` (Techsoft `matrix.h` backend); core words in `src/matrix-dict.cpp`. Backend stays on Techsoft until Phase 4.5 Eigen migration. | L | Prerequisite for 4.3, 4.4, 4.5 |
-| 4.3 | Literal vector/matrix entry: `[` pushes a partial-array sentinel onto the stack (displayed as `[ ...`); subsequent words push elements normally; `]` scans down to the sentinel, collects elements into `stack::Vector` or `stack::Matrix` (if elements are conformant vectors). Follows emacs-calc model. Non-conformant elements → `StArray`. Needed for usable interactive and script matrix entry. | M | Requires 4.2; design: how does `]` distinguish vector vs matrix? |
-| 4.4 | `stack::Mx3` and `stack::Vec3` completeness: 3×3 rotation/transform matrices and 3×1 vectors as specialized types with geometry-focused words (cross product, rotation, homogeneous transforms). Reference implementation in `etc/vecmx.{h,cpp}`. Rework using vecmx.h classes; follows MI pattern. Evaluate whether to keep as distinct types or subsume into general `stack::Matrix`. | S | Requires 4.2 |
-| 4.5 | Eigen migration: migrate matrix backend from Techsoft Matrix TCL Lite (`src/matrix.h`) to Eigen (header-only, actively maintained). Add EIGENVAL and full decomposition (`SelfAdjointEigenSolver` / `EigenSolver`). DET, INV, TRANS already in 4.2; 4.5 adds EIGENVAL. Promote `src/rpn-matrix-types.h` to public `rpn-matrix.h` at repo root (Eigen dep stays out of `rpn.h`). | L | Requires 4.2; prerequisite for 4.6 (OLS) and 4.7 (CAS) |
-| 4.6 | Statistics: MEAN, VARIANCE, STDDEV, LINFIT, CORRELATION on Array (no Eigen needed). OLS (ordinary least squares) regression: takes a matrix of independent variables and a vector/matrix of dependent variables; returns a result object (JSON or new `LinearModel` type) containing beta estimators, t-stats, TSS/RSS/ESS, adjusted R², degrees of freedom, fitted values, and residuals. Reference implementation in `etc/LinearModel.{cpp,h}`. File I/O for large datasets — defer. | M+ | Basic stats require 4.2; OLS requires 4.5 (Eigen) |
-| 4.7 | CAS: symbolic differentiation, integration, simplification. Evaluate SymEngine/GiNaC. Algebraic entry (`'expr'` literal syntax, implied multiplication, function calls) is a thin wrapper over the CAS parser — implement here, not separately. Remove `src/shunting-yard.cpp`. **Note: SymEngine uses Eigen for its numeric layer; GiNaC does not — resolve library choice before starting.** | XL | Requires 4.5 (Eigen migration); research first |
+| 4.2 | Matrix type: `stack::Matrix` (NxM), `->MATRIX`, `+`, `-`, `*`, determinant, transpose, inverse, scale. Connect to `StVec3`. `stack::Matrix` / `stack::Vector` in `src/rpn-matrix-types.h` (Techsoft `matrix.h` backend); core words in `src/matrix-dict.cpp`. Backend stays on Techsoft until Phase 4.5 Eigen migration. **Done.** | L | Done |
+| 4.3 | Literal vector/matrix entry: `[`/`]` collects into `stack::Vector`; `{`/`}` collects into `stack::Object`. Non-conformant elements → `StArray`. **Done.** | M | Done |
+| 4.4 | `stack::Vec3` and `stack::Mx3` completeness via MI on `q::Vec3`/`q::Mx3`. **Done.** | S | Done |
+| 4.5 | Eigen migration: migrate matrix backend from Techsoft Matrix TCL Lite (`src/matrix.h`) to Eigen (header-only, actively maintained). Add EIGENVAL and full decomposition (`SelfAdjointEigenSolver` / `EigenSolver`). DET, INV, TRANS already in 4.2; 4.5 adds EIGENVAL. Promote `src/rpn-matrix-types.h` to public `rpn-matrix.h` at repo root (Eigen dep stays out of `rpn.h`). **Done.** | L | Done |
+| 4.6 | Statistics: MEAN, VARIANCE, STDDEV, LINFIT, CORRELATION on Array. OLS (ordinary least squares) regression: beta estimators, t-stats, TSS/RSS/ESS, adjusted R², degrees of freedom, fitted values, residuals. **Done.** | M+ | Done |
+| 4.7 | CAS: symbolic differentiation, integration, simplification. Spun out to `docs/cas-plan.md`. | XL | See cas-plan.md |
 
 ---
 
 ## Phase 5 — Units
 
-Design TBD.  Key decisions to work through before implementation:
-
-- **`StUnit` type**: number + `UnitExpr` (map of unit-name → rational exponent).  All values stored against their own unit; SI is the canonical intermediate for conversions and dimensional checking.
-- **Unit database**: flat table of name → (dimension vector, SI scale factor).  Adding a unit is one table entry, not a new word.  No per-unit conversion words; no n² problem.
-- **Arithmetic**: `+`/`-` require compatible dimensions; `*`/`/` combine dimension vectors; `^` scales exponents; `SQRT` halves them.  Trig words require dimensionless or angle-unit input.
-- **Single conversion word**: `CONVERT` (or `->`) pops a target unit expression from TOS, converts through SI, pushes result in the target unit.
-- **Literal syntax**: TBD — something like `2[in]` or `2_in` to distinguish unit names from variable names and dictionary words.
-- **Compound / derived units**: `in²`, `m/s`, `kg·m/s²` fall out naturally from the dimension map — never stored explicitly in the database.
-
-**Complexity:** L.  Not blocking anything in Phases 3–4; design first.
+Spun out to `docs/units-plan.md`.
 
 ---
 
@@ -156,9 +147,10 @@ The word reference section will be substantially auto-generated once Phase 2.1 (
 
 | Item | Notes |
 |---|---|
-| `rpn-lang.cmake` | Source-list helper for CMake-based consumers (currently `ui/qt/CMakeLists.txt`). Defines `RPN_LANG_SRCS` via `include()` so external CMake projects can build rpn-lang inline. Keep in sync when adding/removing source files. The RP-42 Xcode project embeds sources directly and does not use this file. |
-| CMakePresets | `CMakePresets.json` added at repo root. Presets: `lib` (debug, `build/`), `lib-release` (`build-release/`), `tests` (`build-tests/`, source `tests/`). Usage: `cmake --preset lib && cmake --build --preset lib`; `cmake --preset tests && cmake --build --preset tests`. |
-| SwiftPM package | `Package.swift` skeleton added. Architecture: Swift C++ interop (Swift 5.9+) imports `RpnInterp` directly as a C++ class — no ObjC bridge, no `.mm`. `RpnLangCXX` clang target (all `.cpp` sources); `RpnLang` Swift target depends on it with `.interoperabilityMode(.cxx)`. The RP-42 Xcode project continues to use `rpn-hl.mm` (ObjC++ bridge) independently. **Remaining work:** create `swiftpm-include/` with a public header; `rpn-hl.h` exposes `rpn::WordHelp` and `nlohmann::json` return types which Swift's C++ importer may not handle cleanly — a thin `RpnInterp.h` wrapping only `std::string`/`std::vector` types may be needed. |
+| CMake structure | `src/CMakeLists.txt` defines the `rpn-lang` static library. Top-level `CMakeLists.txt` does `add_subdirectory(src)` + `add_subdirectory(tests)`. `tests/CMakeLists.txt` links against `rpn-lang` target (does not recompile sources). **Keep `src/CMakeLists.txt` and `Package.swift` in sync when adding/removing source files.** |
+| CMakePresets | `CMakePresets.json` at repo root. Presets: `debug` (Ninja, `build/`), `release` (Ninja, `build-release/`), `xcode` (Xcode generator, `build-xcode/`). Usage: `cmake --preset debug && cmake --build --preset debug`. |
+| SwiftPM package | `Package.swift` skeleton — not yet buildable. Architecture: Swift C++ interop (Swift 5.9+) imports `RpnInterp` directly as a C++ class — no ObjC bridge, no `.mm`. The RP-42 Xcode project continues to use `rpn-hl.mm` (ObjC++ bridge) independently. **Remaining work:** create `include/` with a public header; `rpn-hl.h` exposes `rpn::WordHelp` and `nlohmann::json` return types which Swift's C++ importer may not handle cleanly — a thin `RpnInterp.h` wrapping only `std::string`/`std::vector` types may be needed. |
+| SIOF / static init | All validator statics and global `rpn::Interp` instances in test/consumer code must use construct-on-first-use (Meyers singleton) or be initialized after `main()` starts. Namespace-scope validator statics in library `.cpp` files are safe as long as they are not referenced by other static initializers outside the library. |
 
 ---
 
