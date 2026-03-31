@@ -240,8 +240,9 @@ namespace rpn {
 
   StackSizeValidator(size_t n) : StackValidator(std::string("StackSizeValidator") + ":" + std::to_string(n)), _n(n) {}
     virtual bool operator()(const std::vector<size_t> &types, rpn::Stack &stack) const override;
-    // n=2 → "any any"
+    // n=2 → "any any";  ntos sentinel (-1 cast to size_t) → "n*any"
     virtual std::string input_types() const override {
+      if (_n == (size_t)-1) return "n*any";
       std::string s;
       for (size_t i = 0; i < _n; i++) { if (i) s += ' '; s += "any"; }
       return s;
