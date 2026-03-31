@@ -10,6 +10,8 @@
  *   -f, --file <script>     execute an rpn script file before expression
  *   -d, --dict <name>       load a named extension dictionary (repeatable)
  *   -s, --session <file>    load/save session state from file
+ *   --mcp                   run MCP server over stdio (for Claude Desktop / Claude Code)
+ *   --serve [port]          start MCP server on port (default 5150), run forever
  *   --json                  output stack as JSON
  *   --stack                 print full stack (default: TOS only)
  *   --words                 list all available words as JSON
@@ -19,8 +21,11 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <csignal>
+#include <unistd.h>
 
 #include "rpn.h"
+#include "rpn-mcp.h"
 #include "output.h"
 // #include "session.h"       -- Task 2
 // #include "dict-registry.h" -- Task 3
@@ -32,6 +37,8 @@ static void usage(const char *prog) {
     "  -f, --file <script>    execute rpn script before expression\n"
     "  -s, --session <file>   load/save session state\n"
     "  -d, --dict <name>      load extension dictionary (repeatable)\n"
+    "  --mcp                  run MCP server over stdio (for Claude Desktop/Code)\n"
+    "  --serve [port]         start MCP server on TCP port (default 5150)\n"
     "  --json                 output stack as JSON\n"
     "  --stack                print full stack (default: TOS only)\n"
     "  --words                list all words as JSON\n"
@@ -42,6 +49,9 @@ int main(int argc, char *argv[]) {
   bool opt_json       = false;
   bool opt_stack      = false;
   bool opt_words      = false;
+  bool opt_mcp        = false;
+  bool opt_serve      = false;
+  int  opt_port       = 5150;
   std::string opt_help_word;
   std::string opt_session;
   std::vector<std::string> opt_files;
@@ -56,6 +66,12 @@ int main(int argc, char *argv[]) {
       opt_stack = true;
     } else if (a == "--words") {
       opt_words = true;
+    } else if (a == "--mcp") {
+      opt_mcp = true;
+    } else if (a == "--serve") {
+      opt_serve = true;
+      if (i + 1 < argc && argv[i+1][0] != '-')
+        opt_port = std::stoi(argv[++i]);
     } else if ((a == "--help-word") && i + 1 < argc) {
       opt_help_word = argv[++i];
     } else if ((a == "-f" || a == "--file") && i + 1 < argc) {
@@ -76,7 +92,7 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  rpn::Interp interp(false);  // sync
+  rpn::Interp interp(opt_serve || opt_mcp);  // async mode required for MCP
 
   // Task 3: load extension dicts
   for (const auto &d : opt_dicts) {
@@ -117,6 +133,22 @@ int main(int argc, char *argv[]) {
   if (!opt_session.empty()) {
     std::cerr << "rpn: session support not yet implemented\n";
     return 1;
+  }
+
+  // MCP stdio mode — blocks until EOF
+  if (opt_mcp) {
+    rpn::mcp_run_stdio(interp);
+    return 0;
+  }
+
+  // MCP server mode — blocks until signal
+  if (opt_serve) {
+    rpn::McpServer server(interp, opt_port);
+    std::cout << "rpn --serve running on port " << opt_port
+              << " (Ctrl-C to stop)\n" << std::flush;
+    std::signal(SIGINT, [](int) { std::exit(0); });
+    pause();
+    return 0;
   }
 
   // Output

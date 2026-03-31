@@ -14,6 +14,7 @@
 
 #include <atomic>
 #include <fstream>
+#include <unistd.h>
 #include <iostream>
 #include <queue>
 #include <future>
@@ -217,6 +218,7 @@ struct rpn::Interp::Privates : public rpn::WordContext {
   }
 
   std::future<void> _arv;
+
   Privates(rpn::Interp &rpn, bool async) : _rpn(rpn), _tracing(false) {
     if (async) {
       _arv = std::async(std::launch::async, &rpn::Interp::Privates::main_loop, this);
@@ -1786,5 +1788,6 @@ const rpn::StackSizeValidator rpn::StackSizeValidator::one(1);
 const rpn::StackSizeValidator rpn::StackSizeValidator::two(2);
 const rpn::StackSizeValidator rpn::StackSizeValidator::three(3);
 const rpn::StackSizeValidator rpn::StackSizeValidator::ntos(-1); // n top of stack
+
 
 /* end of qinc/rpn-lang/src/rpn-interp.cpp */

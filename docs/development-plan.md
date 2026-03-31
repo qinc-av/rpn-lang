@@ -162,6 +162,8 @@ Items considered but not scheduled.  Revisit if requirements emerge.
 |---|---|
 | WASM build target | Technically feasible; no current use case. |
 | C ABI wrapper (`rpn_c.h`) | Would enable non-C++ bindings; likely needed as part of SwiftPM packaging (see Build & Infrastructure). |
+| MCP custom tool registration | `rpn::McpServer` currently exposes a fixed tool set (`eval`, `stack`, `clear`, `load_file`, `word_list`, `word_help`). Embedders with custom word extensions should be able to register additional MCP tools with their own names, descriptions, and input schemas — so Claude sees them as first-class tools rather than having to go through `eval`. API sketch: `McpServer::addTool(name, description, inputSchema, handler)`. |
+| MCP TCP bridge via socat | Apps that embed `rpn::McpServer` on a TCP port can be reached from Claude Desktop / Claude Code using `socat - TCP:localhost:<port>` as the MCP command. No code changes needed; document this pattern in the developer guide. |
 
 ---
 

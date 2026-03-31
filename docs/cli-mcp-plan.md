@@ -1,6 +1,6 @@
 # Plan: CLI and MCP Interface
 
-## Status: Design
+## Status: Complete
 
 ## Goal
 
@@ -146,70 +146,28 @@ target_link_libraries(rpn-mcp PRIVATE rpn-lang)
 
 ---
 
-## Tasks
+## What Was Built
 
-### Task 1 — CLI binary (stateless)
+### Delivered
 
-**Files:** `src/cli/rpn-main.cpp`, `src/cli/output.{h,cpp}`
+| Task | Status | Notes |
+|---|---|---|
+| Task 1 — CLI binary | Done | `cli/rpn-main.cpp`, `cli/output.{h,cpp}`. Single-shot eval, `--json`, `--stack`, `--words`, `--help-word`. |
+| Task 2 — Session state | Deferred | `-s/--session` flag parses but returns "not yet implemented". Needs `variables()` API on `rpn::Interp`. |
+| Task 3 — Dict registry | Deferred | `-d/--dict` flag parses but returns "not yet implemented". |
+| Task 4 — MCP server | Done | `rpn::McpServer` (pimpl, TCP) in `src/rpn-mcp.{h,cpp}`. `rpn --mcp` for stdio transport. `rpn --serve [port]` for TCP. Tools: `eval`, `stack`, `clear`, `load_file`, `word_list`, `word_help`. |
+| Task 5 — CMake/install | Done | `cli/CMakeLists.txt` with install rules. Single `rpn` binary. |
 
-- Parse args: expression, `--json`, `--stack`, `--words`, `--help-word`
-- Create `rpn::Interp(false)` (sync — CLI is single-shot)
-- `sync_eval` the expression
-- Output TOS or full stack in human or JSON format
-- `--words` calls `wordList()` grouped by category
-- `--help-word` calls `wordHelp()` and prints JSON
+### Architecture changes from original design
 
-### Task 2 — Session state
+- `rpn-mcp` merged into `rpn` as `--mcp` (stdio) and `--serve` (TCP) flags — one binary.
+- MCP server is `rpn::McpServer` class in the library (`src/`), not a CLI-only concern. Embedders can expose their own `rpn::Interp` (with custom words) via `McpServer` and bridge to Claude with `socat - TCP:localhost:<port>`.
+- Transport: both stdio (for Claude Desktop/Code) and TCP (for embedded/long-running app use).
 
-**Files:** `src/cli/session.{h,cpp}`
+### Future work
 
-- `saveSession(rpn::Interp &, path)` — walk stack via `deparse()`, walk
-  variable store, collect compiled words; write rpn script
-- `loadSession(rpn::Interp &, path)` — `sync_parseFile()` the session file
-- Add `-s/--session` to CLI: load before eval, save after
-
-### Task 3 — Dict registry
-
-**Files:** `src/cli/dict-registry.{h,cpp}`
-
-- Static registry of `{name, add_fn}` entries
-- `registerDict(name, fn)` called from dict init code
-- `loadDict(name, rpn::Interp &)` called by CLI `-d` option
-- Initially register: built-in dicts are always loaded; optional ones
-  (color, etc.) registered when linked
-
-### Task 4 — MCP server
-
-**Files:** `src/cli/rpn-mcp.cpp`
-
-- JSON-RPC 2.0 over stdio (MCP transport)
-- Implement MCP `initialize` / `tools/list` / `tools/call` handlers
-- One `rpn::Interp(false)` for the server lifetime (sync eval; MCP itself
-  provides the async boundary)
-- Implement tools: `eval`, `stack`, `clear`, `load_file`, `word_list`,
-  `word_help`, `save_session`, `load_session`
-- JSON-RPC library: use nlohmann/json (already vendored) for message parsing;
-  no additional dependency needed
-
-### Task 5 — CMake and install
-
-- Add `rpn` and `rpn-mcp` executables to `src/CMakeLists.txt`
-- Add install rules
-- Add to `CMakePresets.json` build targets
-- Update `development-plan.md`
-
----
-
-## Open Questions
-
-- Should session files use a binary format (faster, exact) or the rpn-script
-  approach (human-readable, debuggable, re-entrant)? Script approach preferred
-  for now — matches the `deparse()` investment already made.
-- Does `rpn::Interp` expose enough of the variable store to serialize it?
-  Need to check `VARS` word output and whether the C++ API surfaces variable
-  enumeration directly or only via the `VARS` word.
-- MCP: one interp per server process, or one per tool-call session-id?
-  Per-process is simpler; session-id multiplexing only needed if multiple
-  Claude conversations share one server (unlikely for local use).
-- Should `rpn-mcp` link color-dict and other optional dicts by default, or
-  require explicit `-d` activation? Default-on is more useful for LLM workflows.
+See "Possible Future Work" in `development-plan.md`:
+- MCP custom tool registration (`McpServer::addTool(...)`)
+- socat TCP bridge pattern (documentation)
+- Session state (Task 2) — needs `variables()` API
+- Dict registry (Task 3)

@@ -22,6 +22,7 @@ add_library(rpn-lang
   keypad-dict.cpp
   rpn-stdlib.cpp
   rpn-hl.cpp
+  rpn-mcp.cpp
 )
 
 set_property(TARGET rpn-lang PROPERTY CXX_STANDARD 20)
