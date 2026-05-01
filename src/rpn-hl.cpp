@@ -17,12 +17,12 @@
 #include "nlohmann/json.hpp"
 #include "../rpn.h"
 
-RpnInterp::RpnInterp(bool async) : _interp(new rpn::Interp(async)) {
+RpnInterp::RpnInterp(bool async) : _interp(std::make_shared<rpn::Interp>(async)) {
 }
 
-RpnInterp::~RpnInterp() {
-  delete _interp;
-}
+// Defined out-of-line so the shared_ptr<rpn::Interp> destructor sees the
+// complete type from rpn.h (rpn-hl.h only forward-declares rpn::Interp).
+RpnInterp::~RpnInterp() = default;
 
 void
 RpnInterp::eval(std::string line, std::function<void(Result)> completionHandler) {
@@ -54,7 +54,7 @@ RpnInterp::status() {
 }
 
 std::vector<std::string>
-RpnInterp::displayStack() {
+RpnInterp::displayStack() const {
   std::vector<std::string> rv;
   size_t n = _interp->stack.depth();
   for (size_t i = 0; i < n; i++) {
@@ -69,9 +69,22 @@ RpnInterp::describeStack() {
   size_t n = _interp->stack.depth();
   for (size_t i = 0; i < n; i++) {
     const auto &obj = _interp->stack.peek((int)(i + 1));
-    rv.push_back({ obj.type_name(), (std::string)obj, obj.deparse() });
+    rv.push_back({ obj.type_name(), (std::string)obj, obj.deparse(), obj.to_latex() });
   }
   return rv;
+}
+
+int RpnInterp::precision() const { return _interp->displayPrecision(); }
+int RpnInterp::radix() const { return _interp->integerRadix(); }
+
+std::string
+RpnInterp::angleMode() const {
+  switch (_interp->angleMode()) {
+    case rpn::AngleMode::degrees:  return "DEG";
+    case rpn::AngleMode::radians:  return "RAD";
+    case rpn::AngleMode::gradians: return "GRAD";
+  }
+  return "DEG";
 }
 
 rpn::WordHelp

@@ -5,6 +5,7 @@ public struct StackItem {
     public let type: String
     public let display: String
     public let deparse: String
+    public let latex: String
 }
 
 // MARK: - Internal bridging (Unmanaged + C function pointer)
@@ -40,7 +41,8 @@ public extension RpnInterp {
         describeStack().map {
             StackItem(type: String($0.type),
                       display: String($0.display),
-                      deparse: String($0.deparse))
+                      deparse: String($0.deparse),
+                      latex: String($0.latex))
         }
     }
 }

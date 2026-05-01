@@ -278,6 +278,9 @@ namespace rpn {
   public:
     Interp(bool async);
     ~Interp();
+    Interp (const Interp&) = delete;
+    Interp& operator= (const Interp&) = delete;
+
     static void nullCompletionHandler(rpn::WordDefinition::Result) {};
 
     // mainly for test cases
@@ -330,6 +333,11 @@ namespace rpn {
 
     int binaryWordsize() const;
     void setBinaryWordsize(int bits);  // valid range 1–64; clamped silently
+
+    // Read-only display state.  Mutated only via ->PRECISION / ->RADIX words —
+    // the engine owns this state and the UI must round-trip through eval().
+    int displayPrecision() const;
+    int integerRadix() const;
 
     /*
      * XXX-ELH- should the stack be public or private?

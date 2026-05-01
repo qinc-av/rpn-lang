@@ -1479,6 +1479,9 @@ void rpn::Interp::setBinaryWordsize(int bits) {
   m_p->_binaryWordsize = std::max(1, std::min(64, bits));
 }
 
+int rpn::Interp::displayPrecision() const { return m_p->_double_decimals; }
+int rpn::Interp::integerRadix() const { return m_p->_int_radix; }
+
 void
 rpn::Interp::setDebugSink(std::function<void(const std::string &)> sink) {
   m_p->_debugSink = std::move(sink);

@@ -36,8 +36,8 @@ let cppSources: [String] = [
 let package = Package(
     name: "rpn-lang",
     platforms: [
-        .iOS(.v16),
-        .macOS(.v14),
+      .iOS(.v17),
+      .macOS(.v14),
     ],
     products: [
         .library(name: "RpnLang", targets: ["RpnLang"]),

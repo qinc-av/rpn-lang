@@ -13,6 +13,7 @@
 
 #pragma once
 
+#include <memory>
 #include <string>
 #include <vector>
 #include <functional>
@@ -33,6 +34,7 @@ struct StackItem {
   std::string type;     // type_name() — "double", "integer", "vector", etc.
   std::string display;  // operator string() — human display
   std::string deparse;  // deparse() — round-trip rpn expression
+  std::string latex;    // to_latex() — for SwiftMath rendering in card views
 };
 
 class RpnInterp {
@@ -63,8 +65,18 @@ public:
   bool wordExists(const std::string &word);
 
   std::string status();
-  std::vector<std::string> displayStack();
+  std::vector<std::string> displayStack() const;
   std::vector<StackItem> describeStack();
+
+  // Read-only display state.  Reflects engine state set via ->PRECISION /
+  // ->RADIX / ->DEG / ->RAD / ->GRAD words.  Mutation only round-trips through
+  // eval() — the engine owns this state.
+  //   precision: significant decimal digits, 0–20
+  //   radix:     integer display base (2, 8, 10, 16)
+  //   angleMode: "DEG" / "RAD" / "GRAD"
+  int precision() const;
+  int radix() const;
+  std::string angleMode() const;
 
   rpn::WordHelp wordHelp(const std::string &word) const;
   std::vector<std::string> wordList() const;
@@ -79,7 +91,12 @@ public:
   rpn::Interp &interp();
 
 private:
-  rpn::Interp *_interp;
+  // Shared rather than unique ownership: Swift's C++ interop will copy a
+  // value-typed RpnInterp when calling const methods (and the default copy
+  // ctor is implicitly synthesized as shallow).  Holding _interp by
+  // shared_ptr makes those copies safe — they share one engine instead of
+  // shallow-copying a raw pointer that the temporary's dtor then deletes.
+  std::shared_ptr<rpn::Interp> _interp;
 };
 
 
