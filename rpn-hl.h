@@ -29,7 +29,9 @@ namespace rpn {
   };
 }
 
-// One stack item as returned by RpnInterp::describeStack().
+// One stack item as returned by RpnInterp::describeStack().  Fields are the
+// per-refresh essentials only — anything heavier (full JSON descriptor for a
+// detail modal) goes through a dedicated on-demand accessor like stackJson().
 struct StackItem {
   std::string type;     // type_name() — "double", "integer", "vector", etc.
   std::string display;  // operator string() — human display
@@ -67,6 +69,13 @@ public:
   std::string status();
   std::vector<std::string> displayStack() const;
   std::vector<StackItem> describeStack();
+
+  // Full JSON descriptor for a single stack item (1 = top of stack).  On-demand
+  // — the long-press detail modal calls this for one card; describeStack() does
+  // not eagerly serialize JSON for every item on every refresh because the
+  // payload scales with size (matrices/vectors) and is unused in the common
+  // path.  Serialized as std::string so nlohmann stays out of the interop ABI.
+  std::string stackJson(int n) const;
 
   // Read-only display state.  Reflects engine state set via ->PRECISION /
   // ->RADIX / ->DEG / ->RAD / ->GRAD words.  Mutation only round-trips through

@@ -74,6 +74,11 @@ RpnInterp::describeStack() {
   return rv;
 }
 
+std::string
+RpnInterp::stackJson(int n) const {
+  return _interp->stack.peek(n).to_json().dump();
+}
+
 int RpnInterp::precision() const { return _interp->displayPrecision(); }
 int RpnInterp::radix() const { return _interp->integerRadix(); }
 
