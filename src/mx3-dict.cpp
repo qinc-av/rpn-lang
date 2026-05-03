@@ -220,6 +220,7 @@ rpn::Interp::addMx3Words() {
 
   addDefinition("->MX3",   { mx3_validator::nine,       NATIVE_WORD_FN(mx3m, to_mx3),      nullptr });
   addDefinition("MX3->",   MX3_WDEF(d1_mx3,              mx3_to));
+  addDefinition("OBJ->",   MX3_WDEF(d1_mx3,              mx3_to));
   addDefinition("MX3ID",   { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(mx3m, mx3id),   nullptr });
   addDefinition("MX3DIAG", MX3_WDEF(d1_vec3,              mx3diag));
 
