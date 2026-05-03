@@ -57,6 +57,28 @@ NATIVE_WORD_DECL(vec3m, norm3) {
 }
 
 // ---------------------------------------------------------------------------
+// *  ( vec3 scalar -- vec3 )  TOS=scalar
+// ---------------------------------------------------------------------------
+NATIVE_WORD_DECL(vec3m, vec3_mul_scalar) {
+  double s = rpn.stack.pop_as_double();
+  auto sv = rpn.stack.pop();
+  const auto &v = PEEK_CAST(stack::Vec3, *sv);
+  rpn.stack.push(stack::Vec3(v[0]*s, v[1]*s, v[2]*s));
+  return rpn::WordDefinition::Result::ok;
+}
+
+// ---------------------------------------------------------------------------
+// *  ( scalar vec3 -- vec3 )  NOS=scalar
+// ---------------------------------------------------------------------------
+NATIVE_WORD_DECL(vec3m, scalar_mul_vec3) {
+  auto sv = rpn.stack.pop();
+  double s = rpn.stack.pop_as_double();
+  const auto &v = PEEK_CAST(stack::Vec3, *sv);
+  rpn.stack.push(stack::Vec3(v[0]*s, v[1]*s, v[2]*s));
+  return rpn::WordDefinition::Result::ok;
+}
+
+// ---------------------------------------------------------------------------
 // addVec3Words
 // ---------------------------------------------------------------------------
 void
@@ -67,9 +89,16 @@ rpn::Interp::addVec3Words() {
   addDefinition("CROSS3", VEC3_WDEF(d2_vec3_vec3, cross3));
   addDefinition("NORM3",  VEC3_WDEF(d1_vec3,      norm3));
 
+  // Vec3 +/- live in types-dict.cpp; scalar * was missing — fill the gap.
+  addDefinition("*", VEC3_WDEF(d2_vec3_double,  vec3_mul_scalar));
+  addDefinition("*", VEC3_WDEF(d2_vec3_integer, vec3_mul_scalar));
+  addDefinition("*", VEC3_WDEF(d2_double_vec3,  scalar_mul_vec3));
+  addDefinition("*", VEC3_WDEF(d2_integer_vec3, scalar_mul_vec3));
+
   addWordMetadata("DOT3",   "Dot product of two Vec3 vectors.");
   addWordMetadata("CROSS3", "Cross product: `v1 v2 CROSS3` → v1×v2.");
   addWordMetadata("NORM3",  "Euclidean norm (length) of a Vec3.");
+  addWordMetadata("*",      "Scale a Vec3 by a scalar (Vec3 × scalar or scalar × Vec3 → Vec3).");
 
   setWordCategory("");
 }
