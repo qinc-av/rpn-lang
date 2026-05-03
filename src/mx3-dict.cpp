@@ -159,6 +159,41 @@ NATIVE_WORD_DECL(mx3m, scalar_mul_mx3) {
   return rpn::WordDefinition::Result::ok;
 }
 
+// ---------------------------------------------------------------------------
+// /  ( mx3 scalar -- mx3 )  TOS=scalar; element-wise divide (m * 1/s).
+// Returns param_error on s == 0.
+// ---------------------------------------------------------------------------
+NATIVE_WORD_DECL(mx3m, mx3_div_scalar) {
+  double s = rpn.stack.pop_as_double();
+  if (s == 0.) return rpn::WordDefinition::Result::param_error;
+  auto sm = rpn.stack.pop();
+  const auto &m = PEEK_CAST(stack::Mx3, *sm);
+  q::Mx3 r = m.q::Mx3::operator*(1.0 / s);
+  rpn.stack.push(stack::Mx3(
+    r(0,0), r(0,1), r(0,2),
+    r(1,0), r(1,1), r(1,2),
+    r(2,0), r(2,1), r(2,2)));
+  return rpn::WordDefinition::Result::ok;
+}
+
+// ---------------------------------------------------------------------------
+// /  ( scalar mx3 -- mx3 )  NOS=scalar; convenience for s · inv(m).
+// Singularity not checked here — matches mx3_inv (matrix-dict.cpp); a
+// singular input yields NaN-laden output.
+// ---------------------------------------------------------------------------
+NATIVE_WORD_DECL(mx3m, scalar_div_mx3) {
+  auto sm = rpn.stack.pop();   // TOS: mx3
+  double s = rpn.stack.pop_as_double();   // NOS: scalar
+  const auto &m = PEEK_CAST(stack::Mx3, *sm);
+  q::Mx3 inv = m.q::Mx3::inverse();
+  q::Mx3 r   = inv.q::Mx3::operator*(s);
+  rpn.stack.push(stack::Mx3(
+    r(0,0), r(0,1), r(0,2),
+    r(1,0), r(1,1), r(1,2),
+    r(2,0), r(2,1), r(2,2)));
+  return rpn::WordDefinition::Result::ok;
+}
+
 // local validators
 namespace mx3_validator {
   const rpn::StackSizeValidator nine{9};
@@ -197,6 +232,11 @@ rpn::Interp::addMx3Words() {
   addDefinition("*",       { mx3_validator::d2_double_mx3,  NATIVE_WORD_FN(mx3m, scalar_mul_mx3),nullptr });
   addDefinition("*",       { mx3_validator::d2_integer_mx3, NATIVE_WORD_FN(mx3m, scalar_mul_mx3),nullptr });
 
+  addDefinition("/",       { mx3_validator::d2_mx3_double,  NATIVE_WORD_FN(mx3m, mx3_div_scalar),nullptr });
+  addDefinition("/",       { mx3_validator::d2_mx3_integer, NATIVE_WORD_FN(mx3m, mx3_div_scalar),nullptr });
+  addDefinition("/",       { mx3_validator::d2_double_mx3,  NATIVE_WORD_FN(mx3m, scalar_div_mx3),nullptr });
+  addDefinition("/",       { mx3_validator::d2_integer_mx3, NATIVE_WORD_FN(mx3m, scalar_div_mx3),nullptr });
+
   addWordMetadata("->MX3",   "Create a 3×3 matrix from 9 doubles (row-major: e11..e33).");
   addWordMetadata("MX3->",   "Explode a 3×3 matrix to 9 doubles (row-major).");
   addWordMetadata("MX3ID",   "Push the 3×3 identity matrix.");
@@ -204,6 +244,7 @@ rpn::Interp::addMx3Words() {
   addWordMetadata("+",       "Element-wise add: Mx3 + Mx3 → Mx3.");
   addWordMetadata("-",       "Element-wise subtract: Mx3 - Mx3 → Mx3.");
   addWordMetadata("*",       "Multiply: Mx3 × Vec3 → Vec3; Mx3 × Mx3 → Mx3; Mx3 × scalar → Mx3.");
+  addWordMetadata("/",       "Mx3 ÷ scalar → element-wise; scalar ÷ Mx3 → s · inv(Mx3).");
 
   setWordCategory("");
 }
