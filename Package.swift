@@ -40,7 +40,11 @@ let package = Package(
       .macOS(.v14),
     ],
     products: [
-        .library(name: "RpnLang", targets: ["RpnLang"]),
+        .library(name: "RpnLang",    targets: ["RpnLang"]),
+        // C++ target also exposed as a product so external C++ targets
+        // (e.g. RpnColorCXX in rpn-color) can depend on it directly for
+        // header visibility — not just transitively through RpnLang.
+        .library(name: "RpnLangCXX", targets: ["RpnLangCXX"]),
     ],
     targets: [
         // C++ library — module.modulemap at repo root controls what Swift sees
