@@ -32,6 +32,7 @@ namespace q {
     Timecode operator-(int64_t &rhs) const;
 
     int64_t to_frames() const;
+    bool isDropFrame() const { return (std::floor(double(_frameRate)) != double(_frameRate)); }
 
     //  private: // do we really care about privatizing these
 
@@ -73,7 +74,8 @@ public:
       return {{"type",type_name()},{"display",(std::string)(*this)},{"deparse",deparse()},
               {"data",{{"frames",to_frames()},
                        {"frame_rate",{{"numerator",_frameRate._numerator},
-                                      {"denominator",_frameRate._denominator}}}}}};
+                                      {"denominator",_frameRate._denominator}}},
+                       {"drop_frame",isDropFrame()}}}};
     }
     // default to_latex()
   };

@@ -20,7 +20,7 @@
  * Reference: https://github.com/bradcordeiro/libedl/blob/master/src/timecode.cpp
  */
 static bool
-isDropFrame(unsigned &ifr, const q::Fraction &fr) {
+isDropFrameFrac(unsigned &ifr, const q::Fraction &fr) {
   ifr = std::ceil(double(fr));
   bool isDF = (std::floor(double(fr)) != double(fr)); // it's probably more nuanced than this.
   return isDF;
@@ -37,7 +37,7 @@ int64_t maxFrames(const q::Fraction &fr) {
 
 q::Timecode::Timecode(int64_t frameInput, const q::Fraction &fr) : _day(0), _hour(0), _minute(0), _second(0), _frame(0), _frameRate(fr) {
   unsigned ifr;
-  bool isDF = isDropFrame(ifr, _frameRate);
+  bool isDF = isDropFrameFrac(ifr, _frameRate);
 
   int nominal_fps = ifr;
   int dropCount = nominal_fps / 15;
@@ -141,7 +141,7 @@ q::Timecode::operator-(int64_t &rhs) const {
 int64_t
 q::Timecode::to_frames() const {
   unsigned ifr;
-  bool isDF = isDropFrame(ifr, _frameRate);
+  bool isDF = isDropFrameFrac(ifr, _frameRate);
   int nominal_fps = ifr;
   int framesPerMin = 60 * nominal_fps;
   int framesPer10Min = framesPerMin * 10;
