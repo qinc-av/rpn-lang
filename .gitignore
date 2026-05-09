@@ -15,3 +15,4 @@
 /docs/notes.txt
 /etc/
 .claude/settings.local.json
+/.swiftpm/
