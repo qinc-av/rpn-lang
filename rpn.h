@@ -203,6 +203,7 @@ namespace rpn {
 
     static const StrictTypeValidator d4_integer_double_double_double;
     static const StrictTypeValidator d4_double_double_double_integer;
+    static const StrictTypeValidator d4_double_double_double_double;
 
     // "number" validators — match either stack::Double or stack::Integer.
     // Use these for count/index parameters where the caller uses pop_as_integer()

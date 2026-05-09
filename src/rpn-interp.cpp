@@ -1779,6 +1779,7 @@ const rpn::StrictTypeValidator rpn::StrictTypeValidator::d3_vec3_vec3_vec3({type
 
 const rpn::StrictTypeValidator rpn::StrictTypeValidator::d4_integer_double_double_double({typeid(stack::Double).hash_code(),typeid(stack::Double).hash_code(),typeid(stack::Double).hash_code(),typeid(stack::Integer).hash_code()},"d4_integer_double_double_double");
 const rpn::StrictTypeValidator rpn::StrictTypeValidator::d4_double_double_double_integer({typeid(stack::Integer).hash_code(),typeid(stack::Double).hash_code(),typeid(stack::Double).hash_code(),typeid(stack::Double).hash_code()},"d4_double_double_double_integer");
+const rpn::StrictTypeValidator rpn::StrictTypeValidator::d4_double_double_double_double({typeid(stack::Double).hash_code(),typeid(stack::Double).hash_code(),typeid(stack::Double).hash_code(),typeid(stack::Double).hash_code()},"d4_double_double_double_double");
 
 // "number" validators — match stack::Double or stack::Integer via v_numbertype sentinel.
 #define NUM rpn::StrictTypeValidator::v_numbertype
