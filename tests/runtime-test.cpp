@@ -1734,6 +1734,31 @@ TEST_CASE("deparse round-trips", "display") {
     REQUIRE( arr->val().size() == 3 );
   }
 
+  // Object — single field via ->OBJ (d2_string_any: NOS=string, TOS=any).
+  // Round-trip exercises that deparse emits the key BEFORE the value for
+  // the ->OBJ token.
+  {
+    g_rpn().stack.clear();
+    g_rpn().sync_eval("\"a\" 42. ->OBJ DEPARSE EVAL");
+    REQUIRE( g_rpn().stack.depth() == 1 );
+    auto obj = g_rpn().stack.pop();
+    auto *o = dynamic_cast<const stack::Object*>(obj.get());
+    REQUIRE( o != nullptr );
+    REQUIRE( o->val().size() == 1 );
+  }
+
+  // Object — multi-field, exercises both ->OBJ (first pair) and + (each
+  // subsequent pair: d3_object_any_string with value pushed before key).
+  {
+    g_rpn().stack.clear();
+    g_rpn().sync_eval("\"a\" 1. ->OBJ 2. \"b\" + 3. \"c\" + DEPARSE EVAL");
+    REQUIRE( g_rpn().stack.depth() == 1 );
+    auto obj = g_rpn().stack.pop();
+    auto *o = dynamic_cast<const stack::Object*>(obj.get());
+    REQUIRE( o != nullptr );
+    REQUIRE( o->val().size() == 3 );
+  }
+
   // Lambda / Progn (flat case round-trips cleanly)
   {
     g_rpn().stack.clear();

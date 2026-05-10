@@ -590,10 +590,19 @@ public:
     std::string rv;
     bool first = true;
     for (const auto &m : _v) {
-      rv += m.second->deparse();
-      rv += " \"" + m.first + "\"";
-      rv += first ? " ->OBJ" : " +";
-      rv += " ";
+      if (first) {
+        // ->OBJ takes d2_string_any: NOS=string-key, TOS=any-value.
+        // Push key first, then value, then ->OBJ.
+        rv += "\"" + m.first + "\" ";
+        rv += m.second->deparse();
+        rv += " ->OBJ ";
+      } else {
+        // + takes d3_object_any_string: NOS-most=object, NOS=any-value,
+        // TOS=string-key.  Push value first, key second, then +.
+        rv += m.second->deparse();
+        rv += " \"" + m.first + "\"";
+        rv += " + ";
+      }
       first = false;
     }
     return rv;
