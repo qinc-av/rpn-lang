@@ -63,11 +63,14 @@ public:
       return q::Timecode::to_string();
     }
     virtual std::string deparse() const override {
-      // ->TC expects d2_frac_double: frame count as double, frame rate as Fraction.
-      // ->FRAC expects d2_integer_integer; use 0d prefix to force integer parsing.
-      return std::to_string(to_frames()) + ". " +
-             "0d" + std::to_string(_frameRate._numerator) + " " +
-             "0d" + std::to_string(_frameRate._denominator) + " ->FRAC ->TC";
+      // ->TC validator d2_frac_double per rpn.h:221 reads NOS-first /
+      // TOS-last: NOS = Fraction (frame rate), TOS = Double (frame
+      // count).  Push the rate (via ->FRAC, which itself takes
+      // d2_integer_integer with 0d-prefixed ints) first, then the
+      // frame count, then ->TC.
+      return "0d" + std::to_string(_frameRate._numerator) + " " +
+             "0d" + std::to_string(_frameRate._denominator) + " ->FRAC " +
+             std::to_string(to_frames()) + ". ->TC";
     }
     virtual std::string type_name() const override { return "timecode"; }
     virtual nlohmann::json to_json() const override {

@@ -1711,6 +1711,18 @@ TEST_CASE("deparse round-trips", "display") {
     REQUIRE_THAT( g_rpn().stack.peek_as_double(1).value(), Catch::Matchers::WithinAbs(0.75, 1e-10) );
   }
 
+  // Timecode — ->TC takes d2_frac_double (NOS:Fraction, TOS:Double).
+  // Round-trip exercises that deparse emits tokens in the right order.
+  {
+    g_rpn().stack.clear();
+    g_rpn().sync_eval("0d30000 0d1001 ->FRAC 89915. ->TC DEPARSE EVAL");
+    REQUIRE( g_rpn().stack.depth() == 1 );
+    auto obj = g_rpn().stack.pop();
+    auto *tc = dynamic_cast<const stack::Timecode*>(obj.get());
+    REQUIRE( tc != nullptr );
+    REQUIRE( tc->to_frames() == 89915 );
+  }
+
   // Array of doubles
   {
     g_rpn().stack.clear();
