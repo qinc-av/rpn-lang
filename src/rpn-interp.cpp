@@ -80,6 +80,28 @@ rpn::int_radix() {
   return _sk_int_radix;
 }
 
+/// True when `word` looks like a numeric literal: a digit-leading
+/// run, an optional leading `-`, and/or a leading `.` for fractional
+/// literals like `.8` or `-.8`.  `strtod` handles the rest of the
+/// shape (exponents, signs after the mantissa, etc.); this predicate
+/// just decides "is this token a number, or a dictionary lookup?".
+static bool
+isNumberStart(const std::string &word) {
+  if (word.empty()) return false;
+  auto isFracOrDigit = [](char c) {
+    return std::isdigit(static_cast<unsigned char>(c)) || c == '.';
+  };
+  if (isFracOrDigit(word[0])) return std::isdigit(static_cast<unsigned char>(word[0])) ||
+                                     (word.size() > 1 &&
+                                      std::isdigit(static_cast<unsigned char>(word[1])));
+  if (word[0] == '-' && word.size() > 1) {
+    if (std::isdigit(static_cast<unsigned char>(word[1]))) return true;
+    if (word[1] == '.' && word.size() > 2 &&
+        std::isdigit(static_cast<unsigned char>(word[2]))) return true;
+  }
+  return false;
+}
+
 static std::string::size_type
 nextWord(std::string &word, std::string &buffer, const std::string &delim=" \n\t") {
   word = "";
@@ -1286,7 +1308,7 @@ rpn::Interp::Privates::runtime_eval(const std::string &word, std::string &rest) 
   }
 
   // numbers just push
-  if (std::isdigit(word[0])||(word[0]=='-'&&std::isdigit(word[1]))) {
+  if (isNumberStart(word)) {
     auto underscore = word.find("_");
 
     if (word.find("0x") != std::string::npos ||
@@ -1416,8 +1438,9 @@ rpn::Interp::Privates::compiletime_eval(const std::string &word, std::string &re
         rv = rpn::WordDefinition::Result::dict_error;
       }
 
-    } else if (std::isdigit(word[0]) || (word[0]=='-' && word.size()>1 && std::isdigit(word[1]))) {
-      // numbers just push (including negative literals like -1. or -42)
+    } else if (isNumberStart(word)) {
+      // numbers just push (including negative literals like -1. or -42,
+      // and leading-decimal literals like .8 or -.8)
       progn.addWord(word);
       rv=rpn::WordDefinition::Result::ok;
 

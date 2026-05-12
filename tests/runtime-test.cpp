@@ -49,7 +49,7 @@ TEST_CASE( "parse", "Stack Words" ) {
 	    (2 == g_rpn().stack.peek_as_integer(3)) &&
 	    (1 == g_rpn().stack.peek_as_integer(4)) &&
 	    (3 == g_rpn().stack.peek_as_integer(5)) &&
-	    (12.32 == g_rpn().stack.peek_as_double(6))) );
+	    (12.32 == g_rpn().stack.peek_double(6))) );
   REQUIRE( 6 == g_rpn().stack.depth() );
 
   /*
@@ -301,6 +301,28 @@ TEST_CASE( "parse", "Stack Words" ) {
     REQUIRE( (4 == g_rpn().stack.peek_as_integer(1)) );
   }
 
+}
+
+TEST_CASE( "numeric literal shapes", "parse" ) {
+  // Leading-decimal literals (no integer part).  Previously the
+  // tokenizer required an isdigit first character; tokens like
+  // ".8" or "-.8" fell through to the dictionary and errored.
+  std::string line = ("CLEAR .8 -.8 0.8 -0.8");
+  auto st = g_rpn().sync_eval(line);
+  REQUIRE( (st == rpn::WordDefinition::Result::ok) );
+  REQUIRE( 4 == g_rpn().stack.depth() );
+  REQUIRE_THAT( g_rpn().stack.peek_double(4), Catch::Matchers::WithinAbs( 0.8, 1e-12) );
+  REQUIRE_THAT( g_rpn().stack.peek_double(3), Catch::Matchers::WithinAbs(-0.8, 1e-12) );
+  REQUIRE_THAT( g_rpn().stack.peek_double(2), Catch::Matchers::WithinAbs( 0.8, 1e-12) );
+  REQUIRE_THAT( g_rpn().stack.peek_double(1), Catch::Matchers::WithinAbs(-0.8, 1e-12) );
+
+  // Same shapes inside a word definition (compile-time path).
+  line = ("CLEAR : leading-decimal .8 -.8 ; leading-decimal");
+  st = g_rpn().sync_eval(line);
+  REQUIRE( (st == rpn::WordDefinition::Result::ok) );
+  REQUIRE( 2 == g_rpn().stack.depth() );
+  REQUIRE_THAT( g_rpn().stack.peek_double(2), Catch::Matchers::WithinAbs( 0.8, 1e-12) );
+  REQUIRE_THAT( g_rpn().stack.peek_double(1), Catch::Matchers::WithinAbs(-0.8, 1e-12) );
 }
 
 TEST_CASE( "== !=", " runtime logic" ) {
@@ -654,17 +676,17 @@ TEST_CASE( "file tests.rpn", "parsing" ) {
     REQUIRE( (6  == g_rpn().stack.peek_as_integer(14) ));
     REQUIRE( (5  == g_rpn().stack.peek_as_integer(13) ));
     REQUIRE( (8  == g_rpn().stack.peek_as_integer(12) ));
-    REQUIRE( (10.000000 == g_rpn().stack.peek_as_double(11) ));
-    REQUIRE( (1.000000  == g_rpn().stack.peek_as_double(10) ));
+    REQUIRE( (10.000000 == g_rpn().stack.peek_double(11) ));
+    REQUIRE( (1.000000  == g_rpn().stack.peek_double(10) ));
     REQUIRE_THAT(g_rpn().stack.peek_as_double(9).value(), Catch::Matchers::WithinAbs(0.046083, 0.000001));
     REQUIRE( ("test addition"  == g_rpn().stack.peek_string(8) ));
     REQUIRE( (6  == g_rpn().stack.peek_as_integer(7) ));
-    REQUIRE( (6.500000  == g_rpn().stack.peek_as_double(6) ));
-    REQUIRE( (5.200000  == g_rpn().stack.peek_as_double(5) ));
-    REQUIRE( (9.700000  == g_rpn().stack.peek_as_double(4) ));
+    REQUIRE( (6.500000  == g_rpn().stack.peek_double(6) ));
+    REQUIRE( (5.200000  == g_rpn().stack.peek_double(5) ));
+    REQUIRE( (9.700000  == g_rpn().stack.peek_double(4) ));
     REQUIRE( ("test subtraction" == g_rpn().stack.peek_string(3) ));
     REQUIRE( (-2  == g_rpn().stack.peek_as_integer(2) ));
-    REQUIRE( (-9.000000  == g_rpn().stack.peek_as_double(1) ));
+    REQUIRE( (-9.000000  == g_rpn().stack.peek_double(1) ));
   }
 }
 
