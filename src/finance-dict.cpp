@@ -313,7 +313,10 @@ NATIVE_WORD_DECL(finance, amort) {
   double bal = t.pv;
   double totInt = 0.0, totPrin = 0.0;
   for (int k = 1; k <= periods; ++k) {
-    double intr = bal * r;
+    // begin-mode: the period's payment lands first, so interest
+    // accrues on the post-payment balance. principal/balance update
+    // is identical in both modes.
+    double intr = (t.begin ? (bal + t.pmt) : bal) * r;
     double prin = (-t.pmt) - intr;
     bal -= prin;
     period.push_back((double)k);

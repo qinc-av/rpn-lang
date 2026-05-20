@@ -2877,26 +2877,48 @@ TEST_CASE("finance: AMORT schedule", "[finance]") {
   rpn::Interp rpn(false);
   using Catch::Matchers::WithinAbs;
 
-  // 1000 borrowed, 3 periods, 10%/period, fv 0 → pmt ≈ -402.1148
-  rpn.sync_eval("3. 10. 1000. 0. 0. FALSE ->TVM SOLVE-PMT AMORT");
-  REQUIRE( rpn.stack.depth() == 2 );             // tvm (NOS) + obj (TOS)
+  SECTION("end-of-period loan") {
+    // 1000 borrowed, 3 periods, 10%/period, fv 0 → pmt ≈ -402.1148
+    rpn.sync_eval("3. 10. 1000. 0. 0. FALSE ->TVM SOLVE-PMT AMORT");
+    REQUIRE( rpn.stack.depth() == 2 );           // tvm (NOS) + obj (TOS)
 
-  const auto &obj = PEEK_CAST(stack::Object, rpn.stack.peek(1));
-  const auto &interest  = PEEK_CAST(stack::Vector, obj.member("interest"));
-  const auto &principal = PEEK_CAST(stack::Vector, obj.member("principal"));
-  const auto &balance   = PEEK_CAST(stack::Vector, obj.member("balance"));
+    const auto &obj = PEEK_CAST(stack::Object, rpn.stack.peek(1));
+    const auto &interest  = PEEK_CAST(stack::Vector, obj.member("interest"));
+    const auto &principal = PEEK_CAST(stack::Vector, obj.member("principal"));
+    const auto &balance   = PEEK_CAST(stack::Vector, obj.member("balance"));
 
-  REQUIRE( interest.vec().size() == 3 );
-  REQUIRE_THAT( interest.vec()(0),  WithinAbs(100.0,     0.01) );
-  REQUIRE_THAT( interest.vec()(1),  WithinAbs(69.789,    0.01) );
-  REQUIRE_THAT( principal.vec()(0), WithinAbs(302.115,   0.01) );
-  REQUIRE_THAT( balance.vec()(2),   WithinAbs(0.0,       0.01) );
+    REQUIRE( interest.vec().size() == 3 );
+    REQUIRE_THAT( interest.vec()(0),  WithinAbs(100.0,   0.01) );
+    REQUIRE_THAT( interest.vec()(1),  WithinAbs(69.789,  0.01) );
+    REQUIRE_THAT( principal.vec()(0), WithinAbs(302.115, 0.01) );
+    REQUIRE_THAT( balance.vec()(2),   WithinAbs(0.0,     0.01) );
 
-  const auto &totInt = PEEK_CAST(stack::Double, obj.member("total-interest"));
-  REQUIRE_THAT( (double)totInt, WithinAbs(206.345, 0.01) );
+    const auto &totInt  = PEEK_CAST(stack::Double, obj.member("total-interest"));
+    const auto &totPrin = PEEK_CAST(stack::Double, obj.member("total-principal"));
+    REQUIRE_THAT( (double)totInt,  WithinAbs(206.345,  0.01) );
+    REQUIRE_THAT( (double)totPrin, WithinAbs(1000.0,   0.01) );  // == pv
 
-  // the tvm is still underneath, untouched
-  REQUIRE( PEEK_CAST(stack::Tvm, rpn.stack.peek(2)).n == 3.0 );
+    // the tvm is still underneath, untouched
+    REQUIRE( PEEK_CAST(stack::Tvm, rpn.stack.peek(2)).n == 3.0 );
+  }
+
+  SECTION("begin-of-period loan accrues interest post-payment") {
+    // same loan, begin mode → pmt ≈ -365.559; interest is lower because
+    // each payment lands before the period's interest accrues.
+    rpn.sync_eval("3. 10. 1000. 0. 0. TRUE ->TVM SOLVE-PMT AMORT");
+    const auto &obj = PEEK_CAST(stack::Object, rpn.stack.peek(1));
+    const auto &interest = PEEK_CAST(stack::Vector, obj.member("interest"));
+    const auto &balance  = PEEK_CAST(stack::Vector, obj.member("balance"));
+
+    REQUIRE_THAT( interest.vec()(0), WithinAbs(63.444, 0.01) );
+    REQUIRE_THAT( interest.vec()(2), WithinAbs(0.0,    0.01) );
+    REQUIRE_THAT( balance.vec()(2),  WithinAbs(0.0,    0.01) );  // fully amortized
+
+    const auto &totInt  = PEEK_CAST(stack::Double, obj.member("total-interest"));
+    const auto &totPrin = PEEK_CAST(stack::Double, obj.member("total-principal"));
+    REQUIRE_THAT( (double)totInt,  WithinAbs(96.677, 0.01) );
+    REQUIRE_THAT( (double)totPrin, WithinAbs(1000.0, 0.01) );    // == pv
+  }
 }
 
 /* end of qinc/rpn-lang/tests/runtime-test.cpp */
