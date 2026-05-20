@@ -2769,4 +2769,37 @@ TEST_CASE("finance: ->TVM constructor and TVM-> decompose", "[finance]") {
   }
 }
 
+TEST_CASE("finance: closed-form TVM solvers", "[finance]") {
+  rpn::Interp rpn(false);
+  using Catch::Matchers::WithinAbs;
+
+  SECTION("SOLVE-FV") {
+    rpn.sync_eval("10. 5. -1000. 0. 0. FALSE ->TVM SOLVE-FV");
+    const auto &t = PEEK_CAST(stack::Tvm, rpn.stack.peek(1));
+    REQUIRE_THAT( t.fv, WithinAbs(1628.8946268, 1e-4) );
+    REQUIRE( t.solveFor == stack::Tvm::SolveFor::fv );
+  }
+  SECTION("SOLVE-PV") {
+    rpn.sync_eval("10. 5. 0. 0. 1628.8946268 FALSE ->TVM SOLVE-PV");
+    const auto &t = PEEK_CAST(stack::Tvm, rpn.stack.peek(1));
+    REQUIRE_THAT( t.pv, WithinAbs(-1000.0, 1e-4) );
+  }
+  SECTION("SOLVE-N") {
+    rpn.sync_eval("0. 5. -1000. 0. 1628.8946268 FALSE ->TVM SOLVE-N");
+    const auto &t = PEEK_CAST(stack::Tvm, rpn.stack.peek(1));
+    REQUIRE_THAT( t.n, WithinAbs(10.0, 1e-6) );
+  }
+  SECTION("SOLVE-PMT on a 48-month loan") {
+    // 20000 borrowed, 48 months, 5%/yr = 5/12 %/month, fv 0.
+    rpn.sync_eval("48. 5. 12. / 20000. 0. 0. FALSE ->TVM SOLVE-PMT");
+    const auto &t = PEEK_CAST(stack::Tvm, rpn.stack.peek(1));
+    REQUIRE_THAT( t.pmt, WithinAbs(-460.59, 0.01) );
+  }
+  SECTION("zero-rate degenerate case") {
+    rpn.sync_eval("10. 0. -1000. 0. 0. FALSE ->TVM SOLVE-FV");
+    const auto &t = PEEK_CAST(stack::Tvm, rpn.stack.peek(1));
+    REQUIRE_THAT( t.fv, WithinAbs(1000.0, 1e-9) );  // 0 = pv + fv
+  }
+}
+
 /* end of qinc/rpn-lang/tests/runtime-test.cpp */
