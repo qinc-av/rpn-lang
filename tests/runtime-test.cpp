@@ -1815,6 +1815,15 @@ TEST_CASE("deparse round-trips", "display") {
     g_rpn().sync_eval("3.14159265358979. DEPARSE EVAL");
     REQUIRE( g_rpn().stack.peek_double(1) == 3.14159265358979 );
   }
+
+  // Tvm
+  {
+    g_rpn().stack.clear();
+    g_rpn().sync_eval("36. 0.5 200000. -1199.10 0. FALSE ->TVM");
+    auto before = g_rpn().stack.peek(1).deep_copy();
+    g_rpn().sync_eval("DEPARSE EVAL");
+    REQUIRE( *before == g_rpn().stack.peek(1) );
+  }
 }
 
 TEST_CASE("cancel and progress", "threading") {
@@ -2719,6 +2728,45 @@ TEST_CASE("finance: TVM blank constructor", "[finance]") {
   REQUIRE( t.fv == 0.0 );
   REQUIRE( t.begin == false );
   REQUIRE( t.solveFor == stack::Tvm::SolveFor::none );
+}
+
+TEST_CASE("finance: ->TVM constructor and TVM-> decompose", "[finance]") {
+  rpn::Interp rpn(false);
+
+  SECTION("->TVM fills every field") {
+    REQUIRE( rpn.sync_eval("10. 5. -1000. 0. 1628.89 TRUE ->TVM")
+             == rpn::WordDefinition::Result::ok );
+    REQUIRE( rpn.stack.depth() == 1 );
+    const auto &t = PEEK_CAST(stack::Tvm, rpn.stack.peek(1));
+    REQUIRE( t.n == 10.0 );
+    REQUIRE( t.i == 5.0 );
+    REQUIRE( t.pv == -1000.0 );
+    REQUIRE( t.pmt == 0.0 );
+    REQUIRE_THAT( t.fv, Catch::Matchers::WithinAbs(1628.89, 1e-9) );
+    REQUIRE( t.begin == true );
+    REQUIRE( t.solveFor == stack::Tvm::SolveFor::none );
+  }
+
+  SECTION("TVM-> is the inverse of ->TVM") {
+    REQUIRE( rpn.sync_eval("10. 5. -1000. 0. 1628.89 FALSE ->TVM TVM->")
+             == rpn::WordDefinition::Result::ok );
+    REQUIRE( rpn.stack.depth() == 6 );
+    REQUIRE( rpn.stack.peek_boolean(1) == false );           // begin (TOS)
+    REQUIRE_THAT( rpn.stack.peek_double(2), Catch::Matchers::WithinAbs(1628.89, 1e-9) ); // fv
+    REQUIRE( rpn.stack.peek_double(3) == 0.0 );              // pmt
+    REQUIRE( rpn.stack.peek_double(4) == -1000.0 );          // pv
+    REQUIRE( rpn.stack.peek_double(5) == 5.0 );              // i
+    REQUIRE( rpn.stack.peek_double(6) == 10.0 );             // n
+  }
+
+  SECTION("deparse round-trips") {
+    REQUIRE( rpn.sync_eval("10. 5. -1000. 0. 1628.89 FALSE ->TVM")
+             == rpn::WordDefinition::Result::ok );
+    auto original = rpn.stack.peek(1).deep_copy();
+    REQUIRE( rpn.sync_eval("DEPARSE EVAL") == rpn::WordDefinition::Result::ok );
+    REQUIRE( rpn.stack.depth() == 1 );
+    REQUIRE( *original == rpn.stack.peek(1) );
+  }
 }
 
 /* end of qinc/rpn-lang/tests/runtime-test.cpp */
