@@ -8,6 +8,7 @@
 #include "../rpn.h"
 #include "finance.h"
 #include <cmath>
+#include <functional>
 
 // ---------------------------------------------------------------------------
 // TVM math helpers (anonymous namespace)
@@ -25,8 +26,6 @@ namespace {
   }
 
   // residual of the TVM equation — zero when the five vars are consistent
-  // (used by future SOLVE-I iterative solver)
-  [[maybe_unused]]
   double tvm_residual(double n, double r, double pv, double pmt,
                       double fv, double g) {
     double A = annuity_factor(n, r);
@@ -62,6 +61,54 @@ namespace {
     double D = -(t.pv + c) / denom;
     if (D <= 0.0) return std::nan("");
     return -std::log(D) / std::log(1.0 + r);
+  }
+  // Bracketed root-finder: scan [lo,hi] in `steps` intervals for a sign
+  // change, then converge with secant + bisection fallback. Returns NaN
+  // if no bracket is found or it fails to converge.
+  double solve_root(const std::function<double(double)> &f,
+                    double lo, double hi, int steps = 200,
+                    int max_iter = 100, double tol = 1e-9) {
+    double a = lo, fa = f(a), b = a, fb = fa;
+    bool bracketed = false;
+    double step = (hi - lo) / steps;
+    for (int k = 1; k <= steps; ++k) {
+      b = lo + k * step;
+      fb = f(b);
+      if (std::isfinite(fa) && std::isfinite(fb) && fa * fb <= 0.0) {
+        bracketed = true;
+        break;
+      }
+      a = b; fa = fb;
+    }
+    if (!bracketed) return std::nan("");
+    for (int it = 0; it < max_iter; ++it) {
+      if (std::abs(fb) < tol) return b;
+      double c;
+      if (fb != fa) {                       // secant step
+        c = b - fb * (b - a) / (fb - fa);
+      } else {
+        c = std::nan("");
+      }
+      if (!std::isfinite(c) || c <= std::min(a,b) || c >= std::max(a,b)) {
+        c = 0.5 * (a + b);                  // bisection fallback
+      }
+      double fc = f(c);
+      if (fa * fc <= 0.0) { b = c; fb = fc; }
+      else                { a = c; fa = fc; }
+    }
+    return (std::abs(fb) < 1e-6) ? b : std::nan("");
+  }
+
+  // returns the rate as a percent, or NaN if it cannot be found
+  double solve_i_percent(const Tvm &t) {
+    double g = gmode(t);
+    auto f = [&](double r) {
+      return tvm_residual(t.n, r, t.pv, t.pmt, t.fv, g);
+    };
+    // periodic rates from -99% to +100% per period cover every
+    // realistic case; r = 0 is handled inside annuity_factor.
+    double r = solve_root(f, -0.99, 1.0);
+    return std::isnan(r) ? std::nan("") : r * 100.0;
   }
 } // anonymous namespace
 
@@ -163,6 +210,20 @@ NATIVE_WORD_DECL(finance, solve_n_w) {
 }
 
 // ---------------------------------------------------------------------------
+// SOLVE-I  ( tvm -- tvm )
+// ---------------------------------------------------------------------------
+NATIVE_WORD_DECL(finance, solve_i_w) {
+  auto sv = rpn.stack.pop();
+  ::stack::Tvm t = POP_CAST(::stack::Tvm, sv);
+  double i = solve_i_percent(t);
+  if (std::isnan(i)) { rpn.stack.push(t); return rpn::WordDefinition::Result::param_error; }
+  t.i = i;
+  t.solveFor = ::stack::Tvm::SolveFor::i;
+  rpn.stack.push(t);
+  return rpn::WordDefinition::Result::ok;
+}
+
+// ---------------------------------------------------------------------------
 // addFinanceWords
 // ---------------------------------------------------------------------------
 void
@@ -181,6 +242,7 @@ rpn::Interp::addFinanceWords() {
   addDefinition("SOLVE-FV",  { finance_validator::d1_tvm, NATIVE_WORD_FN(finance, solve_fv_w),  nullptr });
   addDefinition("SOLVE-PMT", { finance_validator::d1_tvm, NATIVE_WORD_FN(finance, solve_pmt_w), nullptr });
   addDefinition("SOLVE-N",   { finance_validator::d1_tvm, NATIVE_WORD_FN(finance, solve_n_w),   nullptr });
+  addDefinition("SOLVE-I",   { finance_validator::d1_tvm, NATIVE_WORD_FN(finance, solve_i_w),   nullptr });
 
   addWordMetadata("TVM",      "Push a blank time-value-of-money object.");
   addWordMetadata("->TVM",    "Build a tvm. `n i pv pmt fv begin ->TVM`.");
@@ -189,6 +251,7 @@ rpn::Interp::addFinanceWords() {
   addWordMetadata("SOLVE-FV",  "Solve a tvm for future value.");
   addWordMetadata("SOLVE-PMT", "Solve a tvm for payment.");
   addWordMetadata("SOLVE-N",   "Solve a tvm for the number of periods.");
+  addWordMetadata("SOLVE-I",   "Solve a tvm for the periodic interest rate.");
 
   setWordCategory("");
 }

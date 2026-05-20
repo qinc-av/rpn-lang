@@ -2810,4 +2810,23 @@ TEST_CASE("finance: closed-form TVM solvers", "[finance]") {
   }
 }
 
+TEST_CASE("finance: iterative SOLVE-I", "[finance]") {
+  rpn::Interp rpn(false);
+  using Catch::Matchers::WithinAbs;
+
+  SECTION("recovers a known 5% rate") {
+    rpn.sync_eval("10. 0. -1000. 0. 1628.8946268 FALSE ->TVM SOLVE-I");
+    REQUIRE( rpn.stack.depth() == 1 );
+    const auto &t = PEEK_CAST(stack::Tvm, rpn.stack.peek(1));
+    REQUIRE_THAT( t.i, WithinAbs(5.0, 1e-4) );
+    REQUIRE( t.solveFor == stack::Tvm::SolveFor::i );
+  }
+  SECTION("loan rate") {
+    // 20000 over 48 months at -460.59/month implies 5/12 %/month.
+    rpn.sync_eval("48. 0. 20000. -460.59 0. FALSE ->TVM SOLVE-I");
+    const auto &t = PEEK_CAST(stack::Tvm, rpn.stack.peek(1));
+    REQUIRE_THAT( t.i, WithinAbs(5.0/12.0, 1e-3) );
+  }
+}
+
 /* end of qinc/rpn-lang/tests/runtime-test.cpp */
