@@ -2843,4 +2843,34 @@ TEST_CASE("finance: iterative SOLVE-I", "[finance]") {
   }
 }
 
+TEST_CASE("finance: TVM field setters with auto-re-solve", "[finance]") {
+  rpn::Interp rpn(false);
+  using Catch::Matchers::WithinAbs;
+
+  SECTION("changing an input re-solves the dependent field") {
+    // 20000 / 48mo / 5%apr, solve pmt; then change n to 60 → pmt updates.
+    rpn.sync_eval("48. 5. 12. / 20000. 0. 0. FALSE ->TVM SOLVE-PMT");
+    const auto &t1 = PEEK_CAST(stack::Tvm, rpn.stack.peek(1));
+    REQUIRE_THAT( t1.pmt, WithinAbs(-460.59, 0.01) );
+    rpn.sync_eval("60. TVM-N");
+    const auto &t2 = PEEK_CAST(stack::Tvm, rpn.stack.peek(1));
+    REQUIRE( t2.n == 60.0 );
+    REQUIRE_THAT( t2.pmt, WithinAbs(-377.42, 0.01) );        // re-solved
+    REQUIRE( t2.solveFor == stack::Tvm::SolveFor::pmt );
+  }
+  SECTION("setting the dependent field itself clears solveFor") {
+    rpn.sync_eval("48. 5. 12. / 20000. 0. 0. FALSE ->TVM SOLVE-PMT");
+    rpn.sync_eval("-500. TVM-PMT");
+    const auto &t = PEEK_CAST(stack::Tvm, rpn.stack.peek(1));
+    REQUIRE( t.pmt == -500.0 );
+    REQUIRE( t.solveFor == stack::Tvm::SolveFor::none );
+  }
+  SECTION("TVM-BEGIN / TVM-END set payment timing") {
+    rpn.sync_eval("TVM TVM-BEGIN");
+    REQUIRE( PEEK_CAST(stack::Tvm, rpn.stack.peek(1)).begin == true );
+    rpn.sync_eval("TVM-END");
+    REQUIRE( PEEK_CAST(stack::Tvm, rpn.stack.peek(1)).begin == false );
+  }
+}
+
 /* end of qinc/rpn-lang/tests/runtime-test.cpp */

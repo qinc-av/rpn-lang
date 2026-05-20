@@ -115,6 +115,34 @@ namespace {
     double r = solve_root(f, -0.99, 1.0);
     return std::isnan(r) ? std::nan("") : r * 100.0;
   }
+
+  // Re-derive the solveFor field in place from the other four.
+  // No-op when solveFor == none.
+  void tvm_resolve(Tvm &t) {
+    switch (t.solveFor) {
+      case Tvm::SolveFor::none: break;
+      case Tvm::SolveFor::n:    t.n   = solve_n(t);          break;
+      case Tvm::SolveFor::i:    t.i   = solve_i_percent(t);  break;
+      case Tvm::SolveFor::pv:   t.pv  = solve_pv(t);         break;
+      case Tvm::SolveFor::pmt:  t.pmt = solve_pmt(t);        break;
+      case Tvm::SolveFor::fv:   t.fv  = solve_fv(t);         break;
+    }
+  }
+
+  // Apply a value to one field of a popped tvm: if that field is the
+  // current solveFor, clear solveFor; otherwise re-derive solveFor.
+  void tvm_set_field(Tvm &t, Tvm::SolveFor field, double value) {
+    switch (field) {
+      case Tvm::SolveFor::n:   t.n   = value; break;
+      case Tvm::SolveFor::i:   t.i   = value; break;
+      case Tvm::SolveFor::pv:  t.pv  = value; break;
+      case Tvm::SolveFor::pmt: t.pmt = value; break;
+      case Tvm::SolveFor::fv:  t.fv  = value; break;
+      case Tvm::SolveFor::none: break;
+    }
+    if (t.solveFor == field) t.solveFor = Tvm::SolveFor::none;
+    else                     tvm_resolve(t);
+  }
 } // anonymous namespace
 
 // ---------------------------------------------------------------------------
@@ -134,6 +162,12 @@ namespace finance_validator {
       rpn::StrictTypeValidator::v_numbertype,
       rpn::StrictTypeValidator::v_numbertype },
     "d6_number_number_number_number_number_boolean");
+
+  // ( tvm x -- tvm ) : TOS = number, NOS = tvm
+  const rpn::StrictTypeValidator d2_tvm_double(
+    { rpn::StrictTypeValidator::v_numbertype,
+      typeid(::stack::Tvm).hash_code() },
+    "d2_tvm_number");
 }
 
 // ---------------------------------------------------------------------------
@@ -229,6 +263,42 @@ NATIVE_WORD_DECL(finance, solve_i_w) {
 }
 
 // ---------------------------------------------------------------------------
+// TVM-N / TVM-I / TVM-PV / TVM-PMT / TVM-FV  ( tvm x -- tvm )
+// ---------------------------------------------------------------------------
+static rpn::WordDefinition::Result
+tvm_set_word(rpn::Interp &rpn, ::stack::Tvm::SolveFor field) {
+  double value = rpn.stack.pop_as_double();
+  auto sv = rpn.stack.pop();
+  ::stack::Tvm t = POP_CAST(::stack::Tvm, sv);
+  tvm_set_field(t, field, value);
+  rpn.stack.push(t);
+  return rpn::WordDefinition::Result::ok;
+}
+NATIVE_WORD_DECL(finance, tvm_set_n)   { return tvm_set_word(rpn, ::stack::Tvm::SolveFor::n);   }
+NATIVE_WORD_DECL(finance, tvm_set_i)   { return tvm_set_word(rpn, ::stack::Tvm::SolveFor::i);   }
+NATIVE_WORD_DECL(finance, tvm_set_pv)  { return tvm_set_word(rpn, ::stack::Tvm::SolveFor::pv);  }
+NATIVE_WORD_DECL(finance, tvm_set_pmt) { return tvm_set_word(rpn, ::stack::Tvm::SolveFor::pmt); }
+NATIVE_WORD_DECL(finance, tvm_set_fv)  { return tvm_set_word(rpn, ::stack::Tvm::SolveFor::fv);  }
+
+// ---------------------------------------------------------------------------
+// TVM-BEGIN / TVM-END  ( tvm -- tvm )
+// ---------------------------------------------------------------------------
+NATIVE_WORD_DECL(finance, tvm_begin) {
+  auto sv = rpn.stack.pop();
+  ::stack::Tvm t = POP_CAST(::stack::Tvm, sv);
+  t.begin = true;  tvm_resolve(t);
+  rpn.stack.push(t);
+  return rpn::WordDefinition::Result::ok;
+}
+NATIVE_WORD_DECL(finance, tvm_end) {
+  auto sv = rpn.stack.pop();
+  ::stack::Tvm t = POP_CAST(::stack::Tvm, sv);
+  t.begin = false; tvm_resolve(t);
+  rpn.stack.push(t);
+  return rpn::WordDefinition::Result::ok;
+}
+
+// ---------------------------------------------------------------------------
 // addFinanceWords
 // ---------------------------------------------------------------------------
 void
@@ -249,6 +319,14 @@ rpn::Interp::addFinanceWords() {
   addDefinition("SOLVE-N",   { finance_validator::d1_tvm, NATIVE_WORD_FN(finance, solve_n_w),   nullptr });
   addDefinition("SOLVE-I",   { finance_validator::d1_tvm, NATIVE_WORD_FN(finance, solve_i_w),   nullptr });
 
+  addDefinition("TVM-N",   { finance_validator::d2_tvm_double, NATIVE_WORD_FN(finance, tvm_set_n),   nullptr });
+  addDefinition("TVM-I",   { finance_validator::d2_tvm_double, NATIVE_WORD_FN(finance, tvm_set_i),   nullptr });
+  addDefinition("TVM-PV",  { finance_validator::d2_tvm_double, NATIVE_WORD_FN(finance, tvm_set_pv),  nullptr });
+  addDefinition("TVM-PMT", { finance_validator::d2_tvm_double, NATIVE_WORD_FN(finance, tvm_set_pmt), nullptr });
+  addDefinition("TVM-FV",  { finance_validator::d2_tvm_double, NATIVE_WORD_FN(finance, tvm_set_fv),  nullptr });
+  addDefinition("TVM-BEGIN", { finance_validator::d1_tvm, NATIVE_WORD_FN(finance, tvm_begin), nullptr });
+  addDefinition("TVM-END",   { finance_validator::d1_tvm, NATIVE_WORD_FN(finance, tvm_end),   nullptr });
+
   addWordMetadata("TVM",      "Push a blank time-value-of-money object.");
   addWordMetadata("->TVM",    "Build a tvm. `n i pv pmt fv begin ->TVM`.");
   addWordMetadata("TVM->",    "Decompose a tvm into `n i pv pmt fv begin`.");
@@ -257,6 +335,13 @@ rpn::Interp::addFinanceWords() {
   addWordMetadata("SOLVE-PMT", "Solve a tvm for payment.");
   addWordMetadata("SOLVE-N",   "Solve a tvm for the number of periods.");
   addWordMetadata("SOLVE-I",   "Solve a tvm for the periodic interest rate.");
+  addWordMetadata("TVM-N",   "Set a tvm's period count; re-solves the unknown.");
+  addWordMetadata("TVM-I",   "Set a tvm's periodic rate; re-solves the unknown.");
+  addWordMetadata("TVM-PV",  "Set a tvm's present value; re-solves the unknown.");
+  addWordMetadata("TVM-PMT", "Set a tvm's payment; re-solves the unknown.");
+  addWordMetadata("TVM-FV",  "Set a tvm's future value; re-solves the unknown.");
+  addWordMetadata("TVM-BEGIN", "Set a tvm to begin-of-period payments.");
+  addWordMetadata("TVM-END",   "Set a tvm to end-of-period payments.");
 
   setWordCategory("");
 }
