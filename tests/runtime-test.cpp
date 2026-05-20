@@ -2873,4 +2873,30 @@ TEST_CASE("finance: TVM field setters with auto-re-solve", "[finance]") {
   }
 }
 
+TEST_CASE("finance: AMORT schedule", "[finance]") {
+  rpn::Interp rpn(false);
+  using Catch::Matchers::WithinAbs;
+
+  // 1000 borrowed, 3 periods, 10%/period, fv 0 → pmt ≈ -402.1148
+  rpn.sync_eval("3. 10. 1000. 0. 0. FALSE ->TVM SOLVE-PMT AMORT");
+  REQUIRE( rpn.stack.depth() == 2 );             // tvm (NOS) + obj (TOS)
+
+  const auto &obj = PEEK_CAST(stack::Object, rpn.stack.peek(1));
+  const auto &interest  = PEEK_CAST(stack::Vector, obj.member("interest"));
+  const auto &principal = PEEK_CAST(stack::Vector, obj.member("principal"));
+  const auto &balance   = PEEK_CAST(stack::Vector, obj.member("balance"));
+
+  REQUIRE( interest.vec().size() == 3 );
+  REQUIRE_THAT( interest.vec()(0),  WithinAbs(100.0,     0.01) );
+  REQUIRE_THAT( interest.vec()(1),  WithinAbs(69.789,    0.01) );
+  REQUIRE_THAT( principal.vec()(0), WithinAbs(302.115,   0.01) );
+  REQUIRE_THAT( balance.vec()(2),   WithinAbs(0.0,       0.01) );
+
+  const auto &totInt = PEEK_CAST(stack::Double, obj.member("total-interest"));
+  REQUIRE_THAT( (double)totInt, WithinAbs(206.345, 0.01) );
+
+  // the tvm is still underneath, untouched
+  REQUIRE( PEEK_CAST(stack::Tvm, rpn.stack.peek(2)).n == 3.0 );
+}
+
 /* end of qinc/rpn-lang/tests/runtime-test.cpp */

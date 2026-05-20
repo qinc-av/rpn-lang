@@ -6,6 +6,7 @@
  *         See docs/finance-plan.md.
  */
 #include "../rpn.h"
+#include "../rpn-matrix.h"
 #include "finance.h"
 #include <cmath>
 #include <functional>
@@ -299,6 +300,42 @@ NATIVE_WORD_DECL(finance, tvm_end) {
 }
 
 // ---------------------------------------------------------------------------
+// AMORT  ( tvm -- tvm obj )
+//   full amortization schedule as a column-oriented stack::Object
+// ---------------------------------------------------------------------------
+NATIVE_WORD_DECL(finance, amort) {
+  const auto &t = PEEK_CAST(::stack::Tvm, rpn.stack.peek(1));  // leave tvm on stack
+  int periods = (int)std::llround(t.n);
+  if (periods < 1) return rpn::WordDefinition::Result::param_error;
+
+  double r = t.i / 100.0;
+  std::vector<double> period, interest, principal, balance;
+  double bal = t.pv;
+  double totInt = 0.0, totPrin = 0.0;
+  for (int k = 1; k <= periods; ++k) {
+    double intr = bal * r;
+    double prin = (-t.pmt) - intr;
+    bal -= prin;
+    period.push_back((double)k);
+    interest.push_back(intr);
+    principal.push_back(prin);
+    balance.push_back(bal);
+    totInt  += intr;
+    totPrin += prin;
+  }
+
+  ::stack::Object obj;
+  obj.add_value("period",          ::stack::Vector(period));
+  obj.add_value("interest",        ::stack::Vector(interest));
+  obj.add_value("principal",       ::stack::Vector(principal));
+  obj.add_value("balance",         ::stack::Vector(balance));
+  obj.add_value("total-interest",  ::stack::Double(totInt));
+  obj.add_value("total-principal", ::stack::Double(totPrin));
+  rpn.stack.push(obj);
+  return rpn::WordDefinition::Result::ok;
+}
+
+// ---------------------------------------------------------------------------
 // addFinanceWords
 // ---------------------------------------------------------------------------
 void
@@ -326,6 +363,7 @@ rpn::Interp::addFinanceWords() {
   addDefinition("TVM-FV",  { finance_validator::d2_tvm_double, NATIVE_WORD_FN(finance, tvm_set_fv),  nullptr });
   addDefinition("TVM-BEGIN", { finance_validator::d1_tvm, NATIVE_WORD_FN(finance, tvm_begin), nullptr });
   addDefinition("TVM-END",   { finance_validator::d1_tvm, NATIVE_WORD_FN(finance, tvm_end),   nullptr });
+  addDefinition("AMORT",     { finance_validator::d1_tvm, NATIVE_WORD_FN(finance, amort),     nullptr });
 
   addWordMetadata("TVM",      "Push a blank time-value-of-money object.");
   addWordMetadata("->TVM",    "Build a tvm. `n i pv pmt fv begin ->TVM`.");
@@ -342,6 +380,7 @@ rpn::Interp::addFinanceWords() {
   addWordMetadata("TVM-FV",  "Set a tvm's future value; re-solves the unknown.");
   addWordMetadata("TVM-BEGIN", "Set a tvm to begin-of-period payments.");
   addWordMetadata("TVM-END",   "Set a tvm to end-of-period payments.");
+  addWordMetadata("AMORT",     "Amortization schedule of a tvm → object {period,interest,principal,balance,total-interest,total-principal}.");
 
   setWordCategory("");
 }
