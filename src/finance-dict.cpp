@@ -62,6 +62,7 @@ namespace {
     if (D <= 0.0) return std::nan("");
     return -std::log(D) / std::log(1.0 + r);
   }
+
   // Bracketed root-finder: scan [lo,hi] in `steps` intervals for a sign
   // change, then converge with secant + bisection fallback. Returns NaN
   // if no bracket is found or it fails to converge.
@@ -91,6 +92,10 @@ namespace {
       }
       if (!std::isfinite(c) || c <= std::min(a,b) || c >= std::max(a,b)) {
         c = 0.5 * (a + b);                  // bisection fallback
+        // Bracket collapsed to one representable value — b is the best
+        // estimate (it carries the smaller residual). Returning here
+        // avoids spinning out max_iter and yielding NaN.
+        if (c == a || c == b) return b;
       }
       double fc = f(c);
       if (fa * fc <= 0.0) { b = c; fb = fc; }

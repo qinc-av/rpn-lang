@@ -2827,6 +2827,20 @@ TEST_CASE("finance: iterative SOLVE-I", "[finance]") {
     const auto &t = PEEK_CAST(stack::Tvm, rpn.stack.peek(1));
     REQUIRE_THAT( t.i, WithinAbs(5.0/12.0, 1e-3) );
   }
+  SECTION("zero-rate, begin mode — bracket collapses to a tight root") {
+    // annuity-due: 100/period x10 == 1000 principal at 0% → i ≈ 0.
+    rpn.sync_eval("10. 0. -1000. 100. 0. TRUE ->TVM SOLVE-I");
+    REQUIRE( rpn.stack.depth() == 1 );
+    const auto &t = PEEK_CAST(stack::Tvm, rpn.stack.peek(1));
+    REQUIRE_THAT( t.i, WithinAbs(0.0, 1e-4) );
+  }
+  SECTION("deparse round-trips a solved-i tvm") {
+    rpn.sync_eval("10. 0. -1000. 0. 1628.8946268 FALSE ->TVM SOLVE-I");
+    auto solved = rpn.stack.peek(1).deep_copy();
+    REQUIRE( rpn.sync_eval("DEPARSE EVAL") == rpn::WordDefinition::Result::ok );
+    REQUIRE( rpn.stack.depth() == 1 );
+    REQUIRE( *solved == rpn.stack.peek(1) );
+  }
 }
 
 /* end of qinc/rpn-lang/tests/runtime-test.cpp */
