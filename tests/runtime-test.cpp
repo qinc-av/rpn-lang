@@ -2714,6 +2714,9 @@ TEST_CASE("finance: TVM blank constructor", "[finance]") {
   REQUIRE( t.type_name() == "tvm" );
   REQUIRE( t.n == 0.0 );
   REQUIRE( t.i == 0.0 );
+  REQUIRE( t.pv == 0.0 );
+  REQUIRE( t.pmt == 0.0 );
+  REQUIRE( t.fv == 0.0 );
   REQUIRE( t.begin == false );
   REQUIRE( t.solveFor == stack::Tvm::SolveFor::none );
 }
