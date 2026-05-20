@@ -176,6 +176,10 @@ static array embedded in `finance-dict.cpp`, carrying a "current through
 `<year>`" marker. It goes stale one value per year; refresh by editing
 the array. US-only for v1.
 
+The word-based interface (`CPI` / `INFL-ADJUST` on plain numbers) is a
+deliberate v1 choice, not the conceptual model — see *Out of scope /
+future work* for the units model these words will eventually fold into.
+
 ## Structured results — `stack::Object`, never `stack::Json`
 
 `AMORT` and the `DEP-*` words return a **column-oriented `stack::Object`**:
@@ -251,8 +255,20 @@ A `[finance]` group in `tests/runtime-test.cpp`:
 ## Out of scope / future work
 
 - **Bonds (price, yield)** — needs a calendar date type rpn-lang lacks.
-- **Exchange rates / currency** — belongs with the Phase 5 Units-of-measure
-  concept.
+- **Money as units (currency + inflation)** — exchange rates and historical
+  inflation are the same problem: a *unit conversion* between members of a
+  money-unit family (`USD`↔`EUR`, `USD_1923`↔`USD_2024`), the conversion
+  factor coming from data (a rate table, a CPI series). Both belong with
+  the Phase 5 Units-of-measure concept. v1 ships exchange rates not at all,
+  and inflation as words (`CPI` / `INFL-ADJUST`) on plain numbers — a
+  pragmatic interface, not the conceptual model. This is a concrete design
+  input for Phase 5 Units: that feature must handle a non-dimensional,
+  *data-driven* sub-kind of unit — most likely a `Quantity` carrying a
+  vintage / epoch rather than ≈110 literal `USD_<year>` unit names. When
+  Units lands, `INFL-ADJUST` becomes sugar over unit conversion (or is
+  superseded); the embedded CPI table is exactly the data that version
+  needs, so it is not wasted, and a plain-number `CPI` lookup stays useful
+  regardless.
 - **Non-US / loadable CPI data** — v1 embeds a US snapshot; a loadable
   multi-region table is future work.
 - **A data-frame type** — rpn-lang has no R-style type with named rows
