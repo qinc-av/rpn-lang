@@ -2800,6 +2800,14 @@ TEST_CASE("finance: closed-form TVM solvers", "[finance]") {
     const auto &t = PEEK_CAST(stack::Tvm, rpn.stack.peek(1));
     REQUIRE_THAT( t.fv, WithinAbs(1000.0, 1e-9) );  // 0 = pv + fv
   }
+  SECTION("deparse round-trips a solved tvm") {
+    // a solveFor != none tvm exercises deparse()'s SOLVE-<X> suffix
+    rpn.sync_eval("10. 5. -1000. 0. 0. FALSE ->TVM SOLVE-FV");
+    auto solved = rpn.stack.peek(1).deep_copy();
+    REQUIRE( rpn.sync_eval("DEPARSE EVAL") == rpn::WordDefinition::Result::ok );
+    REQUIRE( rpn.stack.depth() == 1 );
+    REQUIRE( *solved == rpn.stack.peek(1) );
+  }
 }
 
 /* end of qinc/rpn-lang/tests/runtime-test.cpp */
