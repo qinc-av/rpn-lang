@@ -32,18 +32,23 @@
 #include "../rpn-matrix.h"
 #include "geometry.h"
 
-// Thread-local display context for rpn::to_string() free functions used by stack
-// type operator string() / to_latex() methods (which have no interpreter context).
-// The canonical per-instance state lives in Interp::Privates; these are kept in
-// sync by the ->PRECISION and ->RADIX words.  Thread-local prevents cross-thread
-// interference when multiple interpreters run concurrently.
-thread_local int sk_double_decimals = 10;
-thread_local double sk_double_precision = 10000000000.0;
-thread_local int _sk_int_radix = 10;
+// Process-global display context for rpn::to_string() free functions used by
+// stack type operator string() / to_latex() methods (which have no interpreter
+// context).  The canonical per-instance state lives in Interp::Privates; the
+// ->PRECISION and ->RADIX words write both.
+//
+// Deliberately NOT thread_local: the async interpreter executes words on its
+// main_loop thread, but the stack is rendered (describeStack / to_latex) on the
+// caller's thread.  A per-thread cache would never see a radix/precision a word
+// just set.  Atomic so the cross-thread read is well-defined.
+std::atomic<int> sk_double_decimals{10};
+std::atomic<double> sk_double_precision{10000000000.0};
+std::atomic<int> _sk_int_radix{10};
 
 std::string
 rpn::to_string(const double &dv) {
-  double dvr = std::round(sk_double_precision*(dv))/sk_double_precision;
+  const double precision = sk_double_precision.load();
+  double dvr = std::round(precision*(dv))/precision;
   double intpart;
 
   std::string rv = std::format("{}", dvr);
@@ -62,10 +67,11 @@ rpn::to_string(int64_t iv) {
   const char digit[] = "0123456789ABCDEFGHIJKLMNOPRSTUVWXYZ";
   std::vector<char> stack;
 
+  const int radix = _sk_int_radix.load();
   int64_t quot, rem;
   do {
-    quot = iv / _sk_int_radix;
-    rem = iv % _sk_int_radix;
+    quot = iv / radix;
+    rem = iv % radix;
 
     stack.push_back(digit[rem]);
     iv = quot;
@@ -77,7 +83,7 @@ rpn::to_string(int64_t iv) {
 
 int
 rpn::int_radix() {
-  return _sk_int_radix;
+  return _sk_int_radix.load();
 }
 
 /// True when `word` looks like a numeric literal: a digit-leading

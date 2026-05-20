@@ -17,6 +17,7 @@
 
 #include <atomic>
 #include <chrono>
+#include <future>
 #include <mutex>
 #include <thread>
 
@@ -2675,6 +2676,33 @@ TEST_CASE("marker and collection literals", "types") {
   // Non-conformant rows (different lengths) → error
   REQUIRE( ev("[ [ 1. 2. ] [ 3. 4. 5. ] ]") != ok );
   rpn.stack.clear();
+}
+
+// Regression: ->RADIX / ->PRECISION run on the async interpreter's
+// main_loop thread, but the stack is rendered (to_latex / to_string)
+// on the caller's thread.  The display context backing those render
+// functions must therefore be visible cross-thread — it was once
+// thread_local, so a radix/precision set by a word was never seen by
+// renders on another thread.
+TEST_CASE("display context set on the engine thread is visible to renders elsewhere", "[radix][precision][threading]") {
+  auto runOnEngineThread = [](rpn::Interp &rpn, const std::string &line) {
+    std::promise<void> done;
+    rpn.eval(line, [&done](rpn::WordDefinition::Result) { done.set_value(); });
+    done.get_future().wait();
+  };
+
+  SECTION("radix") {
+    rpn::Interp rpn(true);   // async → words execute on the main_loop thread
+    runOnEngineThread(rpn, "0d255 0d16 ->RADIX");
+    // Render the stacked integer on THIS (test) thread.
+    REQUIRE( rpn.stack.peek(1).to_latex() == "FF_{16}" );
+  }
+
+  SECTION("precision") {
+    rpn::Interp rpn(true);
+    runOnEngineThread(rpn, "1.23456789 0d3 ->PRECISION");
+    REQUIRE( rpn.stack.peek(1).to_latex() == "1.235" );
+  }
 }
 
 /* end of qinc/rpn-lang/tests/runtime-test.cpp */
