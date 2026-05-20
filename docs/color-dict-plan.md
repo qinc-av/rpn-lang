@@ -1,41 +1,31 @@
-# Plan: color-dict / ColorCalc Integration
+# Plan: color-dict / ColorCalc Integration — Superseded
 
-## Status: Deferred — design needed
+## Status: Superseded
 
-## Context
+The original plan — wiring an in-RP42 `libs/color-dict` into the
+interpreter through an ObjC++ bridge (`rp42-misc.mm`), and resolving
+`stack::Mx3` / `stack::Vec3` type duplication first — was not carried
+out as written. It is kept here only as a record of how the problem
+was actually resolved.
 
-`libs/color-dict.{h,cpp}` (in the RP42 project) implements `ColorCalc`, which
-adds color science words (`->RGB`, `->XYZ`, `->Lab`, color space conversions,
-quantisation, delta-E, etc.) to the rpn-lang interpreter. It is currently wired
-in via ObjC++ (`rp42-misc.mm`) and is not active.
+## What happened instead
 
-## The Core Problem
+color-dict became `rpn-color/`, a standalone SwiftPM package consumed
+by RP42 as a git submodule. Its C++ target (`RpnColorCXX`) compiles
+`color-dict.cpp` plus the `libQiColor` backing library (a nested
+submodule); its modulemap exposes a single Swift entry point,
+`addColorDictionary(RpnInterp)`. There is no ObjC bridge and no `.mm`
+anywhere — RP42 is pure Swift consuming SwiftPM packages.
 
-`color-dict.h` includes `libQiColor/QiColor.h` and defines its own stack types
-(`stack::Rgb`, `stack::XYZ`, `stack::Lab`, `stack::Mx3`, `stack::Vec3`, etc.)
-using the MI pattern (`class stack::Foo : public rpn::Stack::Object, public q::Foo`).
+## Type-duplication resolution
 
-The same pattern — and some of the same type names (`stack::Mx3`, `stack::Vec3`) —
-now exists in `rpn-lang` itself (`rpn-matrix.h`). These are exact duplicates
-originating from `libQiColor`.
+`rpn-lang` owns the canonical `stack::Mx3` / `stack::Vec3`
+(`rpn-matrix.h`). color-dict keeps its own qicolor-backed
+`q::color::Mx3` / `q::color::Vec3` and bridges to rpn-lang's
+`q::Mx3` / `q::Vec3` with element-wise `to_color()` / `to_stack()`
+helpers — the two namespaces have identical APIs but cannot share a
+dependency. No ODR collision: the types live in distinct packages
+with distinct namespaces.
 
-Wiring `ColorCalc` into the interpreter currently causes:
-- Name collisions: `stack::Mx3` and `stack::Vec3` defined in both `rpn-matrix.h`
-  and `color-dict.h`
-- Potential ODR violations if both translation units are linked
-
-## Open Questions
-
-- Should `rpn-lang`'s `stack::Mx3` / `stack::Vec3` be the canonical definitions,
-  with `color-dict.h` removing its duplicates and using `rpn-matrix.h` instead?
-- Or should `libQiColor` be the source of truth, with `rpn-lang` depending on it
-  for these types?
-- Are there other type overlaps beyond `Mx3` and `Vec3`?
-- Does `libQiColor` need to become a SwiftPM dependency of rpn-lang, or does
-  it stay as an RP42-side dependency only?
-
-## Prerequisite
-
-Resolve the type duplication strategy before any implementation.
-The swift-interop work (see `docs/swift-interop-plan.md`) leaves a hook in
-`makeRpnInterp()` for future ColorCalc registration once this is resolved.
+For current detail see RP42's `CLAUDE.md` and the `rpn-color/`
+package's own README and docs.
