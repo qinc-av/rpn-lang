@@ -1488,6 +1488,7 @@ rpn::Interp::Interp(bool async) {
   addTimecodeWords();
   addMatrixWords();
   addStatsWords();
+  addFinanceWords();
   addVec3Words();
   addMx3Words();
   geometry::addWords(*this);

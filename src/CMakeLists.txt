@@ -15,6 +15,7 @@ add_library(rpn-lang
   vecmx3.cpp
   matrix-dict.cpp
   stats-dict.cpp
+  finance-dict.cpp
   geometry.cpp
   geometry-dict.cpp
   vec3-dict.cpp

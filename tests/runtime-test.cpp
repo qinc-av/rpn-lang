@@ -25,6 +25,7 @@
 #include "../rpn-matrix.h"
 #include "../src/fraction.h"
 #include "../src/timecode.h"
+#include "../src/finance.h"
 #include <cmath>
 
 static rpn::Interp& g_rpn() { static rpn::Interp i(false); return i; }
@@ -2703,6 +2704,18 @@ TEST_CASE("display context set on the engine thread is visible to renders elsewh
     runOnEngineThread(rpn, "1.23456789 0d3 ->PRECISION");
     REQUIRE( rpn.stack.peek(1).to_latex() == "1.235" );
   }
+}
+
+TEST_CASE("finance: TVM blank constructor", "[finance]") {
+  rpn::Interp rpn(false);
+  REQUIRE( rpn.sync_eval("TVM") == rpn::WordDefinition::Result::ok );
+  REQUIRE( rpn.stack.depth() == 1 );
+  const auto &t = PEEK_CAST(stack::Tvm, rpn.stack.peek(1));
+  REQUIRE( t.type_name() == "tvm" );
+  REQUIRE( t.n == 0.0 );
+  REQUIRE( t.i == 0.0 );
+  REQUIRE( t.begin == false );
+  REQUIRE( t.solveFor == stack::Tvm::SolveFor::none );
 }
 
 /* end of qinc/rpn-lang/tests/runtime-test.cpp */

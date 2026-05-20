@@ -26,6 +26,7 @@ let cppSources: [String] = [
     "mx3-dict.cpp",
     "vec3-dict.cpp",
     "stats-dict.cpp",
+    "finance-dict.cpp",
     "geometry.cpp",
     "geometry-dict.cpp",
     "keypad-dict.cpp",

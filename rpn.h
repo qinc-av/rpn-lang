@@ -364,6 +364,7 @@ namespace rpn {
     void addTimecodeWords();
     void addMatrixWords();
     void addStatsWords();
+    void addFinanceWords();
     void addVec3Words();
     void addMx3Words();
     void addMarkerWords();
