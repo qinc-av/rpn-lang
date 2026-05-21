@@ -2957,4 +2957,28 @@ TEST_CASE("finance: IRR", "[finance]") {
   }
 }
 
+TEST_CASE("finance: interest-rate conversion", "[finance]") {
+  rpn::Interp rpn(false);
+  using Catch::Matchers::WithinAbs;
+
+  SECTION("nominal <-> effective") {
+    rpn.sync_eval("12. 12. NOM->EFF");
+    REQUIRE_THAT( rpn.stack.peek_double(1), WithinAbs(12.6825, 0.001) );
+    rpn.sync_eval("CLEAR 12.6825 12. EFF->NOM");
+    REQUIRE_THAT( rpn.stack.peek_double(1), WithinAbs(12.0, 0.001) );
+  }
+  SECTION("continuous <-> effective") {
+    rpn.sync_eval("5. CONT->EFF");
+    REQUIRE_THAT( rpn.stack.peek_double(1), WithinAbs(5.1271, 0.001) );
+    rpn.sync_eval("CLEAR 5.1271 EFF->CONT");
+    REQUIRE_THAT( rpn.stack.peek_double(1), WithinAbs(5.0, 0.001) );
+  }
+  SECTION("Fisher real <-> nominal") {
+    rpn.sync_eval("3. 2. REAL->NOM");
+    REQUIRE_THAT( rpn.stack.peek_double(1), WithinAbs(5.06, 0.001) );
+    rpn.sync_eval("CLEAR 5.06 2. NOM->REAL");
+    REQUIRE_THAT( rpn.stack.peek_double(1), WithinAbs(3.0, 0.001) );
+  }
+}
+
 /* end of qinc/rpn-lang/tests/runtime-test.cpp */

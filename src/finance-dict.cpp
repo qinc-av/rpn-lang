@@ -179,6 +179,15 @@ namespace finance_validator {
   // ( cashflows -- x ) : a lone vector
   const rpn::StrictTypeValidator d1_vector(
     { typeid(::stack::Vector).hash_code() }, "d1_vector");
+
+  // ( x -- y ) : a lone number (integer or double)
+  const rpn::StrictTypeValidator d1_number(
+    { rpn::StrictTypeValidator::v_numbertype }, "d1_number");
+
+  // ( x y -- z ) : two numbers
+  const rpn::StrictTypeValidator d2_number_number(
+    { rpn::StrictTypeValidator::v_numbertype,
+      rpn::StrictTypeValidator::v_numbertype }, "d2_number_number");
 }
 
 // ---------------------------------------------------------------------------
@@ -386,6 +395,48 @@ NATIVE_WORD_DECL(finance, irr) {
 }
 
 // ---------------------------------------------------------------------------
+// Interest-rate conversion words
+// ---------------------------------------------------------------------------
+NATIVE_WORD_DECL(finance, nom_to_eff) {
+  double periods = rpn.stack.pop_as_double();
+  double nom     = rpn.stack.pop_as_double();
+  rpn.stack.push_double(
+    (std::pow(1.0 + (nom/100.0)/periods, periods) - 1.0) * 100.0);
+  return rpn::WordDefinition::Result::ok;
+}
+NATIVE_WORD_DECL(finance, eff_to_nom) {
+  double periods = rpn.stack.pop_as_double();
+  double eff     = rpn.stack.pop_as_double();
+  rpn.stack.push_double(
+    (std::pow(1.0 + eff/100.0, 1.0/periods) - 1.0) * periods * 100.0);
+  return rpn::WordDefinition::Result::ok;
+}
+NATIVE_WORD_DECL(finance, cont_to_eff) {
+  double cont = rpn.stack.pop_as_double();
+  rpn.stack.push_double((std::exp(cont/100.0) - 1.0) * 100.0);
+  return rpn::WordDefinition::Result::ok;
+}
+NATIVE_WORD_DECL(finance, eff_to_cont) {
+  double eff = rpn.stack.pop_as_double();
+  rpn.stack.push_double(std::log(1.0 + eff/100.0) * 100.0);
+  return rpn::WordDefinition::Result::ok;
+}
+NATIVE_WORD_DECL(finance, real_to_nom) {
+  double infl = rpn.stack.pop_as_double();
+  double real = rpn.stack.pop_as_double();
+  rpn.stack.push_double(
+    ((1.0 + real/100.0) * (1.0 + infl/100.0) - 1.0) * 100.0);
+  return rpn::WordDefinition::Result::ok;
+}
+NATIVE_WORD_DECL(finance, nom_to_real) {
+  double infl = rpn.stack.pop_as_double();
+  double nom  = rpn.stack.pop_as_double();
+  rpn.stack.push_double(
+    ((1.0 + nom/100.0) / (1.0 + infl/100.0) - 1.0) * 100.0);
+  return rpn::WordDefinition::Result::ok;
+}
+
+// ---------------------------------------------------------------------------
 // addFinanceWords
 // ---------------------------------------------------------------------------
 void
@@ -437,6 +488,20 @@ rpn::Interp::addFinanceWords() {
 
   addDefinition("IRR", { finance_validator::d1_vector, NATIVE_WORD_FN(finance, irr), nullptr });
   addWordMetadata("IRR", "Internal rate of return of a cash-flow vector → percent per period.");
+
+  addDefinition("NOM->EFF",  { finance_validator::d2_number_number, NATIVE_WORD_FN(finance, nom_to_eff),  nullptr });
+  addDefinition("EFF->NOM",  { finance_validator::d2_number_number, NATIVE_WORD_FN(finance, eff_to_nom),  nullptr });
+  addDefinition("CONT->EFF", { finance_validator::d1_number,        NATIVE_WORD_FN(finance, cont_to_eff), nullptr });
+  addDefinition("EFF->CONT", { finance_validator::d1_number,        NATIVE_WORD_FN(finance, eff_to_cont), nullptr });
+  addDefinition("REAL->NOM", { finance_validator::d2_number_number, NATIVE_WORD_FN(finance, real_to_nom), nullptr });
+  addDefinition("NOM->REAL", { finance_validator::d2_number_number, NATIVE_WORD_FN(finance, nom_to_real), nullptr });
+
+  addWordMetadata("NOM->EFF",  "Nominal to effective annual rate. `nom% periods NOM->EFF`.");
+  addWordMetadata("EFF->NOM",  "Effective to nominal annual rate. `eff% periods EFF->NOM`.");
+  addWordMetadata("CONT->EFF", "Continuous-nominal to effective rate. `cont% CONT->EFF`.");
+  addWordMetadata("EFF->CONT", "Effective to continuous-nominal rate. `eff% EFF->CONT`.");
+  addWordMetadata("REAL->NOM", "Real to nominal rate (Fisher). `real% inflation% REAL->NOM`.");
+  addWordMetadata("NOM->REAL", "Nominal to real rate (Fisher). `nom% inflation% NOM->REAL`.");
 
   setWordCategory("");
 }
