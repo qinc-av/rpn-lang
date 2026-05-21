@@ -3027,4 +3027,33 @@ TEST_CASE("finance: percentage math", "[finance]") {
   REQUIRE_THAT( rpn.stack.peek_double(1), WithinAbs(20.0, 1e-9) );
 }
 
+TEST_CASE("finance: historical inflation", "[finance]") {
+  rpn::Interp rpn(false);
+  using Catch::Matchers::WithinAbs;
+
+  SECTION("CPI in range vs out of range") {
+    REQUIRE( rpn.sync_eval("1913 CPI") == rpn::WordDefinition::Result::ok );
+    REQUIRE( rpn.sync_eval("CLEAR 1850 CPI") == rpn::WordDefinition::Result::param_error );
+    REQUIRE( rpn.sync_eval("CLEAR 2100 CPI") == rpn::WordDefinition::Result::param_error );
+  }
+  SECTION("anchor values (loose — guards transcription)") {
+    rpn.sync_eval("CLEAR 1923 CPI");
+    REQUIRE_THAT( rpn.stack.peek_double(1), WithinAbs(17.1, 1.0) );
+    rpn.sync_eval("CLEAR 2020 CPI");
+    REQUIRE_THAT( rpn.stack.peek_double(1), WithinAbs(258.8, 2.0) );
+  }
+  SECTION("INFL-ADJUST same year is identity") {
+    rpn.sync_eval("CLEAR 100. 1950 1950 INFL-ADJUST");
+    REQUIRE_THAT( rpn.stack.peek_double(1), WithinAbs(100.0, 1e-9) );
+  }
+  SECTION("INFL-ADJUST round-trips (data-independent)") {
+    rpn.sync_eval("CLEAR 100. 1920 2000 INFL-ADJUST 2000 1920 INFL-ADJUST");
+    REQUIRE_THAT( rpn.stack.peek_double(1), WithinAbs(100.0, 1e-6) );
+  }
+  SECTION("INFL-ADJUST out-of-range year → param_error") {
+    auto r = rpn.sync_eval("CLEAR 100. 1850 2000 INFL-ADJUST");
+    REQUIRE( r == rpn::WordDefinition::Result::param_error );
+  }
+}
+
 /* end of qinc/rpn-lang/tests/runtime-test.cpp */

@@ -8,6 +8,7 @@
 #include "../rpn.h"
 #include "../rpn-matrix.h"
 #include "finance.h"
+#include "finance-cpi.h"
 #include <algorithm>
 #include <cmath>
 #include <functional>
@@ -144,6 +145,14 @@ namespace {
     }
     if (t.solveFor == field) t.solveFor = Tvm::SolveFor::none;
     else                     tvm_resolve(t);
+  }
+
+  // CPI lookup; returns false if the year is outside the embedded table.
+  bool cpi_lookup(int year, double &out) {
+    if (year < finance_cpi::kCpiFirstYear || year > finance_cpi::kCpiLastYear)
+      return false;
+    out = finance_cpi::kCpiAnnual[year - finance_cpi::kCpiFirstYear];
+    return true;
   }
 } // anonymous namespace
 
@@ -549,6 +558,31 @@ NATIVE_WORD_DECL(finance, mu_price) {
 }
 
 // ---------------------------------------------------------------------------
+// CPI  ( year -- index )
+// ---------------------------------------------------------------------------
+NATIVE_WORD_DECL(finance, cpi) {
+  int year = (int)rpn.stack.pop_as_integer();
+  double index;
+  if (!cpi_lookup(year, index)) return rpn::WordDefinition::Result::param_error;
+  rpn.stack.push_double(index);
+  return rpn::WordDefinition::Result::ok;
+}
+
+// ---------------------------------------------------------------------------
+// INFL-ADJUST  ( amount from-year to-year -- adjusted )
+// ---------------------------------------------------------------------------
+NATIVE_WORD_DECL(finance, infl_adjust) {
+  int    toYear   = (int)rpn.stack.pop_as_integer();
+  int    fromYear = (int)rpn.stack.pop_as_integer();
+  double amount   = rpn.stack.pop_as_double();
+  double cFrom, cTo;
+  if (!cpi_lookup(fromYear, cFrom) || !cpi_lookup(toYear, cTo))
+    return rpn::WordDefinition::Result::param_error;
+  rpn.stack.push_double(amount * cTo / cFrom);
+  return rpn::WordDefinition::Result::ok;
+}
+
+// ---------------------------------------------------------------------------
 // addFinanceWords
 // ---------------------------------------------------------------------------
 void
@@ -634,6 +668,12 @@ rpn::Interp::addFinanceWords() {
   addWordMetadata("%T",       "Percent of total. `total amount %T`.");
   addWordMetadata("MU-COST",  "Markup as a percent of cost. `cost price MU-COST`.");
   addWordMetadata("MU-PRICE", "Margin as a percent of price. `cost price MU-PRICE`.");
+
+  addDefinition("CPI",         { finance_validator::d1_number,               NATIVE_WORD_FN(finance, cpi),         nullptr });
+  addDefinition("INFL-ADJUST", { finance_validator::d3_number_number_number, NATIVE_WORD_FN(finance, infl_adjust), nullptr });
+
+  addWordMetadata("CPI",         "US CPI-U annual index for a year. `year CPI`.");
+  addWordMetadata("INFL-ADJUST", "Adjust an amount between years by CPI. `amount from-year to-year INFL-ADJUST`.");
 
   setWordCategory("");
 }
