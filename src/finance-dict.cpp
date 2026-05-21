@@ -366,6 +366,26 @@ NATIVE_WORD_DECL(finance, npv) {
 }
 
 // ---------------------------------------------------------------------------
+// IRR  ( cashflows -- irr )   returns the periodic rate as a percent
+// ---------------------------------------------------------------------------
+NATIVE_WORD_DECL(finance, irr) {
+  auto sv = rpn.stack.pop();
+  const auto &cf = POP_CAST(::stack::Vector, sv);
+  // copy the cash flows so the lambda is self-contained
+  std::vector<double> v(cf.vec().data(), cf.vec().data() + cf.vec().size());
+  auto npv_at = [&v](double r) {
+    double sum = 0.0;
+    for (int t = 0; t < (int)v.size(); ++t)
+      sum += v[t] / std::pow(1.0 + r, (double)t);
+    return sum;
+  };
+  double r = solve_root(npv_at, -0.99, 1.0);
+  if (std::isnan(r)) return rpn::WordDefinition::Result::param_error;
+  rpn.stack.push_double(r * 100.0);
+  return rpn::WordDefinition::Result::ok;
+}
+
+// ---------------------------------------------------------------------------
 // addFinanceWords
 // ---------------------------------------------------------------------------
 void
@@ -414,6 +434,9 @@ rpn::Interp::addFinanceWords() {
 
   addDefinition("NPV", { finance_validator::d2_vector_number, NATIVE_WORD_FN(finance, npv), nullptr });
   addWordMetadata("NPV", "Net present value. `cashflows rate% NPV`; cashflow[0] is t=0.");
+
+  addDefinition("IRR", { finance_validator::d1_vector, NATIVE_WORD_FN(finance, irr), nullptr });
+  addWordMetadata("IRR", "Internal rate of return of a cash-flow vector → percent per period.");
 
   setWordCategory("");
 }

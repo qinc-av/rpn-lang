@@ -2937,4 +2937,24 @@ TEST_CASE("finance: NPV", "[finance]") {
   }
 }
 
+TEST_CASE("finance: IRR", "[finance]") {
+  rpn::Interp rpn(false);
+  using Catch::Matchers::WithinAbs;
+
+  SECTION("known rate") {
+    // -1000 then 500 x3 → IRR ≈ 23.375%
+    rpn.sync_eval("[ -1000. 500. 500. 500. ] IRR");
+    REQUIRE( rpn.stack.depth() == 1 );
+    REQUIRE_THAT( rpn.stack.peek_double(1), WithinAbs(23.375, 0.05) );
+  }
+  SECTION("IRR zeroes the NPV (round-trip)") {
+    rpn.sync_eval("[ -1000. 500. 500. 500. ] DUP IRR NPV");
+    REQUIRE_THAT( rpn.stack.peek_double(1), WithinAbs(0.0, 1e-6) );
+  }
+  SECTION("no sign change → param_error") {
+    auto r = rpn.sync_eval("[ 100. 200. 300. ] IRR");
+    REQUIRE( r == rpn::WordDefinition::Result::param_error );
+  }
+}
+
 /* end of qinc/rpn-lang/tests/runtime-test.cpp */
