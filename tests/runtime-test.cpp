@@ -2981,4 +2981,35 @@ TEST_CASE("finance: interest-rate conversion", "[finance]") {
   }
 }
 
+TEST_CASE("finance: depreciation", "[finance]") {
+  rpn::Interp rpn(false);
+  using Catch::Matchers::WithinAbs;
+
+  SECTION("straight-line") {
+    rpn.sync_eval("10000. 2000. 5. DEP-SL");
+    const auto &obj = PEEK_CAST(stack::Object, rpn.stack.peek(1));
+    const auto &dep  = PEEK_CAST(stack::Vector, obj.member("depreciation"));
+    const auto &book = PEEK_CAST(stack::Vector, obj.member("book"));
+    REQUIRE( dep.vec().size() == 5 );
+    REQUIRE_THAT( dep.vec()(0),  WithinAbs(1600.0, 0.01) );
+    REQUIRE_THAT( book.vec()(4), WithinAbs(2000.0, 0.01) );
+  }
+  SECTION("sum-of-years-digits") {
+    rpn.sync_eval("10000. 2000. 5. DEP-SOYD");
+    const auto &obj = PEEK_CAST(stack::Object, rpn.stack.peek(1));
+    const auto &dep = PEEK_CAST(stack::Vector, obj.member("depreciation"));
+    REQUIRE_THAT( dep.vec()(0), WithinAbs(2666.667, 0.01) ); // 8000*5/15
+    REQUIRE_THAT( dep.vec()(4), WithinAbs(533.333,  0.01) ); // 8000*1/15
+  }
+  SECTION("declining-balance, floored at salvage") {
+    rpn.sync_eval("10000. 2000. 5. 2. DEP-DB");
+    const auto &obj = PEEK_CAST(stack::Object, rpn.stack.peek(1));
+    const auto &dep  = PEEK_CAST(stack::Vector, obj.member("depreciation"));
+    const auto &book = PEEK_CAST(stack::Vector, obj.member("book"));
+    REQUIRE_THAT( dep.vec()(0),  WithinAbs(4000.0, 0.01) ); // 10000*0.4
+    REQUIRE_THAT( dep.vec()(1),  WithinAbs(2400.0, 0.01) ); // 6000*0.4
+    REQUIRE_THAT( book.vec()(4), WithinAbs(2000.0, 0.01) ); // never below salvage
+  }
+}
+
 /* end of qinc/rpn-lang/tests/runtime-test.cpp */

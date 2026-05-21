@@ -8,6 +8,7 @@
 #include "../rpn.h"
 #include "../rpn-matrix.h"
 #include "finance.h"
+#include <algorithm>
 #include <cmath>
 #include <functional>
 
@@ -188,6 +189,21 @@ namespace finance_validator {
   const rpn::StrictTypeValidator d2_number_number(
     { rpn::StrictTypeValidator::v_numbertype,
       rpn::StrictTypeValidator::v_numbertype }, "d2_number_number");
+
+  // ( x y z -- w ) : three numbers
+  const rpn::StrictTypeValidator d3_number_number_number(
+    { rpn::StrictTypeValidator::v_numbertype,
+      rpn::StrictTypeValidator::v_numbertype,
+      rpn::StrictTypeValidator::v_numbertype },
+    "d3_number_number_number");
+
+  // ( w x y z -- v ) : four numbers
+  const rpn::StrictTypeValidator d4_number_number_number_number(
+    { rpn::StrictTypeValidator::v_numbertype,
+      rpn::StrictTypeValidator::v_numbertype,
+      rpn::StrictTypeValidator::v_numbertype,
+      rpn::StrictTypeValidator::v_numbertype },
+    "d4_number_number_number_number");
 }
 
 // ---------------------------------------------------------------------------
@@ -437,6 +453,68 @@ NATIVE_WORD_DECL(finance, nom_to_real) {
 }
 
 // ---------------------------------------------------------------------------
+// Depreciation — each returns { period, depreciation, accumulated, book }
+// ---------------------------------------------------------------------------
+static rpn::WordDefinition::Result
+push_dep_result(rpn::Interp &rpn, double cost,
+                const std::vector<double> &dep) {
+  std::vector<double> period, accum, book;
+  double acc = 0.0;
+  for (size_t k = 0; k < dep.size(); ++k) {
+    acc += dep[k];
+    period.push_back((double)(k + 1));
+    accum.push_back(acc);
+    book.push_back(cost - acc);
+  }
+  ::stack::Object obj;
+  obj.add_value("period",       ::stack::Vector(period));
+  obj.add_value("depreciation", ::stack::Vector(dep));
+  obj.add_value("accumulated",  ::stack::Vector(accum));
+  obj.add_value("book",         ::stack::Vector(book));
+  rpn.stack.push(obj);
+  return rpn::WordDefinition::Result::ok;
+}
+
+NATIVE_WORD_DECL(finance, dep_sl) {
+  int    life    = (int)std::llround(rpn.stack.pop_as_double());
+  double salvage = rpn.stack.pop_as_double();
+  double cost    = rpn.stack.pop_as_double();
+  if (life < 1) return rpn::WordDefinition::Result::param_error;
+  std::vector<double> dep(life, (cost - salvage) / life);
+  return push_dep_result(rpn, cost, dep);
+}
+
+NATIVE_WORD_DECL(finance, dep_soyd) {
+  int    life    = (int)std::llround(rpn.stack.pop_as_double());
+  double salvage = rpn.stack.pop_as_double();
+  double cost    = rpn.stack.pop_as_double();
+  if (life < 1) return rpn::WordDefinition::Result::param_error;
+  double soyd = life * (life + 1) / 2.0;
+  std::vector<double> dep;
+  for (int t = 1; t <= life; ++t)
+    dep.push_back((cost - salvage) * (life - t + 1) / soyd);
+  return push_dep_result(rpn, cost, dep);
+}
+
+NATIVE_WORD_DECL(finance, dep_db) {
+  double factor  = rpn.stack.pop_as_double();
+  int    life    = (int)std::llround(rpn.stack.pop_as_double());
+  double salvage = rpn.stack.pop_as_double();
+  double cost    = rpn.stack.pop_as_double();
+  if (life < 1) return rpn::WordDefinition::Result::param_error;
+  double rate = factor / life;
+  std::vector<double> dep;
+  double bookv = cost;
+  for (int t = 0; t < life; ++t) {
+    double d = std::min(bookv * rate, bookv - salvage);
+    if (d < 0.0) d = 0.0;
+    dep.push_back(d);
+    bookv -= d;
+  }
+  return push_dep_result(rpn, cost, dep);
+}
+
+// ---------------------------------------------------------------------------
 // addFinanceWords
 // ---------------------------------------------------------------------------
 void
@@ -502,6 +580,14 @@ rpn::Interp::addFinanceWords() {
   addWordMetadata("EFF->CONT", "Effective to continuous-nominal rate. `eff% EFF->CONT`.");
   addWordMetadata("REAL->NOM", "Real to nominal rate (Fisher). `real% inflation% REAL->NOM`.");
   addWordMetadata("NOM->REAL", "Nominal to real rate (Fisher). `nom% inflation% NOM->REAL`.");
+
+  addDefinition("DEP-SL",   { finance_validator::d3_number_number_number,        NATIVE_WORD_FN(finance, dep_sl),   nullptr });
+  addDefinition("DEP-SOYD", { finance_validator::d3_number_number_number,        NATIVE_WORD_FN(finance, dep_soyd), nullptr });
+  addDefinition("DEP-DB",   { finance_validator::d4_number_number_number_number, NATIVE_WORD_FN(finance, dep_db),   nullptr });
+
+  addWordMetadata("DEP-SL",   "Straight-line depreciation schedule. `cost salvage life DEP-SL`.");
+  addWordMetadata("DEP-SOYD", "Sum-of-years-digits depreciation schedule. `cost salvage life DEP-SOYD`.");
+  addWordMetadata("DEP-DB",   "Declining-balance depreciation schedule. `cost salvage life factor DEP-DB`.");
 
   setWordCategory("");
 }
