@@ -2,7 +2,11 @@
 
 ## Status
 
-Designed — ready for implementation planning. Brainstormed 2026-05-19.
+v1 shipped 2026-05-20 — Plans A (TVM core + AMORT), B (cash flow: NPV/IRR),
+and C (rate conversion, depreciation, percentage math, historical inflation)
+are all implemented and merged to `main`. Brainstormed 2026-05-19. Deferred
+items (bonds, currency/units, non-US CPI) remain v2+ — see *Out of scope /
+future work* below.
 
 ## Overview
 
