@@ -2921,4 +2921,20 @@ TEST_CASE("finance: AMORT schedule", "[finance]") {
   }
 }
 
+TEST_CASE("finance: NPV", "[finance]") {
+  rpn::Interp rpn(false);
+  using Catch::Matchers::WithinAbs;
+
+  SECTION("textbook discounting") {
+    // -1000 then 200 for five periods, discounted at 8%/period
+    rpn.sync_eval("[ -1000. 200. 200. 200. 200. 200. ] 8. NPV");
+    REQUIRE( rpn.stack.depth() == 1 );
+    REQUIRE_THAT( rpn.stack.peek_double(1), WithinAbs(-201.46, 0.01) );
+  }
+  SECTION("zero rate is the plain sum") {
+    rpn.sync_eval("[ -1000. 200. 200. 200. 200. 200. ] 0. NPV");
+    REQUIRE_THAT( rpn.stack.peek_double(1), WithinAbs(0.0, 1e-9) );
+  }
+}
+
 /* end of qinc/rpn-lang/tests/runtime-test.cpp */

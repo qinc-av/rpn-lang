@@ -169,6 +169,16 @@ namespace finance_validator {
     { rpn::StrictTypeValidator::v_numbertype,
       typeid(::stack::Tvm).hash_code() },
     "d2_tvm_number");
+
+  // ( cashflows rate -- npv ) : TOS = number, NOS = vector
+  const rpn::StrictTypeValidator d2_vector_number(
+    { rpn::StrictTypeValidator::v_numbertype,
+      typeid(::stack::Vector).hash_code() },
+    "d2_vector_number");
+
+  // ( cashflows -- x ) : a lone vector
+  const rpn::StrictTypeValidator d1_vector(
+    { typeid(::stack::Vector).hash_code() }, "d1_vector");
 }
 
 // ---------------------------------------------------------------------------
@@ -339,6 +349,23 @@ NATIVE_WORD_DECL(finance, amort) {
 }
 
 // ---------------------------------------------------------------------------
+// NPV  ( cashflows rate -- npv )   rate is percent per period
+// ---------------------------------------------------------------------------
+NATIVE_WORD_DECL(finance, npv) {
+  double rate = rpn.stack.pop_as_double();
+  auto sv = rpn.stack.pop();
+  const auto &cf = POP_CAST(::stack::Vector, sv);
+  const Eigen::VectorXd &v = cf.vec();
+  double r = rate / 100.0;
+  double sum = 0.0;
+  for (int t = 0; t < (int)v.size(); ++t) {
+    sum += v(t) / std::pow(1.0 + r, (double)t);
+  }
+  rpn.stack.push_double(sum);
+  return rpn::WordDefinition::Result::ok;
+}
+
+// ---------------------------------------------------------------------------
 // addFinanceWords
 // ---------------------------------------------------------------------------
 void
@@ -384,6 +411,9 @@ rpn::Interp::addFinanceWords() {
   addWordMetadata("TVM-BEGIN", "Set a tvm to begin-of-period payments.");
   addWordMetadata("TVM-END",   "Set a tvm to end-of-period payments.");
   addWordMetadata("AMORT",     "Amortization schedule of a tvm → object {period,interest,principal,balance,total-interest,total-principal}.");
+
+  addDefinition("NPV", { finance_validator::d2_vector_number, NATIVE_WORD_FN(finance, npv), nullptr });
+  addWordMetadata("NPV", "Net present value. `cashflows rate% NPV`; cashflow[0] is t=0.");
 
   setWordCategory("");
 }
