@@ -515,6 +515,40 @@ NATIVE_WORD_DECL(finance, dep_db) {
 }
 
 // ---------------------------------------------------------------------------
+// Percentage words
+// ---------------------------------------------------------------------------
+NATIVE_WORD_DECL(finance, pct) {
+  double rate = rpn.stack.pop_as_double();
+  double base = rpn.stack.pop_as_double();
+  rpn.stack.push_double(base * rate / 100.0);
+  return rpn::WordDefinition::Result::ok;
+}
+NATIVE_WORD_DECL(finance, pct_chg) {
+  double nw  = rpn.stack.pop_as_double();
+  double old = rpn.stack.pop_as_double();
+  rpn.stack.push_double((nw - old) / old * 100.0);
+  return rpn::WordDefinition::Result::ok;
+}
+NATIVE_WORD_DECL(finance, pct_total) {
+  double amount = rpn.stack.pop_as_double();
+  double total  = rpn.stack.pop_as_double();
+  rpn.stack.push_double(amount / total * 100.0);
+  return rpn::WordDefinition::Result::ok;
+}
+NATIVE_WORD_DECL(finance, mu_cost) {
+  double price = rpn.stack.pop_as_double();
+  double cost  = rpn.stack.pop_as_double();
+  rpn.stack.push_double((price - cost) / cost * 100.0);
+  return rpn::WordDefinition::Result::ok;
+}
+NATIVE_WORD_DECL(finance, mu_price) {
+  double price = rpn.stack.pop_as_double();
+  double cost  = rpn.stack.pop_as_double();
+  rpn.stack.push_double((price - cost) / price * 100.0);
+  return rpn::WordDefinition::Result::ok;
+}
+
+// ---------------------------------------------------------------------------
 // addFinanceWords
 // ---------------------------------------------------------------------------
 void
@@ -588,6 +622,18 @@ rpn::Interp::addFinanceWords() {
   addWordMetadata("DEP-SL",   "Straight-line depreciation schedule. `cost salvage life DEP-SL`.");
   addWordMetadata("DEP-SOYD", "Sum-of-years-digits depreciation schedule. `cost salvage life DEP-SOYD`.");
   addWordMetadata("DEP-DB",   "Declining-balance depreciation schedule. `cost salvage life factor DEP-DB`.");
+
+  addDefinition("%",        { finance_validator::d2_number_number, NATIVE_WORD_FN(finance, pct),       nullptr });
+  addDefinition("%CHG",     { finance_validator::d2_number_number, NATIVE_WORD_FN(finance, pct_chg),   nullptr });
+  addDefinition("%T",       { finance_validator::d2_number_number, NATIVE_WORD_FN(finance, pct_total), nullptr });
+  addDefinition("MU-COST",  { finance_validator::d2_number_number, NATIVE_WORD_FN(finance, mu_cost),   nullptr });
+  addDefinition("MU-PRICE", { finance_validator::d2_number_number, NATIVE_WORD_FN(finance, mu_price),  nullptr });
+
+  addWordMetadata("%",        "Percentage of a base. `base rate% %`.");
+  addWordMetadata("%CHG",     "Percent change. `old new %CHG`.");
+  addWordMetadata("%T",       "Percent of total. `total amount %T`.");
+  addWordMetadata("MU-COST",  "Markup as a percent of cost. `cost price MU-COST`.");
+  addWordMetadata("MU-PRICE", "Margin as a percent of price. `cost price MU-PRICE`.");
 
   setWordCategory("");
 }

@@ -3012,4 +3012,19 @@ TEST_CASE("finance: depreciation", "[finance]") {
   }
 }
 
+TEST_CASE("finance: percentage math", "[finance]") {
+  rpn::Interp rpn(false);
+  using Catch::Matchers::WithinAbs;
+  rpn.sync_eval("200. 8. %");
+  REQUIRE_THAT( rpn.stack.peek_double(1), WithinAbs(16.0, 1e-9) );
+  rpn.sync_eval("CLEAR 200. 250. %CHG");
+  REQUIRE_THAT( rpn.stack.peek_double(1), WithinAbs(25.0, 1e-9) );
+  rpn.sync_eval("CLEAR 800. 200. %T");
+  REQUIRE_THAT( rpn.stack.peek_double(1), WithinAbs(25.0, 1e-9) );
+  rpn.sync_eval("CLEAR 80. 100. MU-COST");
+  REQUIRE_THAT( rpn.stack.peek_double(1), WithinAbs(25.0, 1e-9) );
+  rpn.sync_eval("CLEAR 80. 100. MU-PRICE");
+  REQUIRE_THAT( rpn.stack.peek_double(1), WithinAbs(20.0, 1e-9) );
+}
+
 /* end of qinc/rpn-lang/tests/runtime-test.cpp */
