@@ -308,6 +308,7 @@ MATH_UNARY_FUNC(lgamma);
 
 void
 rpn::Interp::addMathDictionary() {
+  if (_alreadyRegistered("math")) return;
   rpn::Interp &rpn(*this);
   setWordCategory("math");
   registerType("complex", typeid(stack::Complex).hash_code());

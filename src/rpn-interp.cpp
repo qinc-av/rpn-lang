@@ -1477,6 +1477,11 @@ rpn::Interp::Privates::compiletime_eval(const std::string &word, std::string &re
   return rv;
 }
 
+bool
+rpn::Interp::_alreadyRegistered(const std::string &key) {
+  return !_registeredDictionaries.insert(key).second;
+}
+
 rpn::Interp::Interp(bool async) {
   m_p = new Privates(*this, async);
   m_p->add_private_words();

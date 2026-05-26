@@ -63,6 +63,7 @@ static rpn::WordDefinition::Result STACK_OP(depth)(rpn::Interp &rpn, rpn::WordCo
 
 void
 rpn::Interp::addStackDictionary() {
+  if (_alreadyRegistered("stack")) return;
   rpn::Interp &rpn(*this);
   setWordCategory("stack");
 

@@ -26,6 +26,7 @@
 
 void
 rpn::Interp::addStdlibDictionary() {
+  if (_alreadyRegistered("stdlib")) return;
 
   // -------------------------------------------------------------------------
   // Stack utilities (previously defined via sync_eval in stack-dict.cpp)

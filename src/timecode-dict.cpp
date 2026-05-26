@@ -212,6 +212,7 @@ NATIVE_WORD_DECL(timecode, framerate) {
 
 void
 rpn::Interp::addTimecodeDictionary() {
+  if (_alreadyRegistered("timecode")) return;
   rpn::Interp &rpn = *this; // in case we want to move this out someday
   setWordCategory("timecode");
   registerType("timecode", typeid(stack::Timecode).hash_code());

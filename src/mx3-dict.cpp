@@ -216,6 +216,7 @@ namespace mx3_validator {
 // ---------------------------------------------------------------------------
 void
 rpn::Interp::addMx3Dictionary() {
+  if (_alreadyRegistered("mx3")) return;
   setWordCategory("mx3");
 
   addDefinition("->MX3",   { mx3_validator::nine,       NATIVE_WORD_FN(mx3m, to_mx3),      nullptr });

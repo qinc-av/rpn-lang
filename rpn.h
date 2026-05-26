@@ -21,6 +21,7 @@
 #include <string>
 #include <deque>
 #include <map>
+#include <set>
 #include <cmath>
 #include <complex>
 #include <format>
@@ -369,6 +370,14 @@ namespace rpn {
     void addMx3Dictionary();
     void addMarkerDictionary();
     void addStdlibDictionary();
+
+    std::set<std::string> _registeredDictionaries;
+    // Returns true if `key` was already registered (caller should early-return);
+    // otherwise marks the key and returns false. Used by every addXDictionary
+    // to make registration idempotent — batteries can pull their own
+    // dependencies (geometry → numeric) without double-registering when the
+    // embedder also asks for the dep.
+    bool _alreadyRegistered(const std::string &key);
   };
 
 

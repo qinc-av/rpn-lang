@@ -393,6 +393,7 @@ NATIVE_WORD_DECL(marker, to_object_n);
 
 void
 rpn::Interp::addTypeDictionary() {
+  if (_alreadyRegistered("type")) return;
   setWordCategory("types");
   addDefinition("TRUE",  NATIVE_WORD_WDEF(types, rpn::StackSizeValidator::zero, push_true,  nullptr));
   addDefinition("FALSE", NATIVE_WORD_WDEF(types, rpn::StackSizeValidator::zero, push_false, nullptr));
@@ -573,6 +574,7 @@ NATIVE_WORD_DECL(marker, to_object_n) {
 
 void
 rpn::Interp::addMarkerDictionary() {
+  if (_alreadyRegistered("marker")) return;
   setWordCategory("types");
 
   addDefinition("MARK",      { rpn::StrictTypeValidator::d1_string, NATIVE_WORD_FN(marker, mark),         nullptr });

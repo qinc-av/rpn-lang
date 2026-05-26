@@ -378,6 +378,7 @@ NATIVE_WORD_DECL(matrix, mat_identity) {
 
 void
 rpn::Interp::addMatrixDictionary() {
+  if (_alreadyRegistered("matrix")) return;
   rpn::Interp &rpn(*this);
   setWordCategory("vector");
 

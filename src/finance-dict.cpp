@@ -587,6 +587,7 @@ NATIVE_WORD_DECL(finance, infl_adjust) {
 // ---------------------------------------------------------------------------
 void
 rpn::Interp::addFinanceDictionary() {
+  if (_alreadyRegistered("finance")) return;
   setWordCategory("finance");
 
   addDefinition("TVM", { rpn::StackSizeValidator::zero,

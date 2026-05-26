@@ -242,6 +242,7 @@ const rpn::StrictTypeValidator frac_validator::d5_frac_double_double_double_doub
 
 void
 rpn::Interp::addFractionDictionary() {
+  if (_alreadyRegistered("fraction")) return;
   rpn::Interp &rpn = *this; // in case we want to move this out someday
   setWordCategory("fraction");
   registerType("fraction", typeid(stack::Fraction).hash_code());

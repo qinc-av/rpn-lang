@@ -83,6 +83,7 @@ NATIVE_WORD_DECL(vec3m, scalar_mul_vec3) {
 // ---------------------------------------------------------------------------
 void
 rpn::Interp::addVec3Dictionary() {
+  if (_alreadyRegistered("vec3")) return;
   setWordCategory("vec3");
 
   addDefinition("DOT3",   VEC3_WDEF(d2_vec3_vec3, dot3));
