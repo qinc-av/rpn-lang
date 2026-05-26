@@ -135,4 +135,9 @@ RpnInterp::parseFile(const char *path, void (*callback)(int result, void *ctx), 
   });
 }
 
+void
+addStandardDictionaries(RpnInterp rpni) {
+  rpni.interp().addStandardDictionaries();
+}
+
 /* end of QInc/Projects/RP42/rpn-lang/src/rpn-hl.cpp */

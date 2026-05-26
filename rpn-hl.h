@@ -109,4 +109,12 @@ private:
 };
 
 
+// Mount the standard domain dictionaries (numeric + fraction + timecode +
+// stats + finance + geometry) into the given Interp.  Idempotent.  Swift
+// embedders (e.g. RP42App) call this; mirrors rpn-color's
+// addColorDictionary(RpnInterp).  Color is a separate package — the embedder
+// adds it independently.
+void addStandardDictionaries(RpnInterp rpni);
+
+
 /* end of QInc/Projects/RP42/rpn-lang/rpn-hl.h */

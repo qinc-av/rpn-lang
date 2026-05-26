@@ -357,6 +357,14 @@ namespace rpn {
 
   private:
     rpn::WordDefinition::Result parse(std::string &line);
+
+  public:
+    // Dictionary registration — embedder-facing. The constructor registers
+    // core (stack, logic, math, type, marker, stdlib). Domain and numeric
+    // dictionaries are opt-in; embedders call addStandardDictionaries() for
+    // the full calculator battery, or individual addXDictionary() /
+    // addNumericDictionaries() for a curated set. All registrations are
+    // idempotent (a second call is a no-op).
     void addStackDictionary();
     void addMathDictionary();
     void addLogicDictionary();
@@ -384,6 +392,7 @@ namespace rpn {
     // Color is a separate package; the embedder adds it independently.
     void addStandardDictionaries();
 
+  private:
     std::set<std::string> _registeredDictionaries;
     // Returns true if `key` was already registered (caller should early-return);
     // otherwise marks the key and returns false. Used by every addXDictionary
