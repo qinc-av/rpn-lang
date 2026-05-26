@@ -1482,6 +1482,14 @@ rpn::Interp::_alreadyRegistered(const std::string &key) {
   return !_registeredDictionaries.insert(key).second;
 }
 
+void
+rpn::Interp::addNumericDictionaries() {
+  if (_alreadyRegistered("numeric")) return;
+  addMatrixDictionary();
+  addVec3Dictionary();
+  addMx3Dictionary();
+}
+
 rpn::Interp::Interp(bool async) {
   m_p = new Privates(*this, async);
   m_p->add_private_words();

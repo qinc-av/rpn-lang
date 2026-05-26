@@ -371,6 +371,10 @@ namespace rpn {
     void addMarkerDictionary();
     void addStdlibDictionary();
 
+    // Numeric bundle — matrix/vec3/mx3 are internally cross-coupled
+    // (mx3×vec3 ops), one indivisible unit.
+    void addNumericDictionaries();
+
     std::set<std::string> _registeredDictionaries;
     // Returns true if `key` was already registered (caller should early-return);
     // otherwise marks the key and returns false. Used by every addXDictionary
