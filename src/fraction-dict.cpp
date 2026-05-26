@@ -241,7 +241,7 @@ const rpn::StrictTypeValidator frac_validator::d5_frac_double_double_double_doub
   rpn.addDefinition(word_token, NATIVE_WORD_WDEF(fraction, frac_validator::d2_frac_frac, method##_ff, nullptr))
 
 void
-rpn::Interp::addFractionWords() {
+rpn::Interp::addFractionDictionary() {
   rpn::Interp &rpn = *this; // in case we want to move this out someday
   setWordCategory("fraction");
   registerType("fraction", typeid(stack::Fraction).hash_code());

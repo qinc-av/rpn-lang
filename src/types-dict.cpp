@@ -388,11 +388,11 @@ NATIVE_WORD_DECL(types, json_to) {
 }
 
 // Forward declaration: to_object_n is defined in the marker section below,
-// but referenced in addTypeWords() for the ->OBJECT registration.
+// but referenced in addTypeDictionary() for the ->OBJECT registration.
 NATIVE_WORD_DECL(marker, to_object_n);
 
 void
-rpn::Interp::addTypeWords() {
+rpn::Interp::addTypeDictionary() {
   setWordCategory("types");
   addDefinition("TRUE",  NATIVE_WORD_WDEF(types, rpn::StackSizeValidator::zero, push_true,  nullptr));
   addDefinition("FALSE", NATIVE_WORD_WDEF(types, rpn::StackSizeValidator::zero, push_false, nullptr));
@@ -572,7 +572,7 @@ NATIVE_WORD_DECL(marker, to_object_n) {
 }
 
 void
-rpn::Interp::addMarkerWords() {
+rpn::Interp::addMarkerDictionary() {
   setWordCategory("types");
 
   addDefinition("MARK",      { rpn::StrictTypeValidator::d1_string, NATIVE_WORD_FN(marker, mark),         nullptr });

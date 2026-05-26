@@ -163,10 +163,10 @@ NATIVE_WORD_DECL(stats, ols) {
 }
 
 // ---------------------------------------------------------------------------
-// addStatsWords
+// addStatsDictionary
 // ---------------------------------------------------------------------------
 void
-rpn::Interp::addStatsWords() {
+rpn::Interp::addStatsDictionary() {
   setWordCategory("stats");
 
   addDefinition("MEAN",        STATS_WDEF(d1_vector,        mean));

@@ -1480,20 +1480,20 @@ rpn::Interp::Privates::compiletime_eval(const std::string &word, std::string &re
 rpn::Interp::Interp(bool async) {
   m_p = new Privates(*this, async);
   m_p->add_private_words();
-  addStackWords();
-  addLogicWords();
-  addMathWords();
-  addTypeWords();
-  addFractionWords();
-  addTimecodeWords();
-  addMatrixWords();
-  addStatsWords();
-  addFinanceWords();
-  addVec3Words();
-  addMx3Words();
+  addStackDictionary();
+  addLogicDictionary();
+  addMathDictionary();
+  addTypeDictionary();
+  addFractionDictionary();
+  addTimecodeDictionary();
+  addMatrixDictionary();
+  addStatsDictionary();
+  addFinanceDictionary();
+  addVec3Dictionary();
+  addMx3Dictionary();
   geometry::addWords(*this);
-  addMarkerWords();
-  addStdlibWords();
+  addMarkerDictionary();
+  addStdlibDictionary();
   setWordCategory(""); // reset so embedder-added words don't inherit a built-in category
 }
 

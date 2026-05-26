@@ -25,7 +25,7 @@
 #include "../rpn.h"
 
 void
-rpn::Interp::addStdlibWords() {
+rpn::Interp::addStdlibDictionary() {
 
   // -------------------------------------------------------------------------
   // Stack utilities (previously defined via sync_eval in stack-dict.cpp)
@@ -130,7 +130,7 @@ rpn::Interp::addStdlibWords() {
   setWordCategory("types");
 
   // }  ( {... k1 v1 .. kn vn -- obj )
-  // ] is a native C++ word registered in addMarkerWords() (types-dict.cpp)
+  // ] is a native C++ word registered in addMarkerDictionary() (types-dict.cpp)
   addCompiledWord("}", "( -- obj ) \"{\" FIND-MARK ->OBJECT SWAP DROP");
   addWordMetadata("}", "Close an object literal started with `{`.  Collects key/value pairs above the `{` marker into an object.");
 

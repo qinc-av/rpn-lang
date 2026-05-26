@@ -307,7 +307,7 @@ MATH_UNARY_FUNC(tgamma);
 MATH_UNARY_FUNC(lgamma);
 
 void
-rpn::Interp::addMathWords() {
+rpn::Interp::addMathDictionary() {
   rpn::Interp &rpn(*this);
   setWordCategory("math");
   registerType("complex", typeid(stack::Complex).hash_code());

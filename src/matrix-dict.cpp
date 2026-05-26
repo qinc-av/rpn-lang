@@ -373,11 +373,11 @@ NATIVE_WORD_DECL(matrix, mat_identity) {
 }
 
 // ---------------------------------------------------------------------------
-// addMatrixWords
+// addMatrixDictionary
 // ---------------------------------------------------------------------------
 
 void
-rpn::Interp::addMatrixWords() {
+rpn::Interp::addMatrixDictionary() {
   rpn::Interp &rpn(*this);
   setWordCategory("vector");
 

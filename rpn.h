@@ -356,19 +356,19 @@ namespace rpn {
 
   private:
     rpn::WordDefinition::Result parse(std::string &line);
-    void addStackWords();
-    void addMathWords();
-    void addLogicWords();
-    void addTypeWords();
-    void addFractionWords();
-    void addTimecodeWords();
-    void addMatrixWords();
-    void addStatsWords();
-    void addFinanceWords();
-    void addVec3Words();
-    void addMx3Words();
-    void addMarkerWords();
-    void addStdlibWords();
+    void addStackDictionary();
+    void addMathDictionary();
+    void addLogicDictionary();
+    void addTypeDictionary();
+    void addFractionDictionary();
+    void addTimecodeDictionary();
+    void addMatrixDictionary();
+    void addStatsDictionary();
+    void addFinanceDictionary();
+    void addVec3Dictionary();
+    void addMx3Dictionary();
+    void addMarkerDictionary();
+    void addStdlibDictionary();
   };
 
 

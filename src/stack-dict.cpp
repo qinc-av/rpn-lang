@@ -62,7 +62,7 @@ static rpn::WordDefinition::Result STACK_OP(depth)(rpn::Interp &rpn, rpn::WordCo
   r.addDefinition(symbol, NATIVE_WORD_WDEF(stack, rpn::StackSizeValidator::vv, func, nullptr))
 
 void
-rpn::Interp::addStackWords() {
+rpn::Interp::addStackDictionary() {
   rpn::Interp &rpn(*this);
   setWordCategory("stack");
 

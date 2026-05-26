@@ -176,7 +176,7 @@ NATIVE_WORD_DECL(logic, push_false) {
 }
 
 void
-rpn::Interp::addLogicWords() {
+rpn::Interp::addLogicDictionary() {
   setWordCategory("logic");
   //    IF
   //    IFTE
