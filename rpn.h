@@ -375,6 +375,10 @@ namespace rpn {
     // (mx3×vec3 ops), one indivisible unit.
     void addNumericDictionaries();
 
+    // Geometry — pulls addNumericDictionaries() (uses Vec3) then runs the
+    // existing geometry::addWords. Defined in src/geometry-dict.cpp.
+    void addGeometryDictionary();
+
     std::set<std::string> _registeredDictionaries;
     // Returns true if `key` was already registered (caller should early-return);
     // otherwise marks the key and returns false. Used by every addXDictionary

@@ -80,5 +80,12 @@ geometry::addWords(rpn::Interp &rpn) {
   rpn.addWordMetadata("CIRCLE", "Estimate a circle from three vec3 points or an array of vec3 points. Pushes radius (double) and center (vec3).");
 }
 
+void
+rpn::Interp::addGeometryDictionary() {
+  if (_alreadyRegistered("geometry")) return;
+  addNumericDictionaries();
+  geometry::addWords(*this);
+}
+
 
 /* end of QInc/Projects/rpn-lang/src/geometry-dict.cpp */
