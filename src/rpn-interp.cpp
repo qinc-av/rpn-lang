@@ -1490,6 +1490,17 @@ rpn::Interp::addNumericDictionaries() {
   addMx3Dictionary();
 }
 
+void
+rpn::Interp::addStandardDictionaries() {
+  if (_alreadyRegistered("standard")) return;
+  addNumericDictionaries();
+  addFractionDictionary();
+  addTimecodeDictionary();
+  addStatsDictionary();
+  addFinanceDictionary();
+  addGeometryDictionary();    // also pulls numeric (idempotent)
+}
+
 rpn::Interp::Interp(bool async) {
   m_p = new Privates(*this, async);
   m_p->add_private_words();

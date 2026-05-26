@@ -379,6 +379,11 @@ namespace rpn {
     // existing geometry::addWords. Defined in src/geometry-dict.cpp.
     void addGeometryDictionary();
 
+    // Umbrella — the full domain battery for a calculator embedder.
+    // Numeric + fraction + timecode + stats + finance + geometry.
+    // Color is a separate package; the embedder adds it independently.
+    void addStandardDictionaries();
+
     std::set<std::string> _registeredDictionaries;
     // Returns true if `key` was already registered (caller should early-return);
     // otherwise marks the key and returns false. Used by every addXDictionary
