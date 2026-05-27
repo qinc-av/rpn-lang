@@ -28,7 +28,17 @@
 #include "../src/finance.h"
 #include <cmath>
 
-static rpn::Interp& g_rpn() { static rpn::Interp i(false); return i; }
+// Shared engine for core-test cases. Pre-registers the full standard
+// battery on first use because a handful of meta-tests in this file
+// (validators, word introspection) exercise the cross-module validator
+// and word-presence guarantees. Per-domain test binaries remain the
+// strong isolation guard; this binary's g_rpn() is the "everything" engine.
+static rpn::Interp& g_rpn() {
+  static rpn::Interp i(false);
+  static int _init = (i.addStandardDictionaries(), 0);
+  (void)_init;
+  return i;
+}
 
 TEST_CASE( "parse", "Stack Words" ) {
 
@@ -1685,6 +1695,9 @@ TEST_CASE("word introspection", "API") {
 
 TEST_CASE("json type and words", "types") {
   rpn::Interp rpn(false);
+  // JSON conversion is exercised across many stack-type subclasses
+  // (Double, Integer, Fraction, …); register the full battery.
+  rpn.addStandardDictionaries();
 
   // ->JSON on a double produces a stack::Json containing the number
   {

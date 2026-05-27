@@ -213,6 +213,10 @@ NATIVE_WORD_DECL(timecode, framerate) {
 void
 rpn::Interp::addTimecodeDictionary() {
   if (_alreadyRegistered("timecode")) return;
+  // ->TC takes a Fraction (NOS) + Double (TOS); users construct the
+  // Fraction with ->FRAC from the fraction module. Pull fraction so a
+  // granular embedder gets a working timecode setup.
+  addFractionDictionary();
   rpn::Interp &rpn = *this; // in case we want to move this out someday
   setWordCategory("timecode");
   registerType("timecode", typeid(stack::Timecode).hash_code());

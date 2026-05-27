@@ -1504,18 +1504,15 @@ rpn::Interp::addStandardDictionaries() {
 rpn::Interp::Interp(bool async) {
   m_p = new Privates(*this, async);
   m_p->add_private_words();
-  // Core — always
+  // Core only — embedders opt into domain dictionaries via
+  // addStandardDictionaries() / addNumericDictionaries() / addXDictionary().
+  // RP42, the CLI, and rpn-color register what they need explicitly.
   addStackDictionary();
   addLogicDictionary();
   addMathDictionary();
   addTypeDictionary();
   addMarkerDictionary();
   addStdlibDictionary();
-  // Domain battery (numeric + fraction + timecode + stats + finance +
-  // geometry).  Will move out of the ctor in Phase 4 once RP42 and the
-  // CLI register explicitly; left in here for now so behavior is
-  // unchanged during the refactor.
-  addStandardDictionaries();
   setWordCategory(""); // reset so embedder-added words don't inherit a built-in category
 }
 

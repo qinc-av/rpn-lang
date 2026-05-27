@@ -168,6 +168,10 @@ NATIVE_WORD_DECL(stats, ols) {
 void
 rpn::Interp::addStatsDictionary() {
   if (_alreadyRegistered("stats")) return;
+  // stats words operate on `stack::Vector` and use the numeric module's
+  // ->VEC for construction — pull the numeric bundle so a granular
+  // embedder calling addStatsDictionary alone still gets a working setup.
+  addNumericDictionaries();
   setWordCategory("stats");
 
   addDefinition("MEAN",        STATS_WDEF(d1_vector,        mean));
