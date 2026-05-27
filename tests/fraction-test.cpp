@@ -14,10 +14,18 @@
 #include "../rpn-matrix.h"
 #include "../src/fraction.h"
 
-TEST_CASE("fraction-test smoke", "[fraction]") {
+// stack::Fraction deparse round-trip — owned here per the project's
+// per-domain deparse-round-trip discipline.
+TEST_CASE("fraction deparse round-trips", "[fraction]") {
   rpn::Interp rpn(false);
   rpn.addFractionDictionary();
-  REQUIRE(rpn.wordExists("->FRAC"));
+  // Fraction (use 0d prefix to create integers — ->FRAC expects d2_integer_integer)
+  {
+    rpn.stack.clear();
+    rpn.sync_eval("0d3 0d4 ->FRAC DEPARSE EVAL");
+    REQUIRE( rpn.stack.depth() == 1 );
+    REQUIRE_THAT( rpn.stack.peek_as_double(1).value(), Catch::Matchers::WithinAbs(0.75, 1e-10) );
+  }
 }
 
 /* end of rpn-lang/tests/fraction-test.cpp */

@@ -179,4 +179,23 @@ TEST_CASE("matrix type", "matrix") {
   rpn.stack.clear();
 }
 
+// stack::Vec3 deparse round-trip — owned here per the project's per-domain
+// deparse-round-trip discipline.
+TEST_CASE("numeric deparse round-trips", "[numeric]") {
+  rpn::Interp rpn(false);
+  rpn.addNumericDictionaries();
+  // Vec3
+  {
+    rpn.stack.clear();
+    rpn.sync_eval("1.5 2.25 -3.125 ->VEC3 DEPARSE EVAL");
+    REQUIRE( rpn.stack.depth() == 1 );
+    auto obj = rpn.stack.pop();
+    auto *v = dynamic_cast<const stack::Vec3*>(obj.get());
+    REQUIRE( v != nullptr );
+    REQUIRE( (*v)[0] == 1.5 );
+    REQUIRE( (*v)[1] == 2.25 );
+    REQUIRE( (*v)[2] == -3.125 );
+  }
+}
+
 /* end of rpn-lang/tests/numeric-test.cpp */

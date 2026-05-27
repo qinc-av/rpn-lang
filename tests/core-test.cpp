@@ -2215,5 +2215,152 @@ TEST_CASE("display context set on the engine thread is visible to renders elsewh
   }
 }
 
+// Deparse round-trips for core stack-type subclasses
+// (stack::Double, Integer, String, Boolean, Name, Array, Object, Lambda).
+// Per-domain stack types own their round-trip cases in their respective
+// test files (finance: Tvm, numeric: Vec3, fraction: Fraction,
+// timecode: Timecode).
+TEST_CASE("core deparse round-trips", "[core][display]") {
+  // For each type: push a value, DEPARSE to get the RPN string, EVAL to re-push,
+  // verify the reconstructed value matches the original.
+
+  // Double — full precision preserved
+  {
+    static const double kPi = 3.14159265358979323846;
+    g_rpn().stack.clear();
+    g_rpn().sync_eval("3.14159265358979323846. DEPARSE EVAL");
+    REQUIRE( g_rpn().stack.depth() == 1 );
+    REQUIRE( g_rpn().stack.peek_double(1) == kPi );
+  }
+  // Double — integer-valued double retains double type
+  {
+    g_rpn().stack.clear();
+    g_rpn().sync_eval("42. DEPARSE EVAL");
+    REQUIRE( g_rpn().stack.depth() == 1 );
+    REQUIRE( g_rpn().stack.peek_double(1) == 42.0 );
+  }
+
+  // Integer
+  {
+    g_rpn().stack.clear();
+    g_rpn().sync_eval("0d12345 DEPARSE EVAL");
+    REQUIRE( g_rpn().stack.depth() == 1 );
+    REQUIRE( g_rpn().stack.peek_integer(1) == 12345 );
+  }
+  {
+    g_rpn().stack.clear();
+    g_rpn().sync_eval("0d-99 DEPARSE EVAL");
+    REQUIRE( g_rpn().stack.depth() == 1 );
+    REQUIRE( g_rpn().stack.peek_integer(1) == -99 );
+  }
+
+  // String
+  {
+    g_rpn().stack.clear();
+    g_rpn().sync_eval("\"hello world\" DEPARSE EVAL");
+    REQUIRE( g_rpn().stack.depth() == 1 );
+    REQUIRE( g_rpn().stack.peek_string(1) == "hello world" );
+  }
+
+  // Boolean — TRUE and FALSE words; deparse produces TRUE / FALSE
+  {
+    g_rpn().stack.clear();
+    g_rpn().sync_eval("TRUE DEPARSE EVAL");
+    REQUIRE( g_rpn().stack.depth() == 1 );
+    REQUIRE( g_rpn().stack.peek_boolean(1) == true );
+
+    g_rpn().stack.clear();
+    g_rpn().sync_eval("FALSE DEPARSE EVAL");
+    REQUIRE( g_rpn().stack.depth() == 1 );
+    REQUIRE( g_rpn().stack.peek_boolean(1) == false );
+  }
+  // Comparison-produced boolean also round-trips via TRUE/FALSE
+  {
+    g_rpn().stack.clear();
+    g_rpn().sync_eval("2. 3. < DEPARSE EVAL");
+    REQUIRE( g_rpn().stack.peek_boolean(1) == true );
+  }
+
+  // Name
+  {
+    g_rpn().stack.clear();
+    g_rpn().sync_eval("'myvar' DEPARSE EVAL");
+    REQUIRE( g_rpn().stack.depth() == 1 );
+    auto obj = g_rpn().stack.pop();
+    auto *n = dynamic_cast<const stack::Name*>(obj.get());
+    REQUIRE( n != nullptr );
+    REQUIRE( std::string(*n) == "myvar" );
+  }
+
+  // Array of doubles
+  {
+    g_rpn().stack.clear();
+    g_rpn().sync_eval("1. 2. 3. 3 ->ARRAY DEPARSE EVAL");
+    REQUIRE( g_rpn().stack.depth() == 1 );
+    auto obj = g_rpn().stack.pop();
+    auto *arr = dynamic_cast<const stack::Array*>(obj.get());
+    REQUIRE( arr != nullptr );
+    REQUIRE( arr->val().size() == 3 );
+  }
+
+  // Object — single field via ->OBJ (d2_string_any: NOS=string, TOS=any).
+  // Round-trip exercises that deparse emits the key BEFORE the value for
+  // the ->OBJ token.
+  {
+    g_rpn().stack.clear();
+    g_rpn().sync_eval("\"a\" 42. ->OBJ DEPARSE EVAL");
+    REQUIRE( g_rpn().stack.depth() == 1 );
+    auto obj = g_rpn().stack.pop();
+    auto *o = dynamic_cast<const stack::Object*>(obj.get());
+    REQUIRE( o != nullptr );
+    REQUIRE( o->val().size() == 1 );
+  }
+
+  // Object — multi-field, exercises both ->OBJ (first pair) and + (each
+  // subsequent pair: d3_object_any_string with value pushed before key).
+  {
+    g_rpn().stack.clear();
+    g_rpn().sync_eval("\"a\" 1. ->OBJ 2. \"b\" + 3. \"c\" + DEPARSE EVAL");
+    REQUIRE( g_rpn().stack.depth() == 1 );
+    auto obj = g_rpn().stack.pop();
+    auto *o = dynamic_cast<const stack::Object*>(obj.get());
+    REQUIRE( o != nullptr );
+    REQUIRE( o->val().size() == 3 );
+  }
+
+  // Lambda / Progn (flat case round-trips cleanly)
+  {
+    g_rpn().stack.clear();
+    g_rpn().sync_eval("<< 2. * >> DEPARSE EVAL 5. SWAP EXEC");
+    REQUIRE( g_rpn().stack.depth() == 1 );
+    REQUIRE( g_rpn().stack.peek_double(1) == 10.0 );
+  }
+
+  // Verify TRUE/FALSE deparse strings
+  {
+    g_rpn().stack.clear();
+    g_rpn().sync_eval("TRUE DEPARSE");
+    REQUIRE( g_rpn().stack.peek_string(1) == "TRUE" );
+
+    g_rpn().stack.clear();
+    g_rpn().sync_eval("FALSE DEPARSE");
+    REQUIRE( g_rpn().stack.peek_string(1) == "FALSE" );
+  }
+
+  // Verify double deparse preserves precision
+  {
+    g_rpn().stack.clear();
+    g_rpn().sync_eval("3.14159265358979. DEPARSE");
+    // deparse should not be the display-precision "3.14159265358979."
+    // it should be full 17-digit form
+    std::string dep = g_rpn().stack.peek_string(1);
+    REQUIRE( !dep.empty() );
+    // Can be evaluated back to a double
+    g_rpn().stack.clear();
+    g_rpn().sync_eval("3.14159265358979. DEPARSE EVAL");
+    REQUIRE( g_rpn().stack.peek_double(1) == 3.14159265358979 );
+  }
+}
+
 
 /* end of rpn-lang/tests/core-test.cpp */

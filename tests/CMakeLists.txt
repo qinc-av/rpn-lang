@@ -6,11 +6,6 @@ if (Catch2_FOUND)
   set_target_properties(stack-test PROPERTIES CXX_STANDARD 20 CXX_EXTENSIONS OFF)
   target_link_libraries(stack-test PRIVATE rpn-lang Catch2::Catch2WithMain)
 
-  # Legacy single-file binary, retained until Task 15 moves out the last cases.
-  add_executable(runtime-test runtime-test.cpp)
-  set_target_properties(runtime-test PROPERTIES CXX_STANDARD 20 CXX_EXTENSIONS OFF)
-  target_compile_definitions(runtime-test PRIVATE TESTS_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
-  target_link_libraries(runtime-test PRIVATE rpn-lang Catch2::Catch2WithMain)
 
   # Per-domain test binaries — one per dictionary. Each receives TESTS_DIR
   # (harmless if unused) so test files can load .rpn fixtures.

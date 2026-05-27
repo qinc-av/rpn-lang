@@ -366,4 +366,20 @@ TEST_CASE("finance: historical inflation", "[finance]") {
     REQUIRE( r == rpn::WordDefinition::Result::param_error );
   }
 }
+
+// stack::Tvm deparse round-trip — owned here per the project's per-domain
+// deparse-round-trip discipline.
+TEST_CASE("finance deparse round-trips", "[finance]") {
+  rpn::Interp rpn(false);
+  rpn.addFinanceDictionary();
+  // Tvm
+  {
+    rpn.stack.clear();
+    rpn.sync_eval("36. 0.5 200000. -1199.10 0. FALSE ->TVM");
+    auto before = rpn.stack.peek(1).deep_copy();
+    rpn.sync_eval("DEPARSE EVAL");
+    REQUIRE( *before == rpn.stack.peek(1) );
+  }
+}
+
 /* end of rpn-lang/tests/finance-test.cpp */
