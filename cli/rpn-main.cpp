@@ -93,6 +93,7 @@ int main(int argc, char *argv[]) {
   }
 
   rpn::Interp interp(opt_serve || opt_mcp);  // async mode required for MCP
+  interp.addStandardDictionaries();          // the full calculator battery
 
   // Task 3: load extension dicts
   for (const auto &d : opt_dicts) {
