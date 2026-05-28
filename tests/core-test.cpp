@@ -2376,4 +2376,32 @@ TEST_CASE("core deparse round-trips", "[core][display]") {
 }
 
 
+TEST_CASE("validateWord predicate reports overload viability against current stack", "[core][validateWord]") {
+  // validateWord(name) returns true iff at least one overload's StackValidator
+  // matches the current stack contents — used by the UI to grey out keyword
+  // buttons whose dispatch wouldn't succeed.  Validator semantics are
+  // prefix-style: a unary word fires when the stack has ≥1 item of the right
+  // type at TOS; deeper stack contents are irrelevant.
+  rpn::Interp rpn(false);
+
+  SECTION("two integers on stack → arithmetic words validate, type-mismatched ones don't") {
+    rpn.sync_eval("0d2 0d3");
+    REQUIRE( rpn.validateWord("+")     == true );
+    REQUIRE( rpn.validateWord("==")    == true );
+    REQUIRE( rpn.validateWord("NEG")   == true );   // unary; TOS is integer → fires
+    REQUIRE( rpn.validateWord("TRACE") == false );  // requires boolean TOS, not integer
+  }
+  SECTION("empty stack → zero-arity words validate, others don't") {
+    rpn.sync_eval("CLEAR");
+    REQUIRE( rpn.validateWord("CLEAR") == true );
+    REQUIRE( rpn.validateWord("+")     == false );
+    REQUIRE( rpn.validateWord("DUP")   == false );
+  }
+  SECTION("unknown word → false") {
+    rpn.sync_eval("CLEAR");
+    REQUIRE( rpn.validateWord("BOGUS-NEVER-DEFINED") == false );
+  }
+}
+
+
 /* end of rpn-lang/tests/core-test.cpp */
