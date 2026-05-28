@@ -258,6 +258,25 @@ namespace rpn {
 
   // rpn::WordHelp — see rpn-wordhelp.h (included above, outside namespace)
 
+  // A single input or output slot in a stack effect signature.  `name`
+  // is the operator's role (e.g. "cashflows"); empty string means
+  // anonymous, render as type-only.  `type` is the type identifier
+  // ("number", "vector", "rgb", "mx3", …) — a string, not a typeid,
+  // because user-defined words don't have C++ types.
+  struct StackEffectParam {
+    std::string name;
+    std::string type;
+  };
+
+  // Per-overload signature.  Empty struct (both vectors empty) means
+  // "no structured signature" — wordHelp falls back to rendering from
+  // validator.input_types() + return_types instead.
+  struct StackEffect {
+    std::vector<StackEffectParam> inputs;
+    std::vector<StackEffectParam> outputs;
+    bool empty() const { return inputs.empty() && outputs.empty(); }
+  };
+
   struct WordDefinition {
     enum class Result {
       ok,
@@ -274,6 +293,8 @@ namespace rpn {
     WordContext *context;
     std::string return_types = ""; // output types, e.g. "double". Combined with
                                    // validator.input_types() to form the effect string.
+    StackEffect signature = {};    // optional named per-overload signature; empty = use
+                                   // validator.input_types() + return_types fallback
   };
 
   class Interp {
