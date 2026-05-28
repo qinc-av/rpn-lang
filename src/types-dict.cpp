@@ -441,11 +441,10 @@ rpn::Interp::addTypeDictionary() {
   addWordMetadata("->STRING", "Convert TOS to its string representation.");
   addWordMetadata("->OBJ",    "Create a single-field object.  `\"key\" value ->OBJ`");
   addWordMetadata("->OBJECT", "Build an object from n items (even count, alternating key/value).  `\"k1\" v1 .. \"kn\" vn n ->OBJECT`");
-  addWordMetadata("OBJ->",    "Explode an object, array, complex, fraction, or vec3 to its components.");
+  addWordMetadata("OBJ->",    "Explode a structured value into its components — object, array, complex, fraction, vec3, mx3, or color types.");
   addWordMetadata("->ARRAY",  "Collect the top n items into an array. n is on TOS.");
   addWordMetadata("ARREV",    "Reverse an array in-place.");
-  addWordMetadata("+",        "Add, append, or merge: numbers, vec3 components, array + element, or object + field.");
-  addWordMetadata("-",        "Subtract: numbers or vec3 components.");
+  // + and - extensions for object/array/vec3 are overloads; math-dict owns the metadata.
   addWordMetadata("->VEC3",   "Create a 3D vector from three numbers (x, y, z).");
   addWordMetadata("->VEC3x",  "Create a VEC3 with only the X component set (Y and Z are NaN).");
   addWordMetadata("->VEC3y",  "Create a VEC3 with only the Y component set (X and Z are NaN).");

@@ -99,7 +99,7 @@ rpn::Interp::addVec3Dictionary() {
   addWordMetadata("DOT3",   "Dot product of two Vec3 vectors.");
   addWordMetadata("CROSS3", "Cross product: `v1 v2 CROSS3` → v1×v2.");
   addWordMetadata("NORM3",  "Euclidean norm (length) of a Vec3.");
-  addWordMetadata("*",      "Scale a Vec3 by a scalar (Vec3 × scalar or scalar × Vec3 → Vec3).");
+  // * for Vec3 scaling is an extension overload; math-dict owns the metadata.
 
   setWordCategory("");
 }

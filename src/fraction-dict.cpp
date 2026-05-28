@@ -264,11 +264,10 @@ rpn::Interp::addFractionDictionary() {
   ADD_FRAC_NUM_WORD(rpn, "^", pow);
 
   addWordMetadata("->FRAC",   "Create a fraction from integer numerator and denominator, or approximate a double as a fraction.");
-  addWordMetadata("->FLOAT",  "Convert a fraction to double.");
-  addWordMetadata("OBJ->",    "Explode a fraction to its integer numerator and denominator.");
+  // ->FLOAT, OBJ-> for fraction are extension overloads; types-dict owns the metadata.
+  // INV for fraction is an extension overload; math-dict owns the metadata.
+  // NEG for fraction is an extension overload; logic-dict owns the metadata.
   addWordMetadata("EVAL",     "Evaluate a fraction to its double value.");
-  addWordMetadata("INV",      "Reciprocal of a fraction.");
-  addWordMetadata("NEG",      "Negate a fraction.");
   addWordMetadata("SQ",       "Square a fraction.");
   addWordMetadata("SQRT",     "Square root of a fraction (returns a fraction approximation).");
 }

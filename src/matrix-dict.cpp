@@ -452,7 +452,7 @@ rpn::Interp::addMatrixDictionary() {
   addWordMetadata("COLS",     "Number of columns of a matrix.");
   addWordMetadata("DET",      "Determinant of a square matrix.");
   addWordMetadata("TRANS",    "Transpose of a matrix.");
-  addWordMetadata("INV",      "Inverse of a square non-singular matrix.");
+  // INV for matrix / Mx3 is an extension overload; math-dict owns the metadata.
   addWordMetadata("IDENTITY", "Push an N×N identity matrix.");
 
   setWordCategory(""); // reset

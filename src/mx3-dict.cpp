@@ -243,10 +243,7 @@ rpn::Interp::addMx3Dictionary() {
   addWordMetadata("MX3->",   "Explode a 3×3 matrix to 9 doubles (row-major).");
   addWordMetadata("MX3ID",   "Push the 3×3 identity matrix.");
   addWordMetadata("MX3DIAG", "Create a diagonal 3×3 matrix from a Vec3.");
-  addWordMetadata("+",       "Element-wise add: Mx3 + Mx3 → Mx3.");
-  addWordMetadata("-",       "Element-wise subtract: Mx3 - Mx3 → Mx3.");
-  addWordMetadata("*",       "Multiply: Mx3 × Vec3 → Vec3; Mx3 × Mx3 → Mx3; Mx3 × scalar → Mx3.");
-  addWordMetadata("/",       "Mx3 ÷ scalar → element-wise; scalar ÷ Mx3 → s · inv(Mx3).");
+  // +, -, *, / for Mx3 are extension overloads; math-dict owns the metadata.
 
   setWordCategory("");
 }

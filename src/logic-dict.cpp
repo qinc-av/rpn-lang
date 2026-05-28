@@ -244,7 +244,7 @@ rpn::Interp::addLogicDictionary() {
   addWordMetadata("NOT",        "Boolean NOT.");
   addWordMetadata("AND",        "Boolean AND (two booleans) or bitwise AND (two integers), masked to current wordsize.");
   addWordMetadata("OR",         "Boolean OR (two booleans) or bitwise OR (two integers), masked to current wordsize.");
-  addWordMetadata("NEG",        "Bitwise NOT of integer, masked to current wordsize.");
+  addWordMetadata("NEG",        "Negate or bitwise-NOT — overloaded by type (integer: bitwise NOT masked to current wordsize; fraction: arithmetic negation).");
   addWordMetadata("XOR",        "Bitwise XOR of two integers, masked to current wordsize.");
   addWordMetadata("LSHIFT",     "Logical left shift. `value shift LSHIFT`. Result masked to wordsize.");
   addWordMetadata("RSHIFT",     "Logical right shift. `value shift RSHIFT`. Result masked to wordsize.");

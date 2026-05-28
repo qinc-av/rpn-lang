@@ -382,17 +382,17 @@ rpn::Interp::addMathDictionary() {
 
   // LSHIFT / RSHIFT are registered in logic-dict.cpp alongside the other binary words.
 
-  addWordMetadata("+",          "Add two values.");
-  addWordMetadata("-",          "Subtract TOS from NOS.");
-  addWordMetadata("*",          "Multiply two values.");
-  addWordMetadata("/",          "Divide NOS by TOS.");
+  addWordMetadata("+",          "Add, append, or merge two values — overloaded by type (numbers, vec3, Mx3, vector/matrix, object/array, color).");
+  addWordMetadata("-",          "Subtract — overloaded by type (numbers, vec3, Mx3, vector/matrix).");
+  addWordMetadata("*",          "Multiply or transform — overloaded by type (numbers, Vec3 scaling, Mx3 × Vec3, Mx3 × Mx3, matrix multiply).");
+  addWordMetadata("/",          "Divide — overloaded by type (numbers, Mx3 ÷ scalar or scalar ÷ Mx3).");
   addWordMetadata("^",          "Raise NOS to the power of TOS.");
   addWordMetadata("ATAN2",      "Four-quadrant arctangent of (x, y). TOS=y, NOS=x. Result in current angle mode.");
   addWordMetadata("MIN",        "Return the smaller of two values.");
   addWordMetadata("MAX",        "Return the larger of two values.");
   addWordMetadata("MOD",        "Modulo: NOS mod TOS. Integer or double.");
   addWordMetadata("ABS",        "Absolute value.");
-  addWordMetadata("INV",        "Reciprocal: 1 / TOS.");
+  addWordMetadata("INV",        "Reciprocal or inverse — overloaded by type (1/x for numbers, fraction reciprocal, matrix / Mx3 inverse).");
   addWordMetadata("SQRT",       "Square root. Returns a complex number if TOS < 0.");
   addWordMetadata("COS",        "Cosine. Angle interpreted in current mode (DEG / RAD / GRAD).");
   addWordMetadata("SIN",        "Sine. Angle interpreted in current mode (DEG / RAD / GRAD).");
@@ -414,7 +414,7 @@ rpn::Interp::addMathDictionary() {
   addWordMetadata("LGAMMA",     "Natural logarithm of the gamma function ln Γ(x). Useful for large arguments.");
   addWordMetadata("QUAD",       "Solve quadratic a·x²+b·x+c=0. Pops a, b, c; pushes two roots (real or complex).");
   addWordMetadata("->COMPLEX",  "Create a complex number from real (NOS) and imaginary (TOS) parts.");
-  addWordMetadata("OBJ->",      "Explode a complex number to real and imaginary doubles.");
+  // OBJ-> for complex is an extension overload; types-dict owns the metadata.
   addWordMetadata("k_PI",       "Push π ≈ 3.14159265358979…");
   addWordMetadata("k_E",        "Push e ≈ 2.71828182845905…");
   addWordMetadata("RAND",       "Push a random integer (stdlib rand).");
