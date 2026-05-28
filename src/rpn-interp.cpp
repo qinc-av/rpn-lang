@@ -1631,13 +1631,41 @@ rpn::Interp::wordHelp(const std::string &word) const {
   auto range = m_p->_rtDictionary.equal_range(word);
   for (auto wi = range.first; wi != range.second; ++wi) {
     const auto &def = wi->second;
-    std::string input = def.validator.input_types();
     std::string effect;
-    if (!def.return_types.empty()) {
-      effect = input.empty() ? "( -- " + def.return_types + " )"
-                             : "( " + input + " -- " + def.return_types + " )";
+    if (!def.signature.empty()) {
+      // Render from the structured signature.  Each param is
+      // "name:type" if name is set, else just "type".
+      auto render_param = [](const StackEffectParam &p) -> std::string {
+        return p.name.empty() ? p.type : p.name + ":" + p.type;
+      };
+      auto join = [&](const std::vector<StackEffectParam> &ps) {
+        std::string s;
+        for (size_t i = 0; i < ps.size(); ++i) {
+          if (i) s += " ";
+          s += render_param(ps[i]);
+        }
+        return s;
+      };
+      std::string in  = join(def.signature.inputs);
+      std::string out = join(def.signature.outputs);
+      if (in.empty() && out.empty()) {
+        effect = "()";
+      } else if (out.empty()) {
+        effect = "( " + in + " )";
+      } else if (in.empty()) {
+        effect = "( -- " + out + " )";
+      } else {
+        effect = "( " + in + " -- " + out + " )";
+      }
     } else {
-      effect = input.empty() ? "()" : "( " + input + " )";
+      // Legacy path: build from validator.input_types() + return_types.
+      std::string input = def.validator.input_types();
+      if (!def.return_types.empty()) {
+        effect = input.empty() ? "( -- " + def.return_types + " )"
+                               : "( " + input + " -- " + def.return_types + " )";
+      } else {
+        effect = input.empty() ? "()" : "( " + input + " )";
+      }
     }
     if (std::find(h.effects.begin(), h.effects.end(), effect) == h.effects.end())
       h.effects.push_back(effect);

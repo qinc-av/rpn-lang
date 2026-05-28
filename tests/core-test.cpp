@@ -2404,4 +2404,28 @@ TEST_CASE("validateWord predicate reports overload viability against current sta
 }
 
 
+TEST_CASE("wordHelp renders structured signatures when populated", "[core][wordhelp]") {
+  rpn::Interp rpn(false);
+
+  // Register a one-off word with a populated structured signature.
+  rpn::StackEffect sig;
+  sig.inputs  = { {"a", "number"}, {"b", "number"} };
+  sig.outputs = { {"sum", "number"} };
+  rpn.addDefinition("CANTEST-ADD", rpn::WordDefinition{
+    rpn::StrictTypeValidator::d2_number_number,
+    [](rpn::Interp &rpn, rpn::WordContext *, std::string &) {
+      double b = rpn.stack.pop_as_double();
+      double a = rpn.stack.pop_as_double();
+      rpn.stack.push_double(a + b);
+      return rpn::WordDefinition::Result::ok;
+    },
+    nullptr,
+    "",        // return_types fallback (unused when signature is present)
+    sig
+  });
+  auto h = rpn.wordHelp("CANTEST-ADD");
+  REQUIRE(h.effects.size() == 1);
+  REQUIRE(h.effects[0] == "( a:number b:number -- sum:number )");
+}
+
 /* end of rpn-lang/tests/core-test.cpp */
