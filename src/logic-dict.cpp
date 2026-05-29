@@ -182,57 +182,84 @@ rpn::Interp::addLogicDictionary() {
   //    IF
   //    IFTE
   //    EQ?
-  addDefinition("IFTE", NATIVE_WORD_WDEF(logic, rpn::StrictTypeValidator::d3_any_any_boolean, ifte, nullptr));
-  addDefinition("==", NATIVE_WORD_WDEF(logic, rpn::StackSizeValidator::two, equal, nullptr));
-  addDefinition(">", NATIVE_WORD_WDEF(logic, rpn::StackSizeValidator::two, greater, nullptr));
-  addDefinition(">=", NATIVE_WORD_WDEF(logic, rpn::StackSizeValidator::two, greater_eq, nullptr));
-  addDefinition("<", NATIVE_WORD_WDEF(logic, rpn::StackSizeValidator::two, less, nullptr));
-  addDefinition("<=", NATIVE_WORD_WDEF(logic, rpn::StackSizeValidator::two, less_eq, nullptr));
-  addDefinition("!=", NATIVE_WORD_WDEF(logic, rpn::StackSizeValidator::two, not_equal, nullptr));
+  addDefinition("IFTE", { rpn::StrictTypeValidator::d3_any_any_boolean, NATIVE_WORD_FN(logic, ifte), nullptr, "",
+    rpn::StackEffect{{{"false-val", "any"}, {"true-val", "any"}, {"cond", "boolean"}}, {{"result", "any"}}} });
+  addDefinition("==", { rpn::StackSizeValidator::two, NATIVE_WORD_FN(logic, equal), nullptr, "",
+    rpn::StackEffect{{{"a", "any"}, {"b", "any"}}, {{"result", "boolean"}}} });
+  addDefinition(">", { rpn::StackSizeValidator::two, NATIVE_WORD_FN(logic, greater), nullptr, "",
+    rpn::StackEffect{{{"a", "any"}, {"b", "any"}}, {{"result", "boolean"}}} });
+  addDefinition(">=", { rpn::StackSizeValidator::two, NATIVE_WORD_FN(logic, greater_eq), nullptr, "",
+    rpn::StackEffect{{{"a", "any"}, {"b", "any"}}, {{"result", "boolean"}}} });
+  addDefinition("<", { rpn::StackSizeValidator::two, NATIVE_WORD_FN(logic, less), nullptr, "",
+    rpn::StackEffect{{{"a", "any"}, {"b", "any"}}, {{"result", "boolean"}}} });
+  addDefinition("<=", { rpn::StackSizeValidator::two, NATIVE_WORD_FN(logic, less_eq), nullptr, "",
+    rpn::StackEffect{{{"a", "any"}, {"b", "any"}}, {{"result", "boolean"}}} });
+  addDefinition("!=", { rpn::StackSizeValidator::two, NATIVE_WORD_FN(logic, not_equal), nullptr, "",
+    rpn::StackEffect{{{"a", "any"}, {"b", "any"}}, {{"result", "boolean"}}} });
 
-  addDefinition("NOT", NATIVE_WORD_WDEF(logic, rpn::StrictTypeValidator::d1_boolean, l_not, nullptr));
-  addDefinition("AND", NATIVE_WORD_WDEF(logic, rpn::StrictTypeValidator::d2_boolean_boolean, l_and, nullptr));
-  addDefinition("OR", NATIVE_WORD_WDEF(logic, rpn::StrictTypeValidator::d2_boolean_boolean, l_or, nullptr));
+  addDefinition("NOT", { rpn::StrictTypeValidator::d1_boolean, NATIVE_WORD_FN(logic, l_not), nullptr, "",
+    rpn::StackEffect{{{"a", "boolean"}}, {{"result", "boolean"}}} });
+  addDefinition("AND", { rpn::StrictTypeValidator::d2_boolean_boolean, NATIVE_WORD_FN(logic, l_and), nullptr, "",
+    rpn::StackEffect{{{"a", "boolean"}, {"b", "boolean"}}, {{"result", "boolean"}}} });
+  addDefinition("OR",  { rpn::StrictTypeValidator::d2_boolean_boolean, NATIVE_WORD_FN(logic, l_or), nullptr, "",
+    rpn::StackEffect{{{"a", "boolean"}, {"b", "boolean"}}, {{"result", "boolean"}}} });
 
-  addDefinition("NEG",    NATIVE_WORD_WDEF(logic, rpn::StrictTypeValidator::d1_integer,     b_neg,    nullptr));
-  addDefinition("AND",    NATIVE_WORD_WDEF(logic, rpn::StrictTypeValidator::d2_integer_integer, b_and, nullptr));
-  addDefinition("OR",     NATIVE_WORD_WDEF(logic, rpn::StrictTypeValidator::d2_integer_integer, b_or,  nullptr));
-  addDefinition("XOR",    NATIVE_WORD_WDEF(logic, rpn::StrictTypeValidator::d2_integer_integer, b_xor, nullptr));
-  // LSHIFT/RSHIFT: value must be integer; shift count may be integer or double (4 vs 0x04).
+  addDefinition("NEG", { rpn::StrictTypeValidator::d1_integer, NATIVE_WORD_FN(logic, b_neg), nullptr, "",
+    rpn::StackEffect{{{"a", "integer"}}, {{"result", "integer"}}} });
+  addDefinition("AND", { rpn::StrictTypeValidator::d2_integer_integer, NATIVE_WORD_FN(logic, b_and), nullptr, "",
+    rpn::StackEffect{{{"a", "integer"}, {"b", "integer"}}, {{"result", "integer"}}} });
+  addDefinition("OR",  { rpn::StrictTypeValidator::d2_integer_integer, NATIVE_WORD_FN(logic, b_or),  nullptr, "",
+    rpn::StackEffect{{{"a", "integer"}, {"b", "integer"}}, {{"result", "integer"}}} });
+  addDefinition("XOR", { rpn::StrictTypeValidator::d2_integer_integer, NATIVE_WORD_FN(logic, b_xor), nullptr, "",
+    rpn::StackEffect{{{"a", "integer"}, {"b", "integer"}}, {{"result", "integer"}}} });
   // LSHIFT/RSHIFT: value must be integer (TOS-1); shift count may be integer or double (TOS).
-  addDefinition("LSHIFT", NATIVE_WORD_WDEF(logic, rpn::StrictTypeValidator::d2_integer_integer, b_lshift, nullptr));
-  addDefinition("LSHIFT", NATIVE_WORD_WDEF(logic, rpn::StrictTypeValidator::d2_integer_double,  b_lshift, nullptr));
-  addDefinition("RSHIFT", NATIVE_WORD_WDEF(logic, rpn::StrictTypeValidator::d2_integer_integer, b_rshift, nullptr));
-  addDefinition("RSHIFT", NATIVE_WORD_WDEF(logic, rpn::StrictTypeValidator::d2_integer_double,  b_rshift, nullptr));
-  addDefinition("RLEFT",  NATIVE_WORD_WDEF(logic, rpn::StrictTypeValidator::d2_integer_integer, b_rleft,  nullptr));
-  addDefinition("RLEFT",  NATIVE_WORD_WDEF(logic, rpn::StrictTypeValidator::d2_integer_double,  b_rleft,  nullptr));
-  addDefinition("RRIGHT", NATIVE_WORD_WDEF(logic, rpn::StrictTypeValidator::d2_integer_integer, b_rright, nullptr));
-  addDefinition("RRIGHT", NATIVE_WORD_WDEF(logic, rpn::StrictTypeValidator::d2_integer_double,  b_rright, nullptr));
+  addDefinition("LSHIFT", { rpn::StrictTypeValidator::d2_integer_integer, NATIVE_WORD_FN(logic, b_lshift), nullptr, "",
+    rpn::StackEffect{{{"value", "integer"}, {"shift", "integer"}}, {{"result", "integer"}}} });
+  addDefinition("LSHIFT", { rpn::StrictTypeValidator::d2_integer_double,  NATIVE_WORD_FN(logic, b_lshift), nullptr, "",
+    rpn::StackEffect{{{"value", "integer"}, {"shift", "number"}},  {{"result", "integer"}}} });
+  addDefinition("RSHIFT", { rpn::StrictTypeValidator::d2_integer_integer, NATIVE_WORD_FN(logic, b_rshift), nullptr, "",
+    rpn::StackEffect{{{"value", "integer"}, {"shift", "integer"}}, {{"result", "integer"}}} });
+  addDefinition("RSHIFT", { rpn::StrictTypeValidator::d2_integer_double,  NATIVE_WORD_FN(logic, b_rshift), nullptr, "",
+    rpn::StackEffect{{{"value", "integer"}, {"shift", "number"}},  {{"result", "integer"}}} });
+  addDefinition("RLEFT",  { rpn::StrictTypeValidator::d2_integer_integer, NATIVE_WORD_FN(logic, b_rleft),  nullptr, "",
+    rpn::StackEffect{{{"value", "integer"}, {"n", "integer"}}, {{"result", "integer"}}} });
+  addDefinition("RLEFT",  { rpn::StrictTypeValidator::d2_integer_double,  NATIVE_WORD_FN(logic, b_rleft),  nullptr, "",
+    rpn::StackEffect{{{"value", "integer"}, {"n", "number"}},  {{"result", "integer"}}} });
+  addDefinition("RRIGHT", { rpn::StrictTypeValidator::d2_integer_integer, NATIVE_WORD_FN(logic, b_rright), nullptr, "",
+    rpn::StackEffect{{{"value", "integer"}, {"n", "integer"}}, {{"result", "integer"}}} });
+  addDefinition("RRIGHT", { rpn::StrictTypeValidator::d2_integer_double,  NATIVE_WORD_FN(logic, b_rright), nullptr, "",
+    rpn::StackEffect{{{"value", "integer"}, {"n", "number"}},  {{"result", "integer"}}} });
 
   // Binary wordsize: ->WORDSIZE / STWS sets (TOS integer, 1–64); WORDSIZE-> / RCWS queries.
   addDefinition("->WORDSIZE", { rpn::StrictTypeValidator::d1_integer,
     [](rpn::Interp &rpn, rpn::WordContext *, std::string &) {
       rpn.setBinaryWordsize((int)rpn.stack.pop_integer());
       return rpn::WordDefinition::Result::ok;
-    }, nullptr });
+    }, nullptr, "",
+    rpn::StackEffect{{{"wordsize", "integer"}}, {}} });
   addDefinition("STWS", { rpn::StrictTypeValidator::d1_integer,
     [](rpn::Interp &rpn, rpn::WordContext *, std::string &) {
       rpn.setBinaryWordsize((int)rpn.stack.pop_integer());
       return rpn::WordDefinition::Result::ok;
-    }, nullptr });
+    }, nullptr, "",
+    rpn::StackEffect{{{"wordsize", "integer"}}, {}} });
   addDefinition("WORDSIZE->", { rpn::StackSizeValidator::zero,
     [](rpn::Interp &rpn, rpn::WordContext *, std::string &) {
       rpn.stack.push_integer(rpn.binaryWordsize());
       return rpn::WordDefinition::Result::ok;
-    }, nullptr });
+    }, nullptr, "",
+    rpn::StackEffect{{}, {{"wordsize", "integer"}}} });
   addDefinition("RCWS", { rpn::StackSizeValidator::zero,
     [](rpn::Interp &rpn, rpn::WordContext *, std::string &) {
       rpn.stack.push_integer(rpn.binaryWordsize());
       return rpn::WordDefinition::Result::ok;
-    }, nullptr });
+    }, nullptr, "",
+    rpn::StackEffect{{}, {{"wordsize", "integer"}}} });
 
-  addDefinition("<true>",  NATIVE_WORD_WDEF(logic, rpn::StackSizeValidator::zero, push_true,  nullptr));
-  addDefinition("<false>", NATIVE_WORD_WDEF(logic, rpn::StackSizeValidator::zero, push_false, nullptr));
+  addDefinition("<true>",  { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(logic, push_true),  nullptr, "",
+    rpn::StackEffect{{}, {{"value", "boolean"}}} });
+  addDefinition("<false>", { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(logic, push_false), nullptr, "",
+    rpn::StackEffect{{}, {{"value", "boolean"}}} });
 
   addWordMetadata("IFTE",       "Inline conditional: `cond true-val false-val IFTE`. Leaves the chosen value on the stack.");
   addWordMetadata("==",         "Push true if TOS equals NOS.");
