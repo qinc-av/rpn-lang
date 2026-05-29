@@ -451,6 +451,10 @@ rpn::Interp::addTypeDictionary() {
   addDefinition("-", { rpn::StrictTypeValidator::d2_vec3_integer, NATIVE_WORD_FN(vec3, sub_num_vec3), nullptr, "",
     rpn::StackEffect{{{"n", "integer"},{"v", "vec3"}}, {{"result", "vec3"}}} });
 
+  // ->VEC3: ( x:number y:number z:number -- v:vec3 )
+  // ADD_NATIVE_3_NUMBER_WDEF generates multiple overloads (one per
+  // (double|integer)^3 combination) via macro expansion and has no slot for a
+  // StackEffect.  These overloads fall through to legacy rendering in wordHelp.
   ADD_NATIVE_3_NUMBER_WDEF(vec3, (*this), "->VEC3", to_vec3, to_vec3, nullptr);
   addDefinition("->VEC3x", { rpn::StrictTypeValidator::d1_number, NATIVE_WORD_FN(vec3, to_vec3x), nullptr, "",
     rpn::StackEffect{{{"x", "number"}}, {{"v", "vec3"}}} });

@@ -266,6 +266,11 @@ rpn::Interp::addFractionDictionary() {
   rpn.addDefinition("SQRT", { frac_validator::d1_frac, NATIVE_WORD_FN(fraction, sqrt_f), nullptr, "",
                              rpn::StackEffect{{{"f", "fraction"}}, {{"root", "fraction"}}}});
 
+  // ADD_FRAC_NUM_WORD generates 5 overloads each (fraction × {double|integer},
+  // {double|integer} × fraction, fraction × fraction) via macro expansion and
+  // has no slot for a StackEffect.  These ~25 arithmetic overloads fall through
+  // to legacy rendering in wordHelp.  Adding structured signatures would require
+  // expanding the macro into explicit per-overload addDefinition calls.
   ADD_FRAC_NUM_WORD(rpn, "+", add);
   ADD_FRAC_NUM_WORD(rpn, "-", sub);
   ADD_FRAC_NUM_WORD(rpn, "*", mult);

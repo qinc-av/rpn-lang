@@ -52,18 +52,6 @@ const rpn::StrictTypeValidator math_validator::d1_complex({typeid(stack::Complex
 #define MATH_CONSTANT_WDEF(w) NATIVE_WORD_WDEF(math, rpn::StackSizeValidator::zero, w, nullptr)
 #define MATH_WORD_WDEF(validator,w) NATIVE_WORD_WDEF(math, validator, w, nullptr)
 
-// common case for binary function that converts to double except for
-// when both parameters are integers
-#define ADD_MATH_BINARY_NUMBER_WDEF(r, symbol, double_func, integer_func) \
-  ADD_NATIVE_2_NUMBER_WDEF(math, r, symbol, double_func, integer_func, nullptr)
-
-#define ADD_MATH_UNARY_NUMBER_WDEF(r, symbol, double_func, integer_func) \
-  ADD_NATIVE_1_NUMBER_WDEF(math, r, symbol, double_func, integer_func, nullptr)
-
-// For unary math words that accept integer or double and always return double (e.g. transcendentals).
-#define ADD_MATH_UNARY_FLOAT_WDEF(r, symbol, func) \
-  ADD_NATIVE_1_FLOAT_WDEF(math, r, symbol, func, nullptr)
-
 static double deg_to_rad(const double &deg) {
   return deg * (M_PI / 180.);
 }
@@ -392,9 +380,14 @@ rpn::Interp::addMathDictionary() {
   addDefinition("GAMMA",  { rpn::StrictTypeValidator::d1_double, MATH_FUNC(tgamma), nullptr, "", rpn::StackEffect{{{"a", "number"}}, {{"result", "number"}}} });
   addDefinition("LGAMMA", { rpn::StrictTypeValidator::d1_double, MATH_FUNC(lgamma), nullptr, "", rpn::StackEffect{{{"a", "number"}}, {{"result", "number"}}} });
 
-  // QUAD: ( a b c -- x1 x2 )  solve a*x^2 + b*x + c = 0
+  // QUAD: ( a:number b:number c:number -- x1:number x2:number )  solve a*x^2 + b*x + c = 0
+  // ->COMPLEX: ( re:number im:number -- z:complex )
+  // NOTE: ADD_NATIVE_N_NUMBER_WDEF expands to multiple addDefinition calls (one per
+  // (double|integer)^N overload combination) and has no slot for a StackEffect.  These
+  // overloads therefore fall through to legacy `validator.input_types() + return_types`
+  // rendering in wordHelp.  Adding structured signatures would require expanding the
+  // macro into explicit per-overload addDefinition calls.
   ADD_NATIVE_3_NUMBER_WDEF(math, rpn, "QUAD", quadratic, quadratic, nullptr);
-  // ->COMPLEX: ( re im -- complex )
   ADD_NATIVE_2_NUMBER_WDEF(math, rpn, "->COMPLEX", to_complex, to_complex, nullptr);
   // OBJ-> for complex: ( complex -- re im )
   addDefinition("OBJ->", { math_validator::d1_complex, MATH_FUNC(complex_to), nullptr, "",
