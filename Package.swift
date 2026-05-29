@@ -47,15 +47,33 @@ let package = Package(
         // header visibility — not just transitively through RpnLang.
         .library(name: "RpnLangCXX", targets: ["RpnLangCXX"]),
     ],
+    dependencies: [
+        // Eigen 3.4.0 as a SwiftPM package (header-only, re-published as
+        // the elhernes/eigen fork).  URL-based so external consumers can
+        // resolve; when this package is built under RP42 or another
+        // umbrella that pins eigen locally via XCLocalSwiftPackageReference,
+        // the local path reference overrides this URL by package-name match.
+        //
+        // CMake builds of this same source tree continue to use the
+        // vendored third_party/Eigen tree — this dep is SwiftPM-only.
+        .package(url: "git@github.com:elhernes/eigen.git", branch: "main"),
+    ],
     targets: [
         // C++ library — module.modulemap at repo root controls what Swift sees
         .target(
             name: "RpnLangCXX",
+            dependencies: [
+                .product(name: "CEigen", package: "eigen"),
+            ],
             path: ".",
             sources: cppSources,
             publicHeadersPath: "include",
             cxxSettings: [
                 .headerSearchPath("."),
+                // third_party still needed for nlohmann (vendored).  The
+                // vendored Eigen subdirectory is also reachable through
+                // this path but is shadowed by CEigen's publicHeadersPath,
+                // which appears earlier on the include search order.
                 .headerSearchPath("third_party"),
             ]
         ),
