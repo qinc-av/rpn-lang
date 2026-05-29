@@ -591,27 +591,54 @@ rpn::Interp::addFinanceDictionary() {
   setWordCategory("finance");
 
   addDefinition("TVM", { rpn::StackSizeValidator::zero,
-                         NATIVE_WORD_FN(finance, tvm_new), nullptr });
+                         NATIVE_WORD_FN(finance, tvm_new), nullptr, "",
+                         rpn::StackEffect{
+                           {},
+                           {{"tvm", "tvm"}}
+                         }});
 
   addDefinition("->TVM", { finance_validator::d6_tvm_args,
-                           NATIVE_WORD_FN(finance, to_tvm), nullptr });
+                           NATIVE_WORD_FN(finance, to_tvm), nullptr, "",
+                           rpn::StackEffect{
+                             {{"n", "number"}, {"i", "number"}, {"pv", "number"},
+                              {"pmt", "number"}, {"fv", "number"}, {"begin", "boolean"}},
+                             {{"tvm", "tvm"}}
+                           }});
   addDefinition("TVM->", { finance_validator::d1_tvm,
-                           NATIVE_WORD_FN(finance, tvm_explode), nullptr });
+                           NATIVE_WORD_FN(finance, tvm_explode), nullptr, "",
+                           rpn::StackEffect{
+                             {{"tvm", "tvm"}},
+                             {{"n", "number"}, {"i", "number"}, {"pv", "number"},
+                              {"pmt", "number"}, {"fv", "number"}, {"begin", "boolean"}}
+                           }});
 
-  addDefinition("SOLVE-PV",  { finance_validator::d1_tvm, NATIVE_WORD_FN(finance, solve_pv_w),  nullptr });
-  addDefinition("SOLVE-FV",  { finance_validator::d1_tvm, NATIVE_WORD_FN(finance, solve_fv_w),  nullptr });
-  addDefinition("SOLVE-PMT", { finance_validator::d1_tvm, NATIVE_WORD_FN(finance, solve_pmt_w), nullptr });
-  addDefinition("SOLVE-N",   { finance_validator::d1_tvm, NATIVE_WORD_FN(finance, solve_n_w),   nullptr });
-  addDefinition("SOLVE-I",   { finance_validator::d1_tvm, NATIVE_WORD_FN(finance, solve_i_w),   nullptr });
+  addDefinition("SOLVE-PV",  { finance_validator::d1_tvm, NATIVE_WORD_FN(finance, solve_pv_w),  nullptr, "",
+                               rpn::StackEffect{{{"tvm", "tvm"}}, {{"tvm", "tvm"}}}});
+  addDefinition("SOLVE-FV",  { finance_validator::d1_tvm, NATIVE_WORD_FN(finance, solve_fv_w),  nullptr, "",
+                               rpn::StackEffect{{{"tvm", "tvm"}}, {{"tvm", "tvm"}}}});
+  addDefinition("SOLVE-PMT", { finance_validator::d1_tvm, NATIVE_WORD_FN(finance, solve_pmt_w), nullptr, "",
+                               rpn::StackEffect{{{"tvm", "tvm"}}, {{"tvm", "tvm"}}}});
+  addDefinition("SOLVE-N",   { finance_validator::d1_tvm, NATIVE_WORD_FN(finance, solve_n_w),   nullptr, "",
+                               rpn::StackEffect{{{"tvm", "tvm"}}, {{"tvm", "tvm"}}}});
+  addDefinition("SOLVE-I",   { finance_validator::d1_tvm, NATIVE_WORD_FN(finance, solve_i_w),   nullptr, "",
+                               rpn::StackEffect{{{"tvm", "tvm"}}, {{"tvm", "tvm"}}}});
 
-  addDefinition("TVM-N",   { finance_validator::d2_tvm_double, NATIVE_WORD_FN(finance, tvm_set_n),   nullptr });
-  addDefinition("TVM-I",   { finance_validator::d2_tvm_double, NATIVE_WORD_FN(finance, tvm_set_i),   nullptr });
-  addDefinition("TVM-PV",  { finance_validator::d2_tvm_double, NATIVE_WORD_FN(finance, tvm_set_pv),  nullptr });
-  addDefinition("TVM-PMT", { finance_validator::d2_tvm_double, NATIVE_WORD_FN(finance, tvm_set_pmt), nullptr });
-  addDefinition("TVM-FV",  { finance_validator::d2_tvm_double, NATIVE_WORD_FN(finance, tvm_set_fv),  nullptr });
-  addDefinition("TVM-BEGIN", { finance_validator::d1_tvm, NATIVE_WORD_FN(finance, tvm_begin), nullptr });
-  addDefinition("TVM-END",   { finance_validator::d1_tvm, NATIVE_WORD_FN(finance, tvm_end),   nullptr });
-  addDefinition("AMORT",     { finance_validator::d1_tvm, NATIVE_WORD_FN(finance, amort),     nullptr });
+  addDefinition("TVM-N",   { finance_validator::d2_tvm_double, NATIVE_WORD_FN(finance, tvm_set_n),   nullptr, "",
+                             rpn::StackEffect{{{"tvm", "tvm"}, {"value", "number"}}, {{"tvm", "tvm"}}}});
+  addDefinition("TVM-I",   { finance_validator::d2_tvm_double, NATIVE_WORD_FN(finance, tvm_set_i),   nullptr, "",
+                             rpn::StackEffect{{{"tvm", "tvm"}, {"value", "number"}}, {{"tvm", "tvm"}}}});
+  addDefinition("TVM-PV",  { finance_validator::d2_tvm_double, NATIVE_WORD_FN(finance, tvm_set_pv),  nullptr, "",
+                             rpn::StackEffect{{{"tvm", "tvm"}, {"value", "number"}}, {{"tvm", "tvm"}}}});
+  addDefinition("TVM-PMT", { finance_validator::d2_tvm_double, NATIVE_WORD_FN(finance, tvm_set_pmt), nullptr, "",
+                             rpn::StackEffect{{{"tvm", "tvm"}, {"value", "number"}}, {{"tvm", "tvm"}}}});
+  addDefinition("TVM-FV",  { finance_validator::d2_tvm_double, NATIVE_WORD_FN(finance, tvm_set_fv),  nullptr, "",
+                             rpn::StackEffect{{{"tvm", "tvm"}, {"value", "number"}}, {{"tvm", "tvm"}}}});
+  addDefinition("TVM-BEGIN", { finance_validator::d1_tvm, NATIVE_WORD_FN(finance, tvm_begin), nullptr, "",
+                               rpn::StackEffect{{{"tvm", "tvm"}}, {{"tvm", "tvm"}}}});
+  addDefinition("TVM-END",   { finance_validator::d1_tvm, NATIVE_WORD_FN(finance, tvm_end),   nullptr, "",
+                               rpn::StackEffect{{{"tvm", "tvm"}}, {{"tvm", "tvm"}}}});
+  addDefinition("AMORT",     { finance_validator::d1_tvm, NATIVE_WORD_FN(finance, amort),     nullptr, "",
+                               rpn::StackEffect{{{"tvm", "tvm"}}, {{"tvm", "tvm"}, {"schedule", "object"}}}});
 
   addWordMetadata("TVM",      "Push a blank time-value-of-money object.");
   addWordMetadata("->TVM",    "Build a tvm. `n i pv pmt fv begin ->TVM`.");
@@ -630,18 +657,32 @@ rpn::Interp::addFinanceDictionary() {
   addWordMetadata("TVM-END",   "Set a tvm to end-of-period payments.");
   addWordMetadata("AMORT",     "Amortization schedule of a tvm → object {period,interest,principal,balance,total-interest,total-principal}.");
 
-  addDefinition("NPV", { finance_validator::d2_vector_number, NATIVE_WORD_FN(finance, npv), nullptr });
+  addDefinition("NPV", { finance_validator::d2_vector_number, NATIVE_WORD_FN(finance, npv), nullptr, "",
+                         rpn::StackEffect{
+                           {{"cashflows", "vector"}, {"rate", "number"}},
+                           {{"npv", "number"}}
+                         }});
   addWordMetadata("NPV", "Net present value. `cashflows rate% NPV`; cashflow[0] is t=0.");
 
-  addDefinition("IRR", { finance_validator::d1_vector, NATIVE_WORD_FN(finance, irr), nullptr });
+  addDefinition("IRR", { finance_validator::d1_vector, NATIVE_WORD_FN(finance, irr), nullptr, "",
+                         rpn::StackEffect{
+                           {{"cashflows", "vector"}},
+                           {{"irr", "number"}}
+                         }});
   addWordMetadata("IRR", "Internal rate of return of a cash-flow vector → percent per period.");
 
-  addDefinition("NOM->EFF",  { finance_validator::d2_number_number, NATIVE_WORD_FN(finance, nom_to_eff),  nullptr });
-  addDefinition("EFF->NOM",  { finance_validator::d2_number_number, NATIVE_WORD_FN(finance, eff_to_nom),  nullptr });
-  addDefinition("CONT->EFF", { finance_validator::d1_number,        NATIVE_WORD_FN(finance, cont_to_eff), nullptr });
-  addDefinition("EFF->CONT", { finance_validator::d1_number,        NATIVE_WORD_FN(finance, eff_to_cont), nullptr });
-  addDefinition("REAL->NOM", { finance_validator::d2_number_number, NATIVE_WORD_FN(finance, real_to_nom), nullptr });
-  addDefinition("NOM->REAL", { finance_validator::d2_number_number, NATIVE_WORD_FN(finance, nom_to_real), nullptr });
+  addDefinition("NOM->EFF",  { finance_validator::d2_number_number, NATIVE_WORD_FN(finance, nom_to_eff),  nullptr, "",
+                               rpn::StackEffect{{{"rate", "number"}, {"periods", "number"}}, {{"rate", "number"}}}});
+  addDefinition("EFF->NOM",  { finance_validator::d2_number_number, NATIVE_WORD_FN(finance, eff_to_nom),  nullptr, "",
+                               rpn::StackEffect{{{"rate", "number"}, {"periods", "number"}}, {{"rate", "number"}}}});
+  addDefinition("CONT->EFF", { finance_validator::d1_number,        NATIVE_WORD_FN(finance, cont_to_eff), nullptr, "",
+                               rpn::StackEffect{{{"rate", "number"}}, {{"rate", "number"}}}});
+  addDefinition("EFF->CONT", { finance_validator::d1_number,        NATIVE_WORD_FN(finance, eff_to_cont), nullptr, "",
+                               rpn::StackEffect{{{"rate", "number"}}, {{"rate", "number"}}}});
+  addDefinition("REAL->NOM", { finance_validator::d2_number_number, NATIVE_WORD_FN(finance, real_to_nom), nullptr, "",
+                               rpn::StackEffect{{{"rate", "number"}, {"inflation", "number"}}, {{"rate", "number"}}}});
+  addDefinition("NOM->REAL", { finance_validator::d2_number_number, NATIVE_WORD_FN(finance, nom_to_real), nullptr, "",
+                               rpn::StackEffect{{{"rate", "number"}, {"inflation", "number"}}, {{"rate", "number"}}}});
 
   addWordMetadata("NOM->EFF",  "Nominal to effective annual rate. `nom% periods NOM->EFF`.");
   addWordMetadata("EFF->NOM",  "Effective to nominal annual rate. `eff% periods EFF->NOM`.");
@@ -650,19 +691,36 @@ rpn::Interp::addFinanceDictionary() {
   addWordMetadata("REAL->NOM", "Real to nominal rate (Fisher). `real% inflation% REAL->NOM`.");
   addWordMetadata("NOM->REAL", "Nominal to real rate (Fisher). `nom% inflation% NOM->REAL`.");
 
-  addDefinition("DEP-SL",   { finance_validator::d3_number_number_number,        NATIVE_WORD_FN(finance, dep_sl),   nullptr });
-  addDefinition("DEP-SOYD", { finance_validator::d3_number_number_number,        NATIVE_WORD_FN(finance, dep_soyd), nullptr });
-  addDefinition("DEP-DB",   { finance_validator::d4_number_number_number_number, NATIVE_WORD_FN(finance, dep_db),   nullptr });
+  addDefinition("DEP-SL",   { finance_validator::d3_number_number_number,        NATIVE_WORD_FN(finance, dep_sl),   nullptr, "",
+                              rpn::StackEffect{
+                                {{"cost", "number"}, {"salvage", "number"}, {"life", "number"}},
+                                {{"schedule", "object"}}
+                              }});
+  addDefinition("DEP-SOYD", { finance_validator::d3_number_number_number,        NATIVE_WORD_FN(finance, dep_soyd), nullptr, "",
+                              rpn::StackEffect{
+                                {{"cost", "number"}, {"salvage", "number"}, {"life", "number"}},
+                                {{"schedule", "object"}}
+                              }});
+  addDefinition("DEP-DB",   { finance_validator::d4_number_number_number_number, NATIVE_WORD_FN(finance, dep_db),   nullptr, "",
+                              rpn::StackEffect{
+                                {{"cost", "number"}, {"salvage", "number"}, {"life", "number"}, {"factor", "number"}},
+                                {{"schedule", "object"}}
+                              }});
 
   addWordMetadata("DEP-SL",   "Straight-line depreciation schedule. `cost salvage life DEP-SL`.");
   addWordMetadata("DEP-SOYD", "Sum-of-years-digits depreciation schedule. `cost salvage life DEP-SOYD`.");
   addWordMetadata("DEP-DB",   "Declining-balance depreciation schedule. `cost salvage life factor DEP-DB`.");
 
-  addDefinition("%",        { finance_validator::d2_number_number, NATIVE_WORD_FN(finance, pct),       nullptr });
-  addDefinition("%CHG",     { finance_validator::d2_number_number, NATIVE_WORD_FN(finance, pct_chg),   nullptr });
-  addDefinition("%T",       { finance_validator::d2_number_number, NATIVE_WORD_FN(finance, pct_total), nullptr });
-  addDefinition("MU-COST",  { finance_validator::d2_number_number, NATIVE_WORD_FN(finance, mu_cost),   nullptr });
-  addDefinition("MU-PRICE", { finance_validator::d2_number_number, NATIVE_WORD_FN(finance, mu_price),  nullptr });
+  addDefinition("%",        { finance_validator::d2_number_number, NATIVE_WORD_FN(finance, pct),       nullptr, "",
+                              rpn::StackEffect{{{"base", "number"}, {"rate", "number"}}, {{"result", "number"}}}});
+  addDefinition("%CHG",     { finance_validator::d2_number_number, NATIVE_WORD_FN(finance, pct_chg),   nullptr, "",
+                              rpn::StackEffect{{{"old", "number"}, {"new", "number"}}, {{"change", "number"}}}});
+  addDefinition("%T",       { finance_validator::d2_number_number, NATIVE_WORD_FN(finance, pct_total), nullptr, "",
+                              rpn::StackEffect{{{"total", "number"}, {"amount", "number"}}, {{"percent", "number"}}}});
+  addDefinition("MU-COST",  { finance_validator::d2_number_number, NATIVE_WORD_FN(finance, mu_cost),   nullptr, "",
+                              rpn::StackEffect{{{"cost", "number"}, {"price", "number"}}, {{"markup", "number"}}}});
+  addDefinition("MU-PRICE", { finance_validator::d2_number_number, NATIVE_WORD_FN(finance, mu_price),  nullptr, "",
+                              rpn::StackEffect{{{"cost", "number"}, {"price", "number"}}, {{"margin", "number"}}}});
 
   addWordMetadata("%",        "Percentage of a base. `base rate% %`.");
   addWordMetadata("%CHG",     "Percent change. `old new %CHG`.");
@@ -670,8 +728,13 @@ rpn::Interp::addFinanceDictionary() {
   addWordMetadata("MU-COST",  "Markup as a percent of cost. `cost price MU-COST`.");
   addWordMetadata("MU-PRICE", "Margin as a percent of price. `cost price MU-PRICE`.");
 
-  addDefinition("CPI",         { finance_validator::d1_number,               NATIVE_WORD_FN(finance, cpi),         nullptr });
-  addDefinition("INFL-ADJUST", { finance_validator::d3_number_number_number, NATIVE_WORD_FN(finance, infl_adjust), nullptr });
+  addDefinition("CPI",         { finance_validator::d1_number,               NATIVE_WORD_FN(finance, cpi),         nullptr, "",
+                                 rpn::StackEffect{{{"year", "number"}}, {{"index", "number"}}}});
+  addDefinition("INFL-ADJUST", { finance_validator::d3_number_number_number, NATIVE_WORD_FN(finance, infl_adjust), nullptr, "",
+                                 rpn::StackEffect{
+                                   {{"amount", "number"}, {"from-year", "number"}, {"to-year", "number"}},
+                                   {{"adjusted", "number"}}
+                                 }});
 
   addWordMetadata("CPI",         "US CPI-U annual index for a year. `year CPI`.");
   addWordMetadata("INFL-ADJUST", "Adjust an amount between years by CPI. `amount from-year to-year INFL-ADJUST`.");
