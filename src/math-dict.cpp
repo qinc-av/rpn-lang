@@ -400,16 +400,18 @@ rpn::Interp::addMathDictionary() {
   addDefinition("DRAND",{ rpn::StackSizeValidator::zero, MATH_FUNC(drand),   nullptr, "", rpn::StackEffect{{}, {{"x",  "number"}}} });
   addDefinition("NaN",  { rpn::StackSizeValidator::zero, MATH_FUNC(nan_val), nullptr, "", rpn::StackEffect{{}, {{"nan","number"}}} });
 
-  // Angle mode: ->DEG / ->RAD / ->GRAD set the mode; ANGLEMODE queries it.
-  rpn.addDefinition("->DEG",  { rpn::StackSizeValidator::zero, [](rpn::Interp &rpn, rpn::WordContext *, std::string &) {
+  // Angle mode: DEG / RAD / GRAD set the mode; ANGLEMODE queries it.
+  // (No `->` prefix: these are zero-arity mode-setters, not value
+  // conversions.  `D->R` and `R->D` below are the actual conversions.)
+  rpn.addDefinition("DEG",  { rpn::StackSizeValidator::zero, [](rpn::Interp &rpn, rpn::WordContext *, std::string &) {
     rpn.setAngleMode(rpn::AngleMode::degrees);
     return rpn::WordDefinition::Result::ok;
   }, nullptr, "", rpn::StackEffect{{}, {}} });
-  rpn.addDefinition("->RAD",  { rpn::StackSizeValidator::zero, [](rpn::Interp &rpn, rpn::WordContext *, std::string &) {
+  rpn.addDefinition("RAD",  { rpn::StackSizeValidator::zero, [](rpn::Interp &rpn, rpn::WordContext *, std::string &) {
     rpn.setAngleMode(rpn::AngleMode::radians);
     return rpn::WordDefinition::Result::ok;
   }, nullptr, "", rpn::StackEffect{{}, {}} });
-  rpn.addDefinition("->GRAD", { rpn::StackSizeValidator::zero, [](rpn::Interp &rpn, rpn::WordContext *, std::string &) {
+  rpn.addDefinition("GRAD", { rpn::StackSizeValidator::zero, [](rpn::Interp &rpn, rpn::WordContext *, std::string &) {
     rpn.setAngleMode(rpn::AngleMode::gradians);
     return rpn::WordDefinition::Result::ok;
   }, nullptr, "", rpn::StackEffect{{}, {}} });
@@ -462,9 +464,9 @@ rpn::Interp::addMathDictionary() {
   addWordMetadata("RAND",       "Push a random integer (stdlib rand).");
   addWordMetadata("DRAND",      "Push a random double in [0, 1).");
   addWordMetadata("NaN",        "Push IEEE 754 quiet Not-a-Number.");
-  addWordMetadata("->DEG",      "Set angle mode to degrees.");
-  addWordMetadata("->RAD",      "Set angle mode to radians.");
-  addWordMetadata("->GRAD",     "Set angle mode to gradians.");
+  addWordMetadata("DEG",        "Set angle mode to degrees.");
+  addWordMetadata("RAD",        "Set angle mode to radians.");
+  addWordMetadata("GRAD",       "Set angle mode to gradians.");
   addWordMetadata("ANGLEMODE",  "Push current angle mode as a string: \"DEG\", \"RAD\", or \"GRAD\".");
 }
 
