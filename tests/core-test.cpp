@@ -2428,4 +2428,12 @@ TEST_CASE("wordHelp renders structured signatures when populated", "[core][wordh
   REQUIRE(h.effects[0] == "( a:number b:number -- sum:number )");
 }
 
+TEST_CASE("user-defined word: typed signature parses from ( inputs -- outputs ) comment", "[core][user-word]") {
+  rpn::Interp rpn(false);
+  rpn.sync_eval(": sum-of-squares ( a:number b:number -- result:number ) DUP * SWAP DUP * + ;");
+  auto h = rpn.wordHelp("sum-of-squares");
+  REQUIRE(h.effects.size() == 1);
+  REQUIRE(h.effects[0] == "( a:number b:number -- result:number )");
+}
+
 /* end of rpn-lang/tests/core-test.cpp */
