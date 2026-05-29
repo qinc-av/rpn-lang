@@ -354,7 +354,14 @@ struct rpn::Interp::Privates : public rpn::WordContext {
     std::istringstream ss(inputs);
     std::string token;
     while (ss >> token) {
-      auto it = _typeRegistry.find(token);
+      // Strip an optional `name:` prefix so typed-signature comments like
+      // `( x:number -- result:number )` look up the same registry entries
+      // as legacy bare-type comments `( double -- double )` did.  The
+      // type registry is keyed on the type name (e.g. "number", "vec3"),
+      // not on the parameter role.
+      auto colon = token.rfind(':');
+      const std::string type_token = (colon == std::string::npos) ? token : token.substr(colon + 1);
+      auto it = _typeRegistry.find(type_token);
       if (it == _typeRegistry.end()) return std::nullopt; // unknown type name
       types.push_back(it->second);
     }

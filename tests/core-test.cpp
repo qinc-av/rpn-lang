@@ -2401,6 +2401,20 @@ TEST_CASE("validateWord predicate reports overload viability against current sta
     rpn.sync_eval("CLEAR");
     REQUIRE( rpn.validateWord("BOGUS-NEVER-DEFINED") == false );
   }
+
+  SECTION("typed stdlib compiled word — name:type prefix doesn't bypass type-checking") {
+    // Regression for the Phase-2 stdlib comment migration:
+    //   ( double -- double )  →  ( x:number -- result:number )
+    // parse_input_types must strip the `name:` prefix and look up "number"
+    // in the type registry; otherwise the unknown-token fallback installs
+    // a StackSizeValidator and SINH starts accepting wrong-typed TOS.
+    rpn::Interp typed(false);
+    typed.addStandardDictionaries();
+    typed.sync_eval("CLEAR <true>");                     // boolean TOS
+    REQUIRE( typed.validateWord("SINH") == false );      // not number-typed → reject
+    typed.sync_eval("CLEAR 1.0");                        // double TOS
+    REQUIRE( typed.validateWord("SINH") == true );       // number-typed → fires
+  }
 }
 
 

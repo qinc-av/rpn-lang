@@ -32,9 +32,11 @@ rpn::Interp::addStdlibDictionary() {
   // Stack utilities (previously defined via sync_eval in stack-dict.cpp)
   setWordCategory("stack");
 
-  // TODO(Task-8): addCompiledWord does not accept StackEffect; structured signatures
-  // for compiled words require either extending addCompiledWord or post-hoc
-  // addDefinition. Signatures are documented inline via ( ) comments.
+  // Structured-signature note for compiled words: the inline `( name:type -- name:type )`
+  // comments below are parsed by ct_SEMICOLON (via parse_typed_signature) and DO populate
+  // WordDefinition.signature — help-tooltip rendering picks up the structured form.
+  // Separately, parse_input_types strips the `name:` prefix when building the
+  // StrictTypeValidator, so type-checked dispatch also works.
   addCompiledWord("DUP2",  "( a:any b:any -- a:any b:any a:any b:any ) OVER OVER");
   addWordMetadata("DUP2",  "Duplicate the top two items (equivalent to OVER OVER).");
 
