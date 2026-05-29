@@ -219,25 +219,30 @@ rpn::Interp::addMx3Dictionary() {
   if (_alreadyRegistered("mx3")) return;
   setWordCategory("mx3");
 
-  addDefinition("->MX3",   { mx3_validator::nine,       NATIVE_WORD_FN(mx3m, to_mx3),      nullptr });
-  addDefinition("MX3->",   MX3_WDEF(d1_mx3,              mx3_to));
-  addDefinition("OBJ->",   MX3_WDEF(d1_mx3,              mx3_to));
-  addDefinition("MX3ID",   { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(mx3m, mx3id),   nullptr });
-  addDefinition("MX3DIAG", MX3_WDEF(d1_vec3,              mx3diag));
+  addDefinition("->MX3",   { mx3_validator::nine,       NATIVE_WORD_FN(mx3m, to_mx3),      nullptr, "",
+                             rpn::StackEffect{{{"e11","number"},{"e12","number"},{"e13","number"},{"e21","number"},{"e22","number"},{"e23","number"},{"e31","number"},{"e32","number"},{"e33","number"}}, {{"m","mx3"}}}});
+  addDefinition("MX3->",   { rpn::StrictTypeValidator::d1_mx3, NATIVE_WORD_FN(mx3m, mx3_to), nullptr, "",
+                             rpn::StackEffect{{{"m","mx3"}}, {{"e11","number"},{"e12","number"},{"e13","number"},{"e21","number"},{"e22","number"},{"e23","number"},{"e31","number"},{"e32","number"},{"e33","number"}}}});
+  addDefinition("OBJ->",   { rpn::StrictTypeValidator::d1_mx3, NATIVE_WORD_FN(mx3m, mx3_to), nullptr, "",
+                             rpn::StackEffect{{{"m","mx3"}}, {{"e11","number"},{"e12","number"},{"e13","number"},{"e21","number"},{"e22","number"},{"e23","number"},{"e31","number"},{"e32","number"},{"e33","number"}}}});
+  addDefinition("MX3ID",   { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(mx3m, mx3id), nullptr, "",
+                             rpn::StackEffect{{}, {{"i", "mx3"}}}});
+  addDefinition("MX3DIAG", { rpn::StrictTypeValidator::d1_vec3, NATIVE_WORD_FN(mx3m, mx3diag), nullptr, "",
+                             rpn::StackEffect{{{"v", "vec3"}}, {{"m", "mx3"}}}});
 
-  addDefinition("+",       { mx3_validator::d2_mx3_mx3,     NATIVE_WORD_FN(mx3m, mx3_add),       nullptr });
-  addDefinition("-",       { mx3_validator::d2_mx3_mx3,     NATIVE_WORD_FN(mx3m, mx3_sub),       nullptr });
-  addDefinition("*",       MX3_WDEF(d2_mx3_vec3,            mx3_mul_vec3));
-  addDefinition("*",       { mx3_validator::d2_mx3_mx3,     NATIVE_WORD_FN(mx3m, mx3_mul_mx3),   nullptr });
-  addDefinition("*",       { mx3_validator::d2_mx3_double,  NATIVE_WORD_FN(mx3m, mx3_mul_scalar),nullptr });
-  addDefinition("*",       { mx3_validator::d2_mx3_integer, NATIVE_WORD_FN(mx3m, mx3_mul_scalar),nullptr });
-  addDefinition("*",       { mx3_validator::d2_double_mx3,  NATIVE_WORD_FN(mx3m, scalar_mul_mx3),nullptr });
-  addDefinition("*",       { mx3_validator::d2_integer_mx3, NATIVE_WORD_FN(mx3m, scalar_mul_mx3),nullptr });
+  addDefinition("+",       { mx3_validator::d2_mx3_mx3,     NATIVE_WORD_FN(mx3m, mx3_add),        nullptr, "", rpn::StackEffect{{{"a", "mx3"}, {"b", "mx3"}}, {{"sum", "mx3"}}}});
+  addDefinition("-",       { mx3_validator::d2_mx3_mx3,     NATIVE_WORD_FN(mx3m, mx3_sub),        nullptr, "", rpn::StackEffect{{{"a", "mx3"}, {"b", "mx3"}}, {{"diff", "mx3"}}}});
+  addDefinition("*",       { rpn::StrictTypeValidator::d2_mx3_vec3,   NATIVE_WORD_FN(mx3m, mx3_mul_vec3),   nullptr, "", rpn::StackEffect{{{"m", "mx3"}, {"v", "vec3"}},    {{"result", "vec3"}}}});
+  addDefinition("*",       { mx3_validator::d2_mx3_mx3,     NATIVE_WORD_FN(mx3m, mx3_mul_mx3),    nullptr, "", rpn::StackEffect{{{"a", "mx3"}, {"b", "mx3"}},     {{"product", "mx3"}}}});
+  addDefinition("*",       { mx3_validator::d2_mx3_double,  NATIVE_WORD_FN(mx3m, mx3_mul_scalar), nullptr, "", rpn::StackEffect{{{"m", "mx3"}, {"s", "number"}},  {{"scaled", "mx3"}}}});
+  addDefinition("*",       { mx3_validator::d2_mx3_integer, NATIVE_WORD_FN(mx3m, mx3_mul_scalar), nullptr, "", rpn::StackEffect{{{"m", "mx3"}, {"s", "integer"}}, {{"scaled", "mx3"}}}});
+  addDefinition("*",       { mx3_validator::d2_double_mx3,  NATIVE_WORD_FN(mx3m, scalar_mul_mx3), nullptr, "", rpn::StackEffect{{{"s", "number"},  {"m", "mx3"}}, {{"scaled", "mx3"}}}});
+  addDefinition("*",       { mx3_validator::d2_integer_mx3, NATIVE_WORD_FN(mx3m, scalar_mul_mx3), nullptr, "", rpn::StackEffect{{{"s", "integer"}, {"m", "mx3"}}, {{"scaled", "mx3"}}}});
 
-  addDefinition("/",       { mx3_validator::d2_mx3_double,  NATIVE_WORD_FN(mx3m, mx3_div_scalar),nullptr });
-  addDefinition("/",       { mx3_validator::d2_mx3_integer, NATIVE_WORD_FN(mx3m, mx3_div_scalar),nullptr });
-  addDefinition("/",       { mx3_validator::d2_double_mx3,  NATIVE_WORD_FN(mx3m, scalar_div_mx3),nullptr });
-  addDefinition("/",       { mx3_validator::d2_integer_mx3, NATIVE_WORD_FN(mx3m, scalar_div_mx3),nullptr });
+  addDefinition("/",       { mx3_validator::d2_mx3_double,  NATIVE_WORD_FN(mx3m, mx3_div_scalar), nullptr, "", rpn::StackEffect{{{"m", "mx3"}, {"s", "number"}},  {{"result", "mx3"}}}});
+  addDefinition("/",       { mx3_validator::d2_mx3_integer, NATIVE_WORD_FN(mx3m, mx3_div_scalar), nullptr, "", rpn::StackEffect{{{"m", "mx3"}, {"s", "integer"}}, {{"result", "mx3"}}}});
+  addDefinition("/",       { mx3_validator::d2_double_mx3,  NATIVE_WORD_FN(mx3m, scalar_div_mx3), nullptr, "", rpn::StackEffect{{{"s", "number"},  {"m", "mx3"}}, {{"result", "mx3"}}}});
+  addDefinition("/",       { mx3_validator::d2_integer_mx3, NATIVE_WORD_FN(mx3m, scalar_div_mx3), nullptr, "", rpn::StackEffect{{{"s", "integer"}, {"m", "mx3"}}, {{"result", "mx3"}}}});
 
   addWordMetadata("->MX3",   "Create a 3×3 matrix from 9 doubles (row-major: e11..e33).");
   addWordMetadata("MX3->",   "Explode a 3×3 matrix to 9 doubles (row-major).");

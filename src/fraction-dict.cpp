@@ -247,15 +247,24 @@ rpn::Interp::addFractionDictionary() {
   setWordCategory("fraction");
   registerType("fraction", typeid(stack::Fraction).hash_code());
 
-  rpn.addDefinition("->FRAC", NATIVE_WORD_WDEF(fraction, rpn::StrictTypeValidator::d2_integer_integer, to_frac_ii, nullptr));
-  rpn.addDefinition("->FRAC", NATIVE_WORD_WDEF(fraction, rpn::StrictTypeValidator::d1_double, to_frac_d, nullptr));
-  rpn.addDefinition("->FLOAT", NATIVE_WORD_WDEF(fraction, frac_validator::d1_frac, to_float, nullptr));
-  rpn.addDefinition("EVAL", NATIVE_WORD_WDEF(fraction, frac_validator::d1_frac, to_float, nullptr));
-  rpn.addDefinition("OBJ->", NATIVE_WORD_WDEF(fraction, frac_validator::d1_frac, obj_to, nullptr));
-  rpn.addDefinition("INV", NATIVE_WORD_WDEF(fraction, frac_validator::d1_frac, inv_f, nullptr));
-  rpn.addDefinition("NEG", NATIVE_WORD_WDEF(fraction, frac_validator::d1_frac, neg_f, nullptr));
-  rpn.addDefinition("SQ", NATIVE_WORD_WDEF(fraction, frac_validator::d1_frac, sq_f, nullptr));
-  rpn.addDefinition("SQRT", NATIVE_WORD_WDEF(fraction, frac_validator::d1_frac, sqrt_f, nullptr));
+  rpn.addDefinition("->FRAC", { rpn::StrictTypeValidator::d2_integer_integer, NATIVE_WORD_FN(fraction, to_frac_ii), nullptr, "",
+                               rpn::StackEffect{{{"numerator", "integer"}, {"denominator", "integer"}}, {{"frac", "fraction"}}}});
+  rpn.addDefinition("->FRAC", { rpn::StrictTypeValidator::d1_double, NATIVE_WORD_FN(fraction, to_frac_d), nullptr, "",
+                               rpn::StackEffect{{{"value", "number"}}, {{"frac", "fraction"}}}});
+  rpn.addDefinition("->FLOAT", { frac_validator::d1_frac, NATIVE_WORD_FN(fraction, to_float), nullptr, "",
+                                rpn::StackEffect{{{"frac", "fraction"}}, {{"value", "number"}}}});
+  rpn.addDefinition("EVAL", { frac_validator::d1_frac, NATIVE_WORD_FN(fraction, to_float), nullptr, "",
+                             rpn::StackEffect{{{"frac", "fraction"}}, {{"value", "number"}}}});
+  rpn.addDefinition("OBJ->", { frac_validator::d1_frac, NATIVE_WORD_FN(fraction, obj_to), nullptr, "",
+                              rpn::StackEffect{{{"frac", "fraction"}}, {{"numerator", "integer"}, {"denominator", "integer"}}}});
+  rpn.addDefinition("INV", { frac_validator::d1_frac, NATIVE_WORD_FN(fraction, inv_f), nullptr, "",
+                            rpn::StackEffect{{{"f", "fraction"}}, {{"inv", "fraction"}}}});
+  rpn.addDefinition("NEG", { frac_validator::d1_frac, NATIVE_WORD_FN(fraction, neg_f), nullptr, "",
+                            rpn::StackEffect{{{"f", "fraction"}}, {{"neg", "fraction"}}}});
+  rpn.addDefinition("SQ", { frac_validator::d1_frac, NATIVE_WORD_FN(fraction, sq_f), nullptr, "",
+                           rpn::StackEffect{{{"f", "fraction"}}, {{"sq", "fraction"}}}});
+  rpn.addDefinition("SQRT", { frac_validator::d1_frac, NATIVE_WORD_FN(fraction, sqrt_f), nullptr, "",
+                             rpn::StackEffect{{{"f", "fraction"}}, {{"root", "fraction"}}}});
 
   ADD_FRAC_NUM_WORD(rpn, "+", add);
   ADD_FRAC_NUM_WORD(rpn, "-", sub);

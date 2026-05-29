@@ -383,30 +383,33 @@ rpn::Interp::addMatrixDictionary() {
   setWordCategory("vector");
 
   // ------- Vector construction / decomposition -------
-  rpn.addDefinition("->VEC",  {rpn::StackSizeValidator::ntos, MAT_FUNC(to_vector), nullptr});
-  rpn.addDefinition("VEC->",  MV_WDEF(d1_vector, vector_to));
-  rpn.addDefinition("SIZE",   MV_WDEF(d1_vector, vec_size));
+  rpn.addDefinition("->VEC",  {rpn::StackSizeValidator::ntos, MAT_FUNC(to_vector), nullptr, "",
+                               rpn::StackEffect{{{"a", "number"}, {"n", "integer"}}, {{"v", "vector"}}}});
+  rpn.addDefinition("VEC->",  {matrix_validator::d1_vector, MAT_FUNC(vector_to), nullptr, "",
+                               rpn::StackEffect{{{"v", "vector"}}, {{"a", "number"}, {"n", "integer"}}}});
+  rpn.addDefinition("SIZE",   {matrix_validator::d1_vector, MAT_FUNC(vec_size), nullptr, "",
+                               rpn::StackEffect{{{"v", "vector"}}, {{"n", "integer"}}}});
 
   // ------- Vector arithmetic -------
-  rpn.addDefinition("+", MV_WDEF(d2_vector_vector,  vec_add));
-  rpn.addDefinition("-", MV_WDEF(d2_vector_vector,  vec_sub));
-  rpn.addDefinition("*", MV_WDEF(d2_vector_double,  vec_scale_double));  // TOS=double, pop double first
-  rpn.addDefinition("*", MV_WDEF(d2_vector_integer, vec_scale_double));  // TOS=int,    pop as double first
-  rpn.addDefinition("*", MV_WDEF(d2_double_vector,  scale_double_vec));  // TOS=vector, pop vec first
-  rpn.addDefinition("*", MV_WDEF(d2_integer_vector, scale_double_vec));  // TOS=vector, pop vec first
+  rpn.addDefinition("+", {matrix_validator::d2_vector_vector,  MAT_FUNC(vec_add),        nullptr, "", rpn::StackEffect{{{"a", "vector"}, {"b", "vector"}}, {{"sum", "vector"}}}});
+  rpn.addDefinition("-", {matrix_validator::d2_vector_vector,  MAT_FUNC(vec_sub),        nullptr, "", rpn::StackEffect{{{"a", "vector"}, {"b", "vector"}}, {{"diff", "vector"}}}});
+  rpn.addDefinition("*", {matrix_validator::d2_vector_double,  MAT_FUNC(vec_scale_double), nullptr, "", rpn::StackEffect{{{"v", "vector"}, {"s", "number"}}, {{"scaled", "vector"}}}});
+  rpn.addDefinition("*", {matrix_validator::d2_vector_integer, MAT_FUNC(vec_scale_double), nullptr, "", rpn::StackEffect{{{"v", "vector"}, {"s", "integer"}}, {{"scaled", "vector"}}}});
+  rpn.addDefinition("*", {matrix_validator::d2_double_vector,  MAT_FUNC(scale_double_vec), nullptr, "", rpn::StackEffect{{{"s", "number"}, {"v", "vector"}}, {{"scaled", "vector"}}}});
+  rpn.addDefinition("*", {matrix_validator::d2_integer_vector, MAT_FUNC(scale_double_vec), nullptr, "", rpn::StackEffect{{{"s", "integer"}, {"v", "vector"}}, {{"scaled", "vector"}}}});
 
   // ------- Vector operations -------
-  rpn.addDefinition("VDOT",  MV_WDEF(d2_vector_vector, vec_dot));
-  rpn.addDefinition("VNORM", MV_WDEF(d1_vector,        vec_norm));
+  rpn.addDefinition("VDOT",  {matrix_validator::d2_vector_vector, MAT_FUNC(vec_dot),  nullptr, "", rpn::StackEffect{{{"a", "vector"}, {"b", "vector"}}, {{"dot", "number"}}}});
+  rpn.addDefinition("VNORM", {matrix_validator::d1_vector,        MAT_FUNC(vec_norm), nullptr, "", rpn::StackEffect{{{"v", "vector"}}, {{"norm", "number"}}}});
 
   // ------- Vector ↔ Matrix interop -------
-  rpn.addDefinition("VEC->COLVEC", MV_WDEF(d1_vector, vec_to_colvec));
-  rpn.addDefinition("VEC->ROWVEC", MV_WDEF(d1_vector, vec_to_rowvec));
-  rpn.addDefinition("COLVEC->VEC", MV_WDEF(d1_matrix, colvec_to_vec));
+  rpn.addDefinition("VEC->COLVEC", {matrix_validator::d1_vector, MAT_FUNC(vec_to_colvec), nullptr, "", rpn::StackEffect{{{"v", "vector"}}, {{"m", "matrix"}}}});
+  rpn.addDefinition("VEC->ROWVEC", {matrix_validator::d1_vector, MAT_FUNC(vec_to_rowvec), nullptr, "", rpn::StackEffect{{{"v", "vector"}}, {{"m", "matrix"}}}});
+  rpn.addDefinition("COLVEC->VEC", {matrix_validator::d1_matrix, MAT_FUNC(colvec_to_vec), nullptr, "", rpn::StackEffect{{{"m", "matrix"}}, {{"v", "vector"}}}});
 
   // ------- Vector ↔ VEC3 interop -------
-  rpn.addDefinition("VEC3->VEC", {rpn::StrictTypeValidator::d1_vec3, MAT_FUNC(vec3_to_vec), nullptr});
-  rpn.addDefinition("VEC->VEC3", MV_WDEF(d1_vector, vec_to_vec3));
+  rpn.addDefinition("VEC3->VEC", {rpn::StrictTypeValidator::d1_vec3, MAT_FUNC(vec3_to_vec), nullptr, "", rpn::StackEffect{{{"v", "vec3"}}, {{"result", "vector"}}}});
+  rpn.addDefinition("VEC->VEC3", {matrix_validator::d1_vector, MAT_FUNC(vec_to_vec3), nullptr, "", rpn::StackEffect{{{"v", "vector"}}, {{"result", "vec3"}}}});
 
   addWordMetadata("->VEC",       "Build a vector from N doubles. TOS=N; below = elements bottom→TOS = v[0]...v[N-1].");
   addWordMetadata("VEC->",       "Decompose vector: pushes v[0]...v[N-1] then N.");
@@ -422,29 +425,33 @@ rpn::Interp::addMatrixDictionary() {
   // ------- Matrix construction / decomposition -------
   setWordCategory("matrix");
 
-  rpn.addDefinition("->MATRIX", {rpn::StackSizeValidator::two, MAT_FUNC(to_matrix), nullptr});
-  rpn.addDefinition("MATRIX->", MV_WDEF(d1_matrix, matrix_to));
-  rpn.addDefinition("ROWS",     MV_WDEF(d1_matrix, mat_rows));
-  rpn.addDefinition("COLS",     MV_WDEF(d1_matrix, mat_cols));
+  rpn.addDefinition("->MATRIX", {rpn::StackSizeValidator::two, MAT_FUNC(to_matrix), nullptr, "",
+                                 rpn::StackEffect{{{"a", "number"}, {"rows", "integer"}, {"cols", "integer"}}, {{"m", "matrix"}}}});
+  rpn.addDefinition("MATRIX->", {matrix_validator::d1_matrix, MAT_FUNC(matrix_to), nullptr, "",
+                                 rpn::StackEffect{{{"m", "matrix"}}, {{"a", "number"}, {"rows", "integer"}, {"cols", "integer"}}}});
+  rpn.addDefinition("ROWS",     {matrix_validator::d1_matrix, MAT_FUNC(mat_rows), nullptr, "",
+                                 rpn::StackEffect{{{"m", "matrix"}}, {{"rows", "integer"}}}});
+  rpn.addDefinition("COLS",     {matrix_validator::d1_matrix, MAT_FUNC(mat_cols), nullptr, "",
+                                 rpn::StackEffect{{{"m", "matrix"}}, {{"cols", "integer"}}}});
 
   // ------- Matrix arithmetic -------
-  rpn.addDefinition("+", MV_WDEF(d2_matrix_matrix,  mat_add));
-  rpn.addDefinition("-", MV_WDEF(d2_matrix_matrix,  mat_sub));
-  rpn.addDefinition("*", MV_WDEF(d2_matrix_matrix,  mat_mul));
-  rpn.addDefinition("*", MV_WDEF(d2_matrix_vector,  mat_vec_mul));  // TOS=vec, NOS=matrix (M v *)
-  rpn.addDefinition("*", MV_WDEF(d2_matrix_double,  mat_scale_double));  // TOS=double, pop double first
-  rpn.addDefinition("*", MV_WDEF(d2_matrix_integer, mat_scale_double));  // TOS=int,    pop as double first
-  rpn.addDefinition("*", MV_WDEF(d2_double_matrix,  scale_double_mat));  // TOS=matrix, pop mat first
-  rpn.addDefinition("*", MV_WDEF(d2_integer_matrix, scale_double_mat));  // TOS=matrix, pop mat first
+  rpn.addDefinition("+", {matrix_validator::d2_matrix_matrix,  MAT_FUNC(mat_add),         nullptr, "", rpn::StackEffect{{{"a", "matrix"}, {"b", "matrix"}}, {{"sum", "matrix"}}}});
+  rpn.addDefinition("-", {matrix_validator::d2_matrix_matrix,  MAT_FUNC(mat_sub),         nullptr, "", rpn::StackEffect{{{"a", "matrix"}, {"b", "matrix"}}, {{"diff", "matrix"}}}});
+  rpn.addDefinition("*", {matrix_validator::d2_matrix_matrix,  MAT_FUNC(mat_mul),         nullptr, "", rpn::StackEffect{{{"a", "matrix"}, {"b", "matrix"}}, {{"product", "matrix"}}}});
+  rpn.addDefinition("*", {matrix_validator::d2_matrix_vector,  MAT_FUNC(mat_vec_mul),     nullptr, "", rpn::StackEffect{{{"m", "matrix"}, {"v", "vector"}}, {{"result", "vector"}}}});
+  rpn.addDefinition("*", {matrix_validator::d2_matrix_double,  MAT_FUNC(mat_scale_double),nullptr, "", rpn::StackEffect{{{"m", "matrix"}, {"s", "number"}}, {{"scaled", "matrix"}}}});
+  rpn.addDefinition("*", {matrix_validator::d2_matrix_integer, MAT_FUNC(mat_scale_double),nullptr, "", rpn::StackEffect{{{"m", "matrix"}, {"s", "integer"}}, {{"scaled", "matrix"}}}});
+  rpn.addDefinition("*", {matrix_validator::d2_double_matrix,  MAT_FUNC(scale_double_mat),nullptr, "", rpn::StackEffect{{{"s", "number"}, {"m", "matrix"}}, {{"scaled", "matrix"}}}});
+  rpn.addDefinition("*", {matrix_validator::d2_integer_matrix, MAT_FUNC(scale_double_mat),nullptr, "", rpn::StackEffect{{{"s", "integer"}, {"m", "matrix"}}, {{"scaled", "matrix"}}}});
 
   // ------- Matrix operations -------
-  rpn.addDefinition("DET",      MV_WDEF(d1_matrix, mat_det));
-  rpn.addDefinition("DET",      MV_WDEF(d1_mx3,    mx3_det));
-  rpn.addDefinition("TRANS",    MV_WDEF(d1_matrix, mat_trans));
-  rpn.addDefinition("TRANS",    MV_WDEF(d1_mx3,    mx3_trans));
-  rpn.addDefinition("INV",      MV_WDEF(d1_matrix, mat_inv));
-  rpn.addDefinition("INV",      MV_WDEF(d1_mx3,    mx3_inv));
-  rpn.addDefinition("IDENTITY", {rpn::StackSizeValidator::one, MAT_FUNC(mat_identity), nullptr});
+  rpn.addDefinition("DET",      {matrix_validator::d1_matrix, MAT_FUNC(mat_det),      nullptr, "", rpn::StackEffect{{{"m", "matrix"}}, {{"det", "number"}}}});
+  rpn.addDefinition("DET",      {matrix_validator::d1_mx3,    MAT_FUNC(mx3_det),      nullptr, "", rpn::StackEffect{{{"m", "mx3"}},    {{"det", "number"}}}});
+  rpn.addDefinition("TRANS",    {matrix_validator::d1_matrix, MAT_FUNC(mat_trans),    nullptr, "", rpn::StackEffect{{{"m", "matrix"}}, {{"transpose", "matrix"}}}});
+  rpn.addDefinition("TRANS",    {matrix_validator::d1_mx3,    MAT_FUNC(mx3_trans),    nullptr, "", rpn::StackEffect{{{"m", "mx3"}},    {{"transpose", "mx3"}}}});
+  rpn.addDefinition("INV",      {matrix_validator::d1_matrix, MAT_FUNC(mat_inv),      nullptr, "", rpn::StackEffect{{{"m", "matrix"}}, {{"inverse", "matrix"}}}});
+  rpn.addDefinition("INV",      {matrix_validator::d1_mx3,    MAT_FUNC(mx3_inv),      nullptr, "", rpn::StackEffect{{{"m", "mx3"}},    {{"inverse", "mx3"}}}});
+  rpn.addDefinition("IDENTITY", {rpn::StackSizeValidator::one, MAT_FUNC(mat_identity), nullptr, "", rpn::StackEffect{{{"n", "integer"}}, {{"m", "matrix"}}}});
 
   addWordMetadata("->MATRIX", "Build N×M matrix. Stack: v[0][0]...v[N-1][M-1] rows cols (row-major, TOS=last element).");
   addWordMetadata("MATRIX->", "Decompose matrix: pushes elements row-major, then rows, then cols.");
