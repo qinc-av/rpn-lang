@@ -174,12 +174,12 @@ rpn::Interp::addStatsDictionary() {
   addNumericDictionaries();
   setWordCategory("stats");
 
-  addDefinition("MEAN",        STATS_WDEF(d1_vector,        mean));
-  addDefinition("VARIANCE",    STATS_WDEF(d1_vector,        variance));
-  addDefinition("STDDEV",      STATS_WDEF(d1_vector,        stddev));
-  addDefinition("CORRELATION", STATS_WDEF(d2_vector_vector, correlation));
-  addDefinition("LINFIT",      STATS_WDEF(d2_vector_vector, linfit));
-  addDefinition("OLS",         STATS_WDEF(d2_matrix_vector, ols));
+  addDefinition("MEAN",        { stats_validator::d1_vector,        NATIVE_WORD_FN(stats, mean),        nullptr, "", rpn::StackEffect{{{"v", "vector"}}, {{"mean", "number"}}}});
+  addDefinition("VARIANCE",    { stats_validator::d1_vector,        NATIVE_WORD_FN(stats, variance),    nullptr, "", rpn::StackEffect{{{"v", "vector"}}, {{"variance", "number"}}}});
+  addDefinition("STDDEV",      { stats_validator::d1_vector,        NATIVE_WORD_FN(stats, stddev),      nullptr, "", rpn::StackEffect{{{"v", "vector"}}, {{"stddev", "number"}}}});
+  addDefinition("CORRELATION", { stats_validator::d2_vector_vector, NATIVE_WORD_FN(stats, correlation), nullptr, "", rpn::StackEffect{{{"x", "vector"}, {"y", "vector"}}, {{"r", "number"}}}});
+  addDefinition("LINFIT",      { stats_validator::d2_vector_vector, NATIVE_WORD_FN(stats, linfit),      nullptr, "", rpn::StackEffect{{{"x", "vector"}, {"y", "vector"}}, {{"intercept", "number"}, {"slope", "number"}}}});
+  addDefinition("OLS",         { stats_validator::d2_matrix_vector, NATIVE_WORD_FN(stats, ols),         nullptr, "", rpn::StackEffect{{{"X", "matrix"}, {"y", "vector"}}, {{"result", "object"}}}});
 
   addWordMetadata("MEAN",        "Arithmetic mean of a vector.");
   addWordMetadata("VARIANCE",    "Sample variance of a vector (N-1 denominator).");

@@ -75,8 +75,22 @@ NATIVE_WORD_DECL(geometry, circle_vvv) {
 void
 geometry::addWords(rpn::Interp &rpn) {
   rpn.setWordCategory("geometry");
-  rpn.addDefinition("CIRCLE", NATIVE_WORD_WDEF(geometry, rpn::StrictTypeValidator::d1_array, circle_a, nullptr));
-  rpn.addDefinition("CIRCLE", NATIVE_WORD_WDEF(geometry, rpn::StrictTypeValidator::d3_vec3_vec3_vec3, circle_vvv, nullptr));
+  rpn.addDefinition("CIRCLE", {
+    rpn::StrictTypeValidator::d1_array,
+    NATIVE_WORD_FN(geometry, circle_a), nullptr, "",
+    rpn::StackEffect{
+      {{"points", "array"}},
+      {{"radius", "number"}, {"center", "vec3"}}
+    }
+  });
+  rpn.addDefinition("CIRCLE", {
+    rpn::StrictTypeValidator::d3_vec3_vec3_vec3,
+    NATIVE_WORD_FN(geometry, circle_vvv), nullptr, "",
+    rpn::StackEffect{
+      {{"p1", "vec3"}, {"p2", "vec3"}, {"p3", "vec3"}},
+      {{"radius", "number"}, {"center", "vec3"}}
+    }
+  });
   rpn.addWordMetadata("CIRCLE", "Estimate a circle from three vec3 points or an array of vec3 points. Pushes radius (double) and center (vec3).");
 }
 

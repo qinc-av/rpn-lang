@@ -354,7 +354,14 @@ struct rpn::Interp::Privates : public rpn::WordContext {
     std::istringstream ss(inputs);
     std::string token;
     while (ss >> token) {
-      auto it = _typeRegistry.find(token);
+      // Strip an optional `name:` prefix so typed-signature comments like
+      // `( x:number -- result:number )` look up the same registry entries
+      // as legacy bare-type comments `( double -- double )` did.  The
+      // type registry is keyed on the type name (e.g. "number", "vec3"),
+      // not on the parameter role.
+      auto colon = token.rfind(':');
+      const std::string type_token = (colon == std::string::npos) ? token : token.substr(colon + 1);
+      auto it = _typeRegistry.find(type_token);
       if (it == _typeRegistry.end()) return std::nullopt; // unknown type name
       types.push_back(it->second);
     }
@@ -577,6 +584,38 @@ NATIVE_WORD_DECL(private, COMPILED_EVAL)  {
   return rv;
 }
 
+// Parse tokens between ( and ) (exclusive) as a typed stack-effect signature.
+// Returns true and populates `out` if the tokens contain a "--" separator;
+// returns false (and leaves `out` untouched) if there is no separator.
+//
+// Token grammar within each side:
+//   "name:type"   → StackEffectParam{name=name, type=type}
+//   "name"        → StackEffectParam{name=name, type="any"}
+//   ":type"       → StackEffectParam{name="",   type=type}  (anonymous-typed)
+static bool parse_typed_signature(const std::vector<std::string> &tokens,
+                                  rpn::StackEffect &out) {
+  auto sep_it = std::find(tokens.begin(), tokens.end(), std::string("--"));
+  if (sep_it == tokens.end()) return false;  // no separator = comment
+  auto parse_side = [](auto begin, auto end,
+                       std::vector<rpn::StackEffectParam> &dest) {
+    for (auto it = begin; it != end; ++it) {
+      rpn::StackEffectParam p;
+      auto colon = it->find(':');
+      if (colon == std::string::npos) {
+        p.name = *it;
+        p.type = "any";
+      } else {
+        p.name = it->substr(0, colon);
+        p.type = it->substr(colon + 1);
+      }
+      dest.push_back(p);
+    }
+  };
+  parse_side(tokens.begin(), sep_it, out.inputs);
+  parse_side(sep_it + 1, tokens.end(), out.outputs);
+  return true;
+}
+
 NATIVE_WORD_DECL(private, COLON) {
   // (rpn::Interp &rpn, rpn::WordContext *ctx, std::string &rest)
   rpn::Interp::Privates *p = dynamic_cast<rpn::Interp::Privates*>(ctx);
@@ -624,8 +663,21 @@ NATIVE_WORD_DECL(private, ct_SEMICOLON) {
     }
 
     if (rv == rpn::WordDefinition::Result::ok) {
-      p->_rtDictionary.emplace(progp->_ident, rpn::WordDefinition {
+      auto it = p->_rtDictionary.emplace(progp->_ident, rpn::WordDefinition {
         *validator, NATIVE_WORD_FN(private, COMPILED_EVAL), progp });
+
+      // Parse the effect comment into a structured signature if it has a "--".
+      // Tokenise the raw comment text and run it through parse_typed_signature.
+      if (!progp->_effect_comment.empty()) {
+        std::vector<std::string> tokens;
+        std::istringstream ts(progp->_effect_comment);
+        std::string tok;
+        while (ts >> tok) tokens.push_back(tok);
+        rpn::StackEffect sig;
+        if (parse_typed_signature(tokens, sig)) {
+          it->second.signature = sig;
+        }
+      }
     }
 
   } else {
@@ -1631,13 +1683,41 @@ rpn::Interp::wordHelp(const std::string &word) const {
   auto range = m_p->_rtDictionary.equal_range(word);
   for (auto wi = range.first; wi != range.second; ++wi) {
     const auto &def = wi->second;
-    std::string input = def.validator.input_types();
     std::string effect;
-    if (!def.return_types.empty()) {
-      effect = input.empty() ? "( -- " + def.return_types + " )"
-                             : "( " + input + " -- " + def.return_types + " )";
+    if (!def.signature.empty()) {
+      // Render from the structured signature.  Each param is
+      // "name:type" if name is set, else just "type".
+      auto render_param = [](const StackEffectParam &p) -> std::string {
+        return p.name.empty() ? p.type : p.name + ":" + p.type;
+      };
+      auto join = [&](const std::vector<StackEffectParam> &ps) {
+        std::string s;
+        for (size_t i = 0; i < ps.size(); ++i) {
+          if (i) s += " ";
+          s += render_param(ps[i]);
+        }
+        return s;
+      };
+      std::string in  = join(def.signature.inputs);
+      std::string out = join(def.signature.outputs);
+      if (in.empty() && out.empty()) {
+        effect = "()";
+      } else if (out.empty()) {
+        effect = "( " + in + " )";
+      } else if (in.empty()) {
+        effect = "( -- " + out + " )";
+      } else {
+        effect = "( " + in + " -- " + out + " )";
+      }
     } else {
-      effect = input.empty() ? "()" : "( " + input + " )";
+      // Legacy path: build from validator.input_types() + return_types.
+      std::string input = def.validator.input_types();
+      if (!def.return_types.empty()) {
+        effect = input.empty() ? "( -- " + def.return_types + " )"
+                               : "( " + input + " -- " + def.return_types + " )";
+      } else {
+        effect = input.empty() ? "()" : "( " + input + " )";
+      }
     }
     if (std::find(h.effects.begin(), h.effects.end(), effect) == h.effects.end())
       h.effects.push_back(effect);

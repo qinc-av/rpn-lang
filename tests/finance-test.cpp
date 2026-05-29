@@ -382,4 +382,17 @@ TEST_CASE("finance deparse round-trips", "[finance]") {
   }
 }
 
+TEST_CASE("finance: structured signatures land in wordHelp", "[finance]") {
+  rpn::Interp rpn(false);
+  rpn.addFinanceDictionary();
+  auto h = rpn.wordHelp("NPV");
+  REQUIRE(h.effects.size() == 1);
+  REQUIRE(h.effects[0] == "( cashflows:vector rate:number -- npv:number )");
+
+  auto htvm = rpn.wordHelp("->TVM");
+  REQUIRE(htvm.effects.size() == 1);
+  REQUIRE(htvm.effects[0].find("n:number") != std::string::npos);
+  REQUIRE(htvm.effects[0].find("-- tvm:tvm") != std::string::npos);
+}
+
 /* end of rpn-lang/tests/finance-test.cpp */

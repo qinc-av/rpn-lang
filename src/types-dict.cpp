@@ -395,44 +395,78 @@ void
 rpn::Interp::addTypeDictionary() {
   if (_alreadyRegistered("type")) return;
   setWordCategory("types");
-  addDefinition("TRUE",  NATIVE_WORD_WDEF(types, rpn::StackSizeValidator::zero, push_true,  nullptr));
-  addDefinition("FALSE", NATIVE_WORD_WDEF(types, rpn::StackSizeValidator::zero, push_false, nullptr));
-  addDefinition("->INT", NATIVE_WORD_WDEF(types, rpn::StrictTypeValidator::d1_double, to_int, nullptr));
-  addDefinition("->FLOAT", NATIVE_WORD_WDEF(types, rpn::StrictTypeValidator::d1_integer, to_float, nullptr));
-  addDefinition("->STRING", NATIVE_WORD_WDEF(types, rpn::StackSizeValidator::one, to_string, nullptr));
+  addDefinition("TRUE",  { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(types, push_true),  nullptr, "",
+    rpn::StackEffect{{}, {{"value", "boolean"}}} });
+  addDefinition("FALSE", { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(types, push_false), nullptr, "",
+    rpn::StackEffect{{}, {{"value", "boolean"}}} });
+  addDefinition("->INT", { rpn::StrictTypeValidator::d1_double, NATIVE_WORD_FN(types, to_int), nullptr, "",
+    rpn::StackEffect{{{"a", "number"}}, {{"value", "integer"}}} });
+  addDefinition("->FLOAT", { rpn::StrictTypeValidator::d1_integer, NATIVE_WORD_FN(types, to_float), nullptr, "",
+    rpn::StackEffect{{{"a", "integer"}}, {{"value", "number"}}} });
+  addDefinition("->STRING", { rpn::StackSizeValidator::one, NATIVE_WORD_FN(types, to_string), nullptr, "",
+    rpn::StackEffect{{{"a", "any"}}, {{"str", "string"}}} });
 
-  addDefinition("->OBJ",    NATIVE_WORD_WDEF(t_object, rpn::StrictTypeValidator::d2_string_any, to_object,    nullptr));
-  addDefinition("->OBJECT", NATIVE_WORD_WDEF(marker,   rpn::StackSizeValidator::ntos,         to_object_n,  nullptr));
-  addDefinition("OBJ->", NATIVE_WORD_WDEF(t_object, rpn::StrictTypeValidator::d1_object, object_to, nullptr));
-  addDefinition("->ARRAY", NATIVE_WORD_WDEF(t_array, rpn::StackSizeValidator::ntos, to_array, nullptr));
-  addDefinition("OBJ->", NATIVE_WORD_WDEF(t_array, rpn::StrictTypeValidator::d1_array, array_to, nullptr));
+  addDefinition("->OBJ",    { rpn::StrictTypeValidator::d2_string_any, NATIVE_WORD_FN(t_object, to_object), nullptr, "",
+    rpn::StackEffect{{{"key", "string"}, {"value", "any"}}, {{"object", "object"}}} });
+  addDefinition("->OBJECT", { rpn::StackSizeValidator::ntos, NATIVE_WORD_FN(marker, to_object_n), nullptr, "",
+    rpn::StackEffect{{{"n", "integer"}}, {{"object", "object"}}} });
+  addDefinition("OBJ->", { rpn::StrictTypeValidator::d1_object, NATIVE_WORD_FN(t_object, object_to), nullptr, "",
+    rpn::StackEffect{{{"object", "object"}}, {{"count", "integer"}}} });
+  addDefinition("->ARRAY", { rpn::StackSizeValidator::ntos, NATIVE_WORD_FN(t_array, to_array), nullptr, "",
+    rpn::StackEffect{{{"n", "integer"}}, {{"array", "array"}}} });
+  addDefinition("OBJ->", { rpn::StrictTypeValidator::d1_array, NATIVE_WORD_FN(t_array, array_to), nullptr, "",
+    rpn::StackEffect{{{"array", "array"}}, {{"count", "integer"}}} });
 
-  addDefinition("ARREV", NATIVE_WORD_WDEF(t_array, rpn::StrictTypeValidator::d1_array, reverse, nullptr));
+  addDefinition("ARREV", { rpn::StrictTypeValidator::d1_array, NATIVE_WORD_FN(t_array, reverse), nullptr, "",
+    rpn::StackEffect{{{"array", "array"}}, {{"array", "array"}}} });
 
-  addDefinition("+", NATIVE_WORD_WDEF(t_object, rpn::StrictTypeValidator::d3_any_string_object, add_object_string_any, nullptr));
-  addDefinition("+", NATIVE_WORD_WDEF(t_object, rpn::StrictTypeValidator::d3_object_any_string, add_string_any_object, nullptr));
-  addDefinition("+", NATIVE_WORD_WDEF(t_array, rpn::StrictTypeValidator::d2_any_array, add_array_any, nullptr));
-  addDefinition("+", NATIVE_WORD_WDEF(t_array, rpn::StrictTypeValidator::d2_array_any, add_any_array, nullptr));
+  addDefinition("+", { rpn::StrictTypeValidator::d3_any_string_object, NATIVE_WORD_FN(t_object, add_object_string_any), nullptr, "",
+    rpn::StackEffect{{{"object", "object"}, {"key", "string"}, {"value", "any"}}, {{"object", "object"}}} });
+  addDefinition("+", { rpn::StrictTypeValidator::d3_object_any_string, NATIVE_WORD_FN(t_object, add_string_any_object), nullptr, "",
+    rpn::StackEffect{{{"value", "any"}, {"key", "string"}, {"object", "object"}}, {{"object", "object"}}} });
+  addDefinition("+", { rpn::StrictTypeValidator::d2_any_array, NATIVE_WORD_FN(t_array, add_array_any), nullptr, "",
+    rpn::StackEffect{{{"array", "array"}, {"item", "any"}}, {{"array", "array"}}} });
+  addDefinition("+", { rpn::StrictTypeValidator::d2_array_any, NATIVE_WORD_FN(t_array, add_any_array), nullptr, "",
+    rpn::StackEffect{{{"item", "any"}, {"array", "array"}}, {{"array", "array"}}} });
 
-  addDefinition("+", NATIVE_WORD_WDEF(vec3, rpn::StrictTypeValidator::d2_vec3_vec3, add_vec3, nullptr));
-  addDefinition("+", NATIVE_WORD_WDEF(vec3, rpn::StrictTypeValidator::d2_double_vec3, add_vec3_num, nullptr));
-  addDefinition("+", NATIVE_WORD_WDEF(vec3, rpn::StrictTypeValidator::d2_integer_vec3, add_vec3_num, nullptr));
-  addDefinition("+", NATIVE_WORD_WDEF(vec3, rpn::StrictTypeValidator::d2_vec3_double, add_num_vec3, nullptr));
-  addDefinition("+", NATIVE_WORD_WDEF(vec3, rpn::StrictTypeValidator::d2_vec3_integer, add_num_vec3, nullptr));
+  addDefinition("+", { rpn::StrictTypeValidator::d2_vec3_vec3,    NATIVE_WORD_FN(vec3, add_vec3),     nullptr, "",
+    rpn::StackEffect{{{"a", "vec3"}, {"b", "vec3"}},   {{"result", "vec3"}}} });
+  addDefinition("+", { rpn::StrictTypeValidator::d2_double_vec3,  NATIVE_WORD_FN(vec3, add_vec3_num), nullptr, "",
+    rpn::StackEffect{{{"v", "vec3"}, {"n", "number"}}, {{"result", "vec3"}}} });
+  addDefinition("+", { rpn::StrictTypeValidator::d2_integer_vec3, NATIVE_WORD_FN(vec3, add_vec3_num), nullptr, "",
+    rpn::StackEffect{{{"v", "vec3"}, {"n", "integer"}},{{"result", "vec3"}}} });
+  addDefinition("+", { rpn::StrictTypeValidator::d2_vec3_double,  NATIVE_WORD_FN(vec3, add_num_vec3), nullptr, "",
+    rpn::StackEffect{{{"n", "number"}, {"v", "vec3"}}, {{"result", "vec3"}}} });
+  addDefinition("+", { rpn::StrictTypeValidator::d2_vec3_integer, NATIVE_WORD_FN(vec3, add_num_vec3), nullptr, "",
+    rpn::StackEffect{{{"n", "integer"},{"v", "vec3"}}, {{"result", "vec3"}}} });
 
-  addDefinition("-", NATIVE_WORD_WDEF(vec3, rpn::StrictTypeValidator::d2_vec3_vec3, sub_vec3, nullptr));
-  addDefinition("-", NATIVE_WORD_WDEF(vec3, rpn::StrictTypeValidator::d2_double_vec3, sub_vec3_num, nullptr));
-  addDefinition("-", NATIVE_WORD_WDEF(vec3, rpn::StrictTypeValidator::d2_integer_vec3, sub_vec3_num, nullptr));
-  addDefinition("-", NATIVE_WORD_WDEF(vec3, rpn::StrictTypeValidator::d2_vec3_double, sub_num_vec3, nullptr));
-  addDefinition("-", NATIVE_WORD_WDEF(vec3, rpn::StrictTypeValidator::d2_vec3_integer, sub_num_vec3, nullptr));
+  addDefinition("-", { rpn::StrictTypeValidator::d2_vec3_vec3,    NATIVE_WORD_FN(vec3, sub_vec3),     nullptr, "",
+    rpn::StackEffect{{{"a", "vec3"}, {"b", "vec3"}},   {{"result", "vec3"}}} });
+  addDefinition("-", { rpn::StrictTypeValidator::d2_double_vec3,  NATIVE_WORD_FN(vec3, sub_vec3_num), nullptr, "",
+    rpn::StackEffect{{{"v", "vec3"}, {"n", "number"}}, {{"result", "vec3"}}} });
+  addDefinition("-", { rpn::StrictTypeValidator::d2_integer_vec3, NATIVE_WORD_FN(vec3, sub_vec3_num), nullptr, "",
+    rpn::StackEffect{{{"v", "vec3"}, {"n", "integer"}},{{"result", "vec3"}}} });
+  addDefinition("-", { rpn::StrictTypeValidator::d2_vec3_double,  NATIVE_WORD_FN(vec3, sub_num_vec3), nullptr, "",
+    rpn::StackEffect{{{"n", "number"}, {"v", "vec3"}}, {{"result", "vec3"}}} });
+  addDefinition("-", { rpn::StrictTypeValidator::d2_vec3_integer, NATIVE_WORD_FN(vec3, sub_num_vec3), nullptr, "",
+    rpn::StackEffect{{{"n", "integer"},{"v", "vec3"}}, {{"result", "vec3"}}} });
 
+  // ->VEC3: ( x:number y:number z:number -- v:vec3 )
+  // ADD_NATIVE_3_NUMBER_WDEF generates multiple overloads (one per
+  // (double|integer)^3 combination) via macro expansion and has no slot for a
+  // StackEffect.  These overloads fall through to legacy rendering in wordHelp.
   ADD_NATIVE_3_NUMBER_WDEF(vec3, (*this), "->VEC3", to_vec3, to_vec3, nullptr);
-  addDefinition("->VEC3x", NATIVE_WORD_WDEF(vec3, rpn::StrictTypeValidator::d1_number, to_vec3x, nullptr));
-  addDefinition("->VEC3y", NATIVE_WORD_WDEF(vec3, rpn::StrictTypeValidator::d1_number, to_vec3y, nullptr));
-  addDefinition("->VEC3z", NATIVE_WORD_WDEF(vec3, rpn::StrictTypeValidator::d1_number, to_vec3z, nullptr));
+  addDefinition("->VEC3x", { rpn::StrictTypeValidator::d1_number, NATIVE_WORD_FN(vec3, to_vec3x), nullptr, "",
+    rpn::StackEffect{{{"x", "number"}}, {{"v", "vec3"}}} });
+  addDefinition("->VEC3y", { rpn::StrictTypeValidator::d1_number, NATIVE_WORD_FN(vec3, to_vec3y), nullptr, "",
+    rpn::StackEffect{{{"y", "number"}}, {{"v", "vec3"}}} });
+  addDefinition("->VEC3z", { rpn::StrictTypeValidator::d1_number, NATIVE_WORD_FN(vec3, to_vec3z), nullptr, "",
+    rpn::StackEffect{{{"z", "number"}}, {{"v", "vec3"}}} });
 
-  addDefinition("VEC3->", NATIVE_WORD_WDEF(vec3, rpn::StrictTypeValidator::d1_vec3, vec3_to, nullptr));
-  addDefinition("OBJ->", NATIVE_WORD_WDEF(vec3, rpn::StrictTypeValidator::d1_vec3, vec3_to, nullptr));
+  addDefinition("VEC3->", { rpn::StrictTypeValidator::d1_vec3, NATIVE_WORD_FN(vec3, vec3_to), nullptr, "",
+    rpn::StackEffect{{{"v", "vec3"}}, {{"x", "number"}, {"y", "number"}, {"z", "number"}}} });
+  addDefinition("OBJ->", { rpn::StrictTypeValidator::d1_vec3, NATIVE_WORD_FN(vec3, vec3_to), nullptr, "",
+    rpn::StackEffect{{{"v", "vec3"}}, {{"x", "number"}, {"y", "number"}, {"z", "number"}}} });
 
   addWordMetadata("TRUE",     "Push boolean true.");
   addWordMetadata("FALSE",    "Push boolean false.");
@@ -451,8 +485,10 @@ rpn::Interp::addTypeDictionary() {
   addWordMetadata("->VEC3z",  "Create a VEC3 with only the Z component set (X and Y are NaN).");
   addWordMetadata("VEC3->",   "Explode a VEC3 to x, y, z doubles.");
 
-  addDefinition("->JSON", NATIVE_WORD_WDEF(types, rpn::StackSizeValidator::one, to_json, nullptr));
-  addDefinition("JSON->", NATIVE_WORD_WDEF(types, rpn::StackSizeValidator::one, json_to, nullptr));
+  addDefinition("->JSON", { rpn::StackSizeValidator::one, NATIVE_WORD_FN(types, to_json), nullptr, "",
+    rpn::StackEffect{{{"a", "any"}}, {{"json", "json"}}} });
+  addDefinition("JSON->", { rpn::StackSizeValidator::one, NATIVE_WORD_FN(types, json_to), nullptr, "",
+    rpn::StackEffect{{{"json", "json"}}, {{"count", "integer"}}} });
   addWordMetadata("->JSON", "Convert TOS to a JSON value (stack::Json), using the type's data encoding.");
   addWordMetadata("JSON->", "Unpack a JSON value: array→elements+count, object→(val,key) pairs+count, scalar→native type.");
 }
@@ -576,11 +612,16 @@ rpn::Interp::addMarkerDictionary() {
   if (_alreadyRegistered("marker")) return;
   setWordCategory("types");
 
-  addDefinition("MARK",      { rpn::StrictTypeValidator::d1_string, NATIVE_WORD_FN(marker, mark),         nullptr });
-  addDefinition("FIND-MARK", { rpn::StrictTypeValidator::d1_string, NATIVE_WORD_FN(marker, find_mark),    nullptr });
-  addDefinition("[",         { rpn::StackSizeValidator::zero,        NATIVE_WORD_FN(marker, open_vec),     nullptr });
-  addDefinition("]",         { rpn::StackSizeValidator::zero,        NATIVE_WORD_FN(marker, close_vec),    nullptr });
-  addDefinition("{",         { rpn::StackSizeValidator::zero,        NATIVE_WORD_FN(marker, open_obj),     nullptr });
+  addDefinition("MARK",      { rpn::StrictTypeValidator::d1_string, NATIVE_WORD_FN(marker, mark),      nullptr, "",
+    rpn::StackEffect{{{"label", "string"}}, {{"marker", "any"}}} });
+  addDefinition("FIND-MARK", { rpn::StrictTypeValidator::d1_string, NATIVE_WORD_FN(marker, find_mark), nullptr, "",
+    rpn::StackEffect{{{"label", "string"}}, {{"count", "integer"}}} });
+  addDefinition("[",         { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(marker, open_vec),  nullptr, "",
+    rpn::StackEffect{{}, {}} });
+  addDefinition("]",         { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(marker, close_vec), nullptr, "",
+    rpn::StackEffect{{}, {{"result", "any"}}} });
+  addDefinition("{",         { rpn::StackSizeValidator::zero, NATIVE_WORD_FN(marker, open_obj),  nullptr, "",
+    rpn::StackEffect{{}, {}} });
 
   addWordMetadata("MARK",      "Push a marker onto the stack with the given label.  `\"[\" MARK`");
   addWordMetadata("FIND-MARK", "Find a marker by label; push count of items above it.  `\"[\" FIND-MARK`");

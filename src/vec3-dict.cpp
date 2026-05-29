@@ -86,15 +86,15 @@ rpn::Interp::addVec3Dictionary() {
   if (_alreadyRegistered("vec3")) return;
   setWordCategory("vec3");
 
-  addDefinition("DOT3",   VEC3_WDEF(d2_vec3_vec3, dot3));
-  addDefinition("CROSS3", VEC3_WDEF(d2_vec3_vec3, cross3));
-  addDefinition("NORM3",  VEC3_WDEF(d1_vec3,      norm3));
+  addDefinition("DOT3",   {rpn::StrictTypeValidator::d2_vec3_vec3, NATIVE_WORD_FN(vec3m, dot3),   nullptr, "", rpn::StackEffect{{{"a", "vec3"}, {"b", "vec3"}}, {{"dot", "number"}}}});
+  addDefinition("CROSS3", {rpn::StrictTypeValidator::d2_vec3_vec3, NATIVE_WORD_FN(vec3m, cross3), nullptr, "", rpn::StackEffect{{{"a", "vec3"}, {"b", "vec3"}}, {{"cross", "vec3"}}}});
+  addDefinition("NORM3",  {rpn::StrictTypeValidator::d1_vec3,      NATIVE_WORD_FN(vec3m, norm3),  nullptr, "", rpn::StackEffect{{{"v", "vec3"}}, {{"norm", "number"}}}});
 
   // Vec3 +/- live in types-dict.cpp; scalar * was missing — fill the gap.
-  addDefinition("*", VEC3_WDEF(d2_vec3_double,  vec3_mul_scalar));
-  addDefinition("*", VEC3_WDEF(d2_vec3_integer, vec3_mul_scalar));
-  addDefinition("*", VEC3_WDEF(d2_double_vec3,  scalar_mul_vec3));
-  addDefinition("*", VEC3_WDEF(d2_integer_vec3, scalar_mul_vec3));
+  addDefinition("*", {rpn::StrictTypeValidator::d2_vec3_double,  NATIVE_WORD_FN(vec3m, vec3_mul_scalar), nullptr, "", rpn::StackEffect{{{"v", "vec3"}, {"s", "number"}},  {{"scaled", "vec3"}}}});
+  addDefinition("*", {rpn::StrictTypeValidator::d2_vec3_integer, NATIVE_WORD_FN(vec3m, vec3_mul_scalar), nullptr, "", rpn::StackEffect{{{"v", "vec3"}, {"s", "integer"}}, {{"scaled", "vec3"}}}});
+  addDefinition("*", {rpn::StrictTypeValidator::d2_double_vec3,  NATIVE_WORD_FN(vec3m, scalar_mul_vec3), nullptr, "", rpn::StackEffect{{{"s", "number"},  {"v", "vec3"}}, {{"scaled", "vec3"}}}});
+  addDefinition("*", {rpn::StrictTypeValidator::d2_integer_vec3, NATIVE_WORD_FN(vec3m, scalar_mul_vec3), nullptr, "", rpn::StackEffect{{{"s", "integer"}, {"v", "vec3"}}, {{"scaled", "vec3"}}}});
 
   addWordMetadata("DOT3",   "Dot product of two Vec3 vectors.");
   addWordMetadata("CROSS3", "Cross product: `v1 v2 CROSS3` → v1×v2.");

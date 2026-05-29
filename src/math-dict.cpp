@@ -52,18 +52,6 @@ const rpn::StrictTypeValidator math_validator::d1_complex({typeid(stack::Complex
 #define MATH_CONSTANT_WDEF(w) NATIVE_WORD_WDEF(math, rpn::StackSizeValidator::zero, w, nullptr)
 #define MATH_WORD_WDEF(validator,w) NATIVE_WORD_WDEF(math, validator, w, nullptr)
 
-// common case for binary function that converts to double except for
-// when both parameters are integers
-#define ADD_MATH_BINARY_NUMBER_WDEF(r, symbol, double_func, integer_func) \
-  ADD_NATIVE_2_NUMBER_WDEF(math, r, symbol, double_func, integer_func, nullptr)
-
-#define ADD_MATH_UNARY_NUMBER_WDEF(r, symbol, double_func, integer_func) \
-  ADD_NATIVE_1_NUMBER_WDEF(math, r, symbol, double_func, integer_func, nullptr)
-
-// For unary math words that accept integer or double and always return double (e.g. transcendentals).
-#define ADD_MATH_UNARY_FLOAT_WDEF(r, symbol, func) \
-  ADD_NATIVE_1_FLOAT_WDEF(math, r, symbol, func, nullptr)
-
 static double deg_to_rad(const double &deg) {
   return deg * (M_PI / 180.);
 }
@@ -313,64 +301,118 @@ rpn::Interp::addMathDictionary() {
   setWordCategory("math");
   registerType("complex", typeid(stack::Complex).hash_code());
 
-  ADD_MATH_BINARY_NUMBER_WDEF(rpn, "+", add, iadd);
-  ADD_MATH_BINARY_NUMBER_WDEF(rpn, "-", subtract, isubtract);
-  ADD_MATH_BINARY_NUMBER_WDEF(rpn, "*", multiply, imultiply);
-  ADD_MATH_BINARY_NUMBER_WDEF(rpn, "/", divide, idivide);
-  ADD_MATH_BINARY_NUMBER_WDEF(rpn, "^", pow, ipow);
-  ADD_NATIVE_2_FLOAT_WDEF(math, rpn, "ATAN2", trig_atan2, nullptr);
-  ADD_MATH_BINARY_NUMBER_WDEF(rpn, "MIN", fmin, imin);
-  ADD_MATH_BINARY_NUMBER_WDEF(rpn, "MAX", fmax, imax);
-  ADD_MATH_BINARY_NUMBER_WDEF(rpn, "MOD", dmod, imod);
-  ADD_MATH_UNARY_NUMBER_WDEF(rpn, "ABS", dabs, iabs);
+  // Binary arithmetic — each overload (double/double, integer/double, double/integer, integer/integer)
+  // gets the same semantic signature; only the type label differs per overload.
+  rpn.addDefinition("+", { rpn::StrictTypeValidator::d2_double_double,   MATH_FUNC(add),       nullptr, "", rpn::StackEffect{{{"a", "number"},  {"b", "number"}},  {{"sum", "number"}}}  });
+  rpn.addDefinition("+", { rpn::StrictTypeValidator::d2_integer_double,  MATH_FUNC(add),       nullptr, "", rpn::StackEffect{{{"a", "number"},  {"b", "number"}},  {{"sum", "number"}}}  });
+  rpn.addDefinition("+", { rpn::StrictTypeValidator::d2_double_integer,  MATH_FUNC(add),       nullptr, "", rpn::StackEffect{{{"a", "number"},  {"b", "number"}},  {{"sum", "number"}}}  });
+  rpn.addDefinition("+", { rpn::StrictTypeValidator::d2_integer_integer, MATH_FUNC(iadd),      nullptr, "", rpn::StackEffect{{{"a", "integer"}, {"b", "integer"}}, {{"sum", "integer"}}} });
 
-  ADD_MATH_UNARY_FLOAT_WDEF(rpn, "INV",  inverse);
-  ADD_MATH_UNARY_FLOAT_WDEF(rpn, "SQRT", sqrt);
-  ADD_MATH_UNARY_FLOAT_WDEF(rpn, "COS",  trig_cos);
-  ADD_MATH_UNARY_FLOAT_WDEF(rpn, "SIN",  trig_sin);
-  ADD_MATH_UNARY_FLOAT_WDEF(rpn, "TAN",  trig_tan);
-  ADD_MATH_UNARY_FLOAT_WDEF(rpn, "ACOS", trig_acos);
-  ADD_MATH_UNARY_FLOAT_WDEF(rpn, "ASIN", trig_asin);
-  ADD_MATH_UNARY_FLOAT_WDEF(rpn, "ATAN", trig_atan);
-  ADD_MATH_UNARY_FLOAT_WDEF(rpn, "EXP",  exp);
-  ADD_MATH_UNARY_FLOAT_WDEF(rpn, "LN",   log);
-  ADD_MATH_UNARY_FLOAT_WDEF(rpn, "LN2",  ln2);
-  ADD_MATH_UNARY_FLOAT_WDEF(rpn, "LOG",  log10);
-  ADD_MATH_UNARY_NUMBER_WDEF(rpn, "CHS", change_sign, ichange_sign);  // integer CHS preserves type
-  ADD_MATH_UNARY_FLOAT_WDEF(rpn, "D->R", deg_to_rad);
-  ADD_MATH_UNARY_FLOAT_WDEF(rpn, "R->D", rad_to_deg);
+  rpn.addDefinition("-", { rpn::StrictTypeValidator::d2_double_double,   MATH_FUNC(subtract),  nullptr, "", rpn::StackEffect{{{"a", "number"},  {"b", "number"}},  {{"diff", "number"}}}  });
+  rpn.addDefinition("-", { rpn::StrictTypeValidator::d2_integer_double,  MATH_FUNC(subtract),  nullptr, "", rpn::StackEffect{{{"a", "number"},  {"b", "number"}},  {{"diff", "number"}}}  });
+  rpn.addDefinition("-", { rpn::StrictTypeValidator::d2_double_integer,  MATH_FUNC(subtract),  nullptr, "", rpn::StackEffect{{{"a", "number"},  {"b", "number"}},  {{"diff", "number"}}}  });
+  rpn.addDefinition("-", { rpn::StrictTypeValidator::d2_integer_integer, MATH_FUNC(isubtract), nullptr, "", rpn::StackEffect{{{"a", "integer"}, {"b", "integer"}}, {{"diff", "integer"}}} });
+
+  rpn.addDefinition("*", { rpn::StrictTypeValidator::d2_double_double,   MATH_FUNC(multiply),  nullptr, "", rpn::StackEffect{{{"a", "number"},  {"b", "number"}},  {{"product", "number"}}}  });
+  rpn.addDefinition("*", { rpn::StrictTypeValidator::d2_integer_double,  MATH_FUNC(multiply),  nullptr, "", rpn::StackEffect{{{"a", "number"},  {"b", "number"}},  {{"product", "number"}}}  });
+  rpn.addDefinition("*", { rpn::StrictTypeValidator::d2_double_integer,  MATH_FUNC(multiply),  nullptr, "", rpn::StackEffect{{{"a", "number"},  {"b", "number"}},  {{"product", "number"}}}  });
+  rpn.addDefinition("*", { rpn::StrictTypeValidator::d2_integer_integer, MATH_FUNC(imultiply), nullptr, "", rpn::StackEffect{{{"a", "integer"}, {"b", "integer"}}, {{"product", "integer"}}} });
+
+  rpn.addDefinition("/", { rpn::StrictTypeValidator::d2_double_double,   MATH_FUNC(divide),    nullptr, "", rpn::StackEffect{{{"a", "number"},  {"b", "number"}},  {{"quotient", "number"}}}  });
+  rpn.addDefinition("/", { rpn::StrictTypeValidator::d2_integer_double,  MATH_FUNC(divide),    nullptr, "", rpn::StackEffect{{{"a", "number"},  {"b", "number"}},  {{"quotient", "number"}}}  });
+  rpn.addDefinition("/", { rpn::StrictTypeValidator::d2_double_integer,  MATH_FUNC(divide),    nullptr, "", rpn::StackEffect{{{"a", "number"},  {"b", "number"}},  {{"quotient", "number"}}}  });
+  rpn.addDefinition("/", { rpn::StrictTypeValidator::d2_integer_integer, MATH_FUNC(idivide),   nullptr, "", rpn::StackEffect{{{"a", "integer"}, {"b", "integer"}}, {{"quotient", "integer"}}} });
+
+  rpn.addDefinition("^", { rpn::StrictTypeValidator::d2_double_double,   MATH_FUNC(pow),       nullptr, "", rpn::StackEffect{{{"base", "number"},  {"exponent", "number"}},  {{"result", "number"}}}  });
+  rpn.addDefinition("^", { rpn::StrictTypeValidator::d2_integer_double,  MATH_FUNC(pow),       nullptr, "", rpn::StackEffect{{{"base", "number"},  {"exponent", "number"}},  {{"result", "number"}}}  });
+  rpn.addDefinition("^", { rpn::StrictTypeValidator::d2_double_integer,  MATH_FUNC(pow),       nullptr, "", rpn::StackEffect{{{"base", "number"},  {"exponent", "number"}},  {{"result", "number"}}}  });
+  rpn.addDefinition("^", { rpn::StrictTypeValidator::d2_integer_integer, MATH_FUNC(ipow),      nullptr, "", rpn::StackEffect{{{"base", "integer"}, {"exponent", "integer"}}, {{"result", "integer"}}} });
+
+  // ATAN2: ( x:number y:number -- angle:number )  TOS=y, NOS=x
+  rpn.addDefinition("ATAN2", { rpn::StrictTypeValidator::d2_number_number, MATH_FUNC(trig_atan2), nullptr, "",
+    rpn::StackEffect{{{"x", "number"}, {"y", "number"}}, {{"angle", "number"}}} });
+
+  // MIN / MAX
+  rpn.addDefinition("MIN", { rpn::StrictTypeValidator::d2_double_double,   MATH_FUNC(fmin),  nullptr, "", rpn::StackEffect{{{"a", "number"},  {"b", "number"}},  {{"min", "number"}}}  });
+  rpn.addDefinition("MIN", { rpn::StrictTypeValidator::d2_integer_double,  MATH_FUNC(fmin),  nullptr, "", rpn::StackEffect{{{"a", "number"},  {"b", "number"}},  {{"min", "number"}}}  });
+  rpn.addDefinition("MIN", { rpn::StrictTypeValidator::d2_double_integer,  MATH_FUNC(fmin),  nullptr, "", rpn::StackEffect{{{"a", "number"},  {"b", "number"}},  {{"min", "number"}}}  });
+  rpn.addDefinition("MIN", { rpn::StrictTypeValidator::d2_integer_integer, MATH_FUNC(imin),  nullptr, "", rpn::StackEffect{{{"a", "integer"}, {"b", "integer"}}, {{"min", "integer"}}} });
+  rpn.addDefinition("MAX", { rpn::StrictTypeValidator::d2_double_double,   MATH_FUNC(fmax),  nullptr, "", rpn::StackEffect{{{"a", "number"},  {"b", "number"}},  {{"max", "number"}}}  });
+  rpn.addDefinition("MAX", { rpn::StrictTypeValidator::d2_integer_double,  MATH_FUNC(fmax),  nullptr, "", rpn::StackEffect{{{"a", "number"},  {"b", "number"}},  {{"max", "number"}}}  });
+  rpn.addDefinition("MAX", { rpn::StrictTypeValidator::d2_double_integer,  MATH_FUNC(fmax),  nullptr, "", rpn::StackEffect{{{"a", "number"},  {"b", "number"}},  {{"max", "number"}}}  });
+  rpn.addDefinition("MAX", { rpn::StrictTypeValidator::d2_integer_integer, MATH_FUNC(imax),  nullptr, "", rpn::StackEffect{{{"a", "integer"}, {"b", "integer"}}, {{"max", "integer"}}} });
+
+  // MOD
+  rpn.addDefinition("MOD", { rpn::StrictTypeValidator::d2_double_double,   MATH_FUNC(dmod),  nullptr, "", rpn::StackEffect{{{"a", "number"},  {"b", "number"}},  {{"remainder", "number"}}}  });
+  rpn.addDefinition("MOD", { rpn::StrictTypeValidator::d2_integer_double,  MATH_FUNC(dmod),  nullptr, "", rpn::StackEffect{{{"a", "number"},  {"b", "number"}},  {{"remainder", "number"}}}  });
+  rpn.addDefinition("MOD", { rpn::StrictTypeValidator::d2_double_integer,  MATH_FUNC(dmod),  nullptr, "", rpn::StackEffect{{{"a", "number"},  {"b", "number"}},  {{"remainder", "number"}}}  });
+  rpn.addDefinition("MOD", { rpn::StrictTypeValidator::d2_integer_integer, MATH_FUNC(imod),  nullptr, "", rpn::StackEffect{{{"a", "integer"}, {"b", "integer"}}, {{"remainder", "integer"}}} });
+
+  // ABS
+  rpn.addDefinition("ABS", { rpn::StrictTypeValidator::d1_double,  MATH_FUNC(dabs),  nullptr, "", rpn::StackEffect{{{"a", "number"}},  {{"result", "number"}}}  });
+  rpn.addDefinition("ABS", { rpn::StrictTypeValidator::d1_integer, MATH_FUNC(iabs),  nullptr, "", rpn::StackEffect{{{"a", "integer"}}, {{"result", "integer"}}} });
+
+  // Unary float words (accept number, return number)
+  rpn.addDefinition("INV",  { rpn::StrictTypeValidator::d1_number, MATH_FUNC(inverse),   nullptr, "", rpn::StackEffect{{{"a", "number"}},     {{"result", "number"}}} });
+  rpn.addDefinition("SQRT", { rpn::StrictTypeValidator::d1_number, MATH_FUNC(sqrt),      nullptr, "", rpn::StackEffect{{{"a", "number"}},     {{"result", "number"}}} });
+  rpn.addDefinition("COS",  { rpn::StrictTypeValidator::d1_number, MATH_FUNC(trig_cos),  nullptr, "", rpn::StackEffect{{{"angle", "number"}}, {{"result", "number"}}} });
+  rpn.addDefinition("SIN",  { rpn::StrictTypeValidator::d1_number, MATH_FUNC(trig_sin),  nullptr, "", rpn::StackEffect{{{"angle", "number"}}, {{"result", "number"}}} });
+  rpn.addDefinition("TAN",  { rpn::StrictTypeValidator::d1_number, MATH_FUNC(trig_tan),  nullptr, "", rpn::StackEffect{{{"angle", "number"}}, {{"result", "number"}}} });
+  rpn.addDefinition("ACOS", { rpn::StrictTypeValidator::d1_number, MATH_FUNC(trig_acos), nullptr, "", rpn::StackEffect{{{"x", "number"}},     {{"angle", "number"}}} });
+  rpn.addDefinition("ASIN", { rpn::StrictTypeValidator::d1_number, MATH_FUNC(trig_asin), nullptr, "", rpn::StackEffect{{{"x", "number"}},     {{"angle", "number"}}} });
+  rpn.addDefinition("ATAN", { rpn::StrictTypeValidator::d1_number, MATH_FUNC(trig_atan), nullptr, "", rpn::StackEffect{{{"x", "number"}},     {{"angle", "number"}}} });
+  rpn.addDefinition("EXP",  { rpn::StrictTypeValidator::d1_number, MATH_FUNC(exp),       nullptr, "", rpn::StackEffect{{{"a", "number"}},     {{"result", "number"}}} });
+  rpn.addDefinition("LN",   { rpn::StrictTypeValidator::d1_number, MATH_FUNC(log),       nullptr, "", rpn::StackEffect{{{"a", "number"}},     {{"result", "number"}}} });
+  rpn.addDefinition("LN2",  { rpn::StrictTypeValidator::d1_number, MATH_FUNC(ln2),       nullptr, "", rpn::StackEffect{{{"a", "number"}},     {{"result", "number"}}} });
+  rpn.addDefinition("LOG",  { rpn::StrictTypeValidator::d1_number, MATH_FUNC(log10),     nullptr, "", rpn::StackEffect{{{"a", "number"}},     {{"result", "number"}}} });
+  rpn.addDefinition("D->R", { rpn::StrictTypeValidator::d1_number, MATH_FUNC(deg_to_rad),nullptr, "", rpn::StackEffect{{{"degrees", "number"}},{{"radians", "number"}}} });
+  rpn.addDefinition("R->D", { rpn::StrictTypeValidator::d1_number, MATH_FUNC(rad_to_deg),nullptr, "", rpn::StackEffect{{{"radians", "number"}},{{"degrees", "number"}}} });
+
+  // CHS: integer overload preserves type
+  rpn.addDefinition("CHS", { rpn::StrictTypeValidator::d1_double,  MATH_FUNC(change_sign),  nullptr, "", rpn::StackEffect{{{"a", "number"}},  {{"result", "number"}}}  });
+  rpn.addDefinition("CHS", { rpn::StrictTypeValidator::d1_integer, MATH_FUNC(ichange_sign), nullptr, "", rpn::StackEffect{{{"a", "integer"}}, {{"result", "integer"}}} });
 
   // these don't really make sense on Integers, but maybe we should
   // allow it anyway?
-  addDefinition("ROUND",  MATH_WORD_WDEF(rpn::StrictTypeValidator::d1_double, round));
-  addDefinition("CEIL",   MATH_WORD_WDEF(rpn::StrictTypeValidator::d1_double, ceil));
-  addDefinition("FLOOR",  MATH_WORD_WDEF(rpn::StrictTypeValidator::d1_double, floor));
-  addDefinition("GAMMA",  MATH_WORD_WDEF(rpn::StrictTypeValidator::d1_double, tgamma));
-  addDefinition("LGAMMA", MATH_WORD_WDEF(rpn::StrictTypeValidator::d1_double, lgamma));
+  addDefinition("ROUND",  { rpn::StrictTypeValidator::d1_double, MATH_FUNC(round),  nullptr, "", rpn::StackEffect{{{"a", "number"}}, {{"result", "number"}}} });
+  addDefinition("CEIL",   { rpn::StrictTypeValidator::d1_double, MATH_FUNC(ceil),   nullptr, "", rpn::StackEffect{{{"a", "number"}}, {{"result", "number"}}} });
+  addDefinition("FLOOR",  { rpn::StrictTypeValidator::d1_double, MATH_FUNC(floor),  nullptr, "", rpn::StackEffect{{{"a", "number"}}, {{"result", "number"}}} });
+  addDefinition("GAMMA",  { rpn::StrictTypeValidator::d1_double, MATH_FUNC(tgamma), nullptr, "", rpn::StackEffect{{{"a", "number"}}, {{"result", "number"}}} });
+  addDefinition("LGAMMA", { rpn::StrictTypeValidator::d1_double, MATH_FUNC(lgamma), nullptr, "", rpn::StackEffect{{{"a", "number"}}, {{"result", "number"}}} });
 
+  // QUAD: ( a:number b:number c:number -- x1:number x2:number )  solve a*x^2 + b*x + c = 0
+  // ->COMPLEX: ( re:number im:number -- z:complex )
+  // NOTE: ADD_NATIVE_N_NUMBER_WDEF expands to multiple addDefinition calls (one per
+  // (double|integer)^N overload combination) and has no slot for a StackEffect.  These
+  // overloads therefore fall through to legacy `validator.input_types() + return_types`
+  // rendering in wordHelp.  Adding structured signatures would require expanding the
+  // macro into explicit per-overload addDefinition calls.
   ADD_NATIVE_3_NUMBER_WDEF(math, rpn, "QUAD", quadratic, quadratic, nullptr);
   ADD_NATIVE_2_NUMBER_WDEF(math, rpn, "->COMPLEX", to_complex, to_complex, nullptr);
-  addDefinition("OBJ->", MATH_WORD_WDEF(math_validator::d1_complex, complex_to));
+  // OBJ-> for complex: ( complex -- re im )
+  addDefinition("OBJ->", { math_validator::d1_complex, MATH_FUNC(complex_to), nullptr, "",
+    rpn::StackEffect{{{"z", "complex"}}, {{"re", "number"}, {"im", "number"}}} });
 
-  addDefinition("k_PI", MATH_CONSTANT_WDEF(pi));
-  addDefinition("k_E",  MATH_CONSTANT_WDEF(e));
-  addDefinition("RAND", MATH_CONSTANT_WDEF(rand));
-  addDefinition("DRAND",MATH_CONSTANT_WDEF(drand));
-  addDefinition("NaN",  MATH_CONSTANT_WDEF(nan_val));
+  // Constants
+  addDefinition("k_PI", { rpn::StackSizeValidator::zero, MATH_FUNC(pi),      nullptr, "", rpn::StackEffect{{}, {{"pi", "number"}}} });
+  addDefinition("k_E",  { rpn::StackSizeValidator::zero, MATH_FUNC(e),       nullptr, "", rpn::StackEffect{{}, {{"e",  "number"}}} });
+  addDefinition("RAND", { rpn::StackSizeValidator::zero, MATH_FUNC(rand),    nullptr, "", rpn::StackEffect{{}, {{"n",  "integer"}}} });
+  addDefinition("DRAND",{ rpn::StackSizeValidator::zero, MATH_FUNC(drand),   nullptr, "", rpn::StackEffect{{}, {{"x",  "number"}}} });
+  addDefinition("NaN",  { rpn::StackSizeValidator::zero, MATH_FUNC(nan_val), nullptr, "", rpn::StackEffect{{}, {{"nan","number"}}} });
 
   // Angle mode: ->DEG / ->RAD / ->GRAD set the mode; ANGLEMODE queries it.
   rpn.addDefinition("->DEG",  { rpn::StackSizeValidator::zero, [](rpn::Interp &rpn, rpn::WordContext *, std::string &) {
     rpn.setAngleMode(rpn::AngleMode::degrees);
     return rpn::WordDefinition::Result::ok;
-  }, nullptr });
+  }, nullptr, "", rpn::StackEffect{{}, {}} });
   rpn.addDefinition("->RAD",  { rpn::StackSizeValidator::zero, [](rpn::Interp &rpn, rpn::WordContext *, std::string &) {
     rpn.setAngleMode(rpn::AngleMode::radians);
     return rpn::WordDefinition::Result::ok;
-  }, nullptr });
+  }, nullptr, "", rpn::StackEffect{{}, {}} });
   rpn.addDefinition("->GRAD", { rpn::StackSizeValidator::zero, [](rpn::Interp &rpn, rpn::WordContext *, std::string &) {
     rpn.setAngleMode(rpn::AngleMode::gradians);
     return rpn::WordDefinition::Result::ok;
-  }, nullptr });
+  }, nullptr, "", rpn::StackEffect{{}, {}} });
   rpn.addDefinition("ANGLEMODE", { rpn::StackSizeValidator::zero, [](rpn::Interp &rpn, rpn::WordContext *, std::string &) {
     switch (rpn.angleMode()) {
       case rpn::AngleMode::degrees:  rpn.stack.push_string("DEG");  break;
@@ -378,7 +420,7 @@ rpn::Interp::addMathDictionary() {
       case rpn::AngleMode::gradians: rpn.stack.push_string("GRAD"); break;
     }
     return rpn::WordDefinition::Result::ok;
-  }, nullptr });
+  }, nullptr, "", rpn::StackEffect{{}, {{"mode", "string"}}} });
 
   // LSHIFT / RSHIFT are registered in logic-dict.cpp alongside the other binary words.
 

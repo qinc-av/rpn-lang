@@ -67,26 +67,46 @@ rpn::Interp::addStackDictionary() {
   rpn::Interp &rpn(*this);
   setWordCategory("stack");
 
-  ADD_STACK_OP(rpn, "DROP", one, drop);
-  ADD_STACK_OP(rpn, "CLEAR", zero, clear);
-  ADD_STACK_OP(rpn, "DEPTH", zero, depth);
-  ADD_STACK_OP(rpn, "SWAP", two, swap);
-  ADD_STACK_OP(rpn, "ROLLU", zero, rollu);
-  ADD_STACK_OP(rpn, "ROLLD", zero, rolld);
-  ADD_STACK_OP(rpn, "OVER", two, over);
-  ADD_STACK_OP(rpn, "DUP", one, dup);
-  ADD_STACK_OP(rpn, "ROTU", three, rotu);
-  ADD_STACK_OP(rpn, "ROTD", three, rotd);
-  ADD_STACK_OP(rpn, "DROPn", ntos, dropn);
-  ADD_STACK_OP(rpn, "DUPn", ntos, dupn);
-  ADD_STACK_OP(rpn, "NIPn", ntos, nipn);
-  ADD_STACK_OP(rpn, "PICK", ntos, pick);
-  ADD_STACK_OP(rpn, "ROLLDn", ntos, rolldn);
-  ADD_STACK_OP(rpn, "ROLLUn", ntos, rollun);
-  ADD_STACK_OP(rpn, "TUCKn", ntos, tuckn);
-  ADD_STACK_OP(rpn, ".S", zero, print);
-  ADD_STACK_OP(rpn, "REVERSE", zero, reverse);
-  ADD_STACK_OP(rpn, "REVERSEn", ntos, reversen);
+  rpn.addDefinition("DROP",  { rpn::StackSizeValidator::one,  STACK_OP(drop),  nullptr, "",
+    rpn::StackEffect{{{"a", "any"}}, {}} });
+  rpn.addDefinition("CLEAR", { rpn::StackSizeValidator::zero, STACK_OP(clear), nullptr, "",
+    rpn::StackEffect{{}, {}} });
+  rpn.addDefinition("DEPTH", { rpn::StackSizeValidator::zero, STACK_OP(depth), nullptr, "",
+    rpn::StackEffect{{}, {{"depth", "integer"}}} });
+  rpn.addDefinition("SWAP",  { rpn::StackSizeValidator::two,  STACK_OP(swap),  nullptr, "",
+    rpn::StackEffect{{{"a", "any"}, {"b", "any"}}, {{"b", "any"}, {"a", "any"}}} });
+  rpn.addDefinition("ROLLU", { rpn::StackSizeValidator::zero, STACK_OP(rollu), nullptr, "",
+    rpn::StackEffect{{}, {}} });
+  rpn.addDefinition("ROLLD", { rpn::StackSizeValidator::zero, STACK_OP(rolld), nullptr, "",
+    rpn::StackEffect{{}, {}} });
+  rpn.addDefinition("OVER",  { rpn::StackSizeValidator::two,  STACK_OP(over),  nullptr, "",
+    rpn::StackEffect{{{"a", "any"}, {"b", "any"}}, {{"a", "any"}, {"b", "any"}, {"a", "any"}}} });
+  rpn.addDefinition("DUP",   { rpn::StackSizeValidator::one,  STACK_OP(dup),   nullptr, "",
+    rpn::StackEffect{{{"a", "any"}}, {{"a", "any"}, {"a", "any"}}} });
+  rpn.addDefinition("ROTU",  { rpn::StackSizeValidator::three, STACK_OP(rotu), nullptr, "",
+    rpn::StackEffect{{{"a", "any"}, {"b", "any"}, {"c", "any"}}, {{"b", "any"}, {"c", "any"}, {"a", "any"}}} });
+  rpn.addDefinition("ROTD",  { rpn::StackSizeValidator::three, STACK_OP(rotd), nullptr, "",
+    rpn::StackEffect{{{"a", "any"}, {"b", "any"}, {"c", "any"}}, {{"c", "any"}, {"a", "any"}, {"b", "any"}}} });
+  rpn.addDefinition("DROPn", { rpn::StackSizeValidator::ntos, STACK_OP(dropn), nullptr, "",
+    rpn::StackEffect{{{"n", "integer"}}, {}} });
+  rpn.addDefinition("DUPn",  { rpn::StackSizeValidator::ntos, STACK_OP(dupn),  nullptr, "",
+    rpn::StackEffect{{{"n", "integer"}}, {}} });
+  rpn.addDefinition("NIPn",  { rpn::StackSizeValidator::ntos, STACK_OP(nipn),  nullptr, "",
+    rpn::StackEffect{{{"n", "integer"}}, {}} });
+  rpn.addDefinition("PICK",  { rpn::StackSizeValidator::ntos, STACK_OP(pick),  nullptr, "",
+    rpn::StackEffect{{{"n", "integer"}}, {{"item", "any"}}} });
+  rpn.addDefinition("ROLLDn",{ rpn::StackSizeValidator::ntos, STACK_OP(rolldn),nullptr, "",
+    rpn::StackEffect{{{"n", "integer"}}, {}} });
+  rpn.addDefinition("ROLLUn",{ rpn::StackSizeValidator::ntos, STACK_OP(rollun),nullptr, "",
+    rpn::StackEffect{{{"n", "integer"}}, {}} });
+  rpn.addDefinition("TUCKn", { rpn::StackSizeValidator::ntos, STACK_OP(tuckn), nullptr, "",
+    rpn::StackEffect{{{"n", "integer"}}, {}} });
+  rpn.addDefinition(".S",    { rpn::StackSizeValidator::zero, STACK_OP(print), nullptr, "",
+    rpn::StackEffect{{}, {}} });
+  rpn.addDefinition("REVERSE", { rpn::StackSizeValidator::zero, STACK_OP(reverse), nullptr, "",
+    rpn::StackEffect{{}, {}} });
+  rpn.addDefinition("REVERSEn",{ rpn::StackSizeValidator::ntos, STACK_OP(reversen), nullptr, "",
+    rpn::StackEffect{{{"n", "integer"}}, {}} });
 
   addWordMetadata("DROP",     "Discard TOS.");
   addWordMetadata("CLEAR",    "Clear the entire stack.");

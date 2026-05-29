@@ -2376,4 +2376,78 @@ TEST_CASE("core deparse round-trips", "[core][display]") {
 }
 
 
+TEST_CASE("validateWord predicate reports overload viability against current stack", "[core][validateWord]") {
+  // validateWord(name) returns true iff at least one overload's StackValidator
+  // matches the current stack contents — used by the UI to grey out keyword
+  // buttons whose dispatch wouldn't succeed.  Validator semantics are
+  // prefix-style: a unary word fires when the stack has ≥1 item of the right
+  // type at TOS; deeper stack contents are irrelevant.
+  rpn::Interp rpn(false);
+
+  SECTION("two integers on stack → arithmetic words validate, type-mismatched ones don't") {
+    rpn.sync_eval("0d2 0d3");
+    REQUIRE( rpn.validateWord("+")     == true );
+    REQUIRE( rpn.validateWord("==")    == true );
+    REQUIRE( rpn.validateWord("NEG")   == true );   // unary; TOS is integer → fires
+    REQUIRE( rpn.validateWord("TRACE") == false );  // requires boolean TOS, not integer
+  }
+  SECTION("empty stack → zero-arity words validate, others don't") {
+    rpn.sync_eval("CLEAR");
+    REQUIRE( rpn.validateWord("CLEAR") == true );
+    REQUIRE( rpn.validateWord("+")     == false );
+    REQUIRE( rpn.validateWord("DUP")   == false );
+  }
+  SECTION("unknown word → false") {
+    rpn.sync_eval("CLEAR");
+    REQUIRE( rpn.validateWord("BOGUS-NEVER-DEFINED") == false );
+  }
+
+  SECTION("typed stdlib compiled word — name:type prefix doesn't bypass type-checking") {
+    // Regression for the Phase-2 stdlib comment migration:
+    //   ( double -- double )  →  ( x:number -- result:number )
+    // parse_input_types must strip the `name:` prefix and look up "number"
+    // in the type registry; otherwise the unknown-token fallback installs
+    // a StackSizeValidator and SINH starts accepting wrong-typed TOS.
+    rpn::Interp typed(false);
+    typed.addStandardDictionaries();
+    typed.sync_eval("CLEAR <true>");                     // boolean TOS
+    REQUIRE( typed.validateWord("SINH") == false );      // not number-typed → reject
+    typed.sync_eval("CLEAR 1.0");                        // double TOS
+    REQUIRE( typed.validateWord("SINH") == true );       // number-typed → fires
+  }
+}
+
+
+TEST_CASE("wordHelp renders structured signatures when populated", "[core][wordhelp]") {
+  rpn::Interp rpn(false);
+
+  // Register a one-off word with a populated structured signature.
+  rpn::StackEffect sig;
+  sig.inputs  = { {"a", "number"}, {"b", "number"} };
+  sig.outputs = { {"sum", "number"} };
+  rpn.addDefinition("CANTEST-ADD", rpn::WordDefinition{
+    rpn::StrictTypeValidator::d2_number_number,
+    [](rpn::Interp &rpn, rpn::WordContext *, std::string &) {
+      double b = rpn.stack.pop_as_double();
+      double a = rpn.stack.pop_as_double();
+      rpn.stack.push_double(a + b);
+      return rpn::WordDefinition::Result::ok;
+    },
+    nullptr,
+    "",        // return_types fallback (unused when signature is present)
+    sig
+  });
+  auto h = rpn.wordHelp("CANTEST-ADD");
+  REQUIRE(h.effects.size() == 1);
+  REQUIRE(h.effects[0] == "( a:number b:number -- sum:number )");
+}
+
+TEST_CASE("user-defined word: typed signature parses from ( inputs -- outputs ) comment", "[core][user-word]") {
+  rpn::Interp rpn(false);
+  rpn.sync_eval(": sum-of-squares ( a:number b:number -- result:number ) DUP * SWAP DUP * + ;");
+  auto h = rpn.wordHelp("sum-of-squares");
+  REQUIRE(h.effects.size() == 1);
+  REQUIRE(h.effects[0] == "( a:number b:number -- result:number )");
+}
+
 /* end of rpn-lang/tests/core-test.cpp */
